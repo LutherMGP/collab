@@ -1,50 +1,62 @@
 # Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Expo GO
 
-## Get started
+1. npx expo start -c
 
-1. Install dependencies
+## Build til TestFlight (Apple)
 
-   ```bash
-   npm install
-   ```
+1. npx eas build --platform ios
 
-2. Start the app
+2. eas submit --platform ios
 
-   ```bash
-    npx expo start
-   ```
+# Buildtyper 👋
 
-In the output, you'll find options to open the app in a
+Med den nuværende opsætning af eas.json er følgende implementeret:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1. Miljøbaseret Test-login:
+   Ved hjælp af miljøvariabler i eas.json er knapperne til test-login (Bruger, Designer, Admin) kun synlige, når miljøet er sat til udvikling eller preview (med DEVELOPER_MODE: "true").
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+2. Automatisk Testbrugeroprettelse:
+   loginAsTestUser-funktionen i login.tsx tjekker, om en testbruger allerede eksisterer i Firestore. Hvis ikke, oprettes brugeren automatisk i Firestore med den relevante rolle.
 
-## Get a fresh project
+3. Begrænset Adgang i TestFlight:
+   Ved at sætte DEVELOPER_MODE til false i produktionsindstillingerne i eas.json er knapperne til test-login skjult for alle andre end dig, når appen køres i TestFlight, da DEVELOPER_EMAIL tjekkes i udviklings- og preview-miljøet.
 
-When you're ready, run:
+4. Login via Apple og Testbrugere:
+   Apple-login er implementeret som hovedlogin, mens loginAsTestUser-funktionen giver dig mulighed for hurtigt at logge ind som forskellige roller under udvikling og test.
 
-```bash
-npm run reset-project
-```
+Hvad er næste skridt?
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+1. Test i TestFlight (kan ikke anbefales at benytte!):
+   Du kan nu bygge og uploade appen til TestFlight ved hjælp af:
 
-## Learn more
+   step 1:
+   eas build --profile preview --platform ios
 
-To learn more about developing your project with Expo, look at the following resources:
+   Når du tester i TestFlight, vil kun du (baseret på DEVELOPER_EMAIL) kunne se test-login-knapperne.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+2. Klargøring til Produktion:
+   Når du er klar til at frigive appen til produktion, kan du bygge den med:
 
-## Join the community
+   step 1:
+   eas build --profile production --platform ios
 
-Join our community of developers creating universal apps.
+   step 2:
+   eas submit --platform ios
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+   som vil skjule testknapperne for alle, inklusive dig.
+
+   Når du er klar til den endelige produktionsudgivelse, kan du ændre i eas.json:
+   • Fjerne DEVELOPER_EMAIL fra production-profilen i eas.json, eller
+   • Sætte DEVELOPER_MODE til "false" i produktionsprofilen for at skjule testknapperne for alle, inklusive dig.
+
+   ## Installation: fra repository 'collab'
+
+   • git clone https://github.com/LutherMGP/collab.git
+   • cd collab
+   • npm install expo
+
+   ## Opstart af iOS Simulator
+
+   • npx expo start -c
