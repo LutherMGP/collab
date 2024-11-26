@@ -78,7 +78,6 @@ export default function TabLayout() {
                 : userRole === "Admin" && focused
                 ? Colors.light.admin // Bruger den røde farve
                 : color; // Standardfarve, når den ikke er fokuseret
-
             return (
               <Ionicons
                 size={24}
@@ -171,7 +170,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <View>
               <MaterialIcons
-                size={36}
+                size={30}
                 name="join-left"
                 color={color}
                 style={{ marginBottom: -3 }}
@@ -329,7 +328,7 @@ export default function TabLayout() {
               />
             );
           },
-          tabBarButton: () => null,
+          // tabBarButton: () => null,
           headerLeft: () => (
             <Image
               source={
