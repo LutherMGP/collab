@@ -60,6 +60,7 @@ Hvad er næste skridt?
    ## Installation: app relateret
 
    • npx expo install firebase
+   • npx expo install expo-apple-authentication
 
    ## Opstart af iOS Simulator
 

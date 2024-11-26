@@ -3,7 +3,7 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { Platform, StyleSheet } from "react-native";
-import { Text, View } from "@/components/Themed";
+import { Text, View } from "@/components/Theamed";
 
 export default function ModalScreen() {
   return (
