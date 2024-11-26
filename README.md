@@ -61,6 +61,7 @@ Hvad er næste skridt?
 
    • npx expo install firebase
    • npx expo install expo-apple-authentication
+   • npx expo install @react-native-async-storage/async-storage
 
    ## Opstart af iOS Simulator
 
