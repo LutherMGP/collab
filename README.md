@@ -57,6 +57,10 @@ Hvad er næste skridt?
    • cd collab
    • npm install expo
 
+   ## Installation: app relateret
+
+   • npx expo install firebase
+
    ## Opstart af iOS Simulator
 
    • npx expo start -c
