@@ -65,8 +65,7 @@ Hvad er næste skridt?
    • npx expo install expo-secure-store
    • npx expo install expo-document-picker
    • npx expo install expo-image-manipulator
-   •
-   •
+   • npm install moment
 
    ## Opstart af iOS Simulator
 
