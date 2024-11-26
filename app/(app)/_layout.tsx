@@ -100,7 +100,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal" asChild>
+              <Link href="./modal" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
@@ -146,7 +146,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_assetmanager" asChild>
+              <Link href="./modal_assetmanager" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
@@ -195,7 +195,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_collab" asChild>
+              <Link href="./modal_collab" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
@@ -238,7 +238,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_admin" asChild>
+              <Link href="./modal_admin" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
@@ -289,7 +289,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_account" asChild>
+              <Link href="./modal_account" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
@@ -342,7 +342,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_template" asChild>
+              <Link href="./modal_template" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
