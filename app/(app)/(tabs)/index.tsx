@@ -1,74 +1,187 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+// @/app/(app)/(tabs)/index.tsx
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React, { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Animated,
+  Text,
+  ActivityIndicator,
+} from "react-native";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { database } from "@/firebaseConfig";
+import { useAuth } from "@/hooks/useAuth";
+import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
+import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
+import InfoPanelProjects from "@/components/indexcomponents/infopanels/InfoPanelProjects";
+import InfoPanelPublished from "@/components/indexcomponents/infopanels/InfoPanelPublished";
+import InfoPanelProducts from "@/components/indexcomponents/infopanels/InfoPanelProducts";
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+import { useVisibility } from "@/hooks/useVisibilityContext";
+import {
+  getDoc,
+  doc,
+  collectionGroup,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+const Index = () => {
+  const theme = useColorScheme() || "light";
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const {
+    isInfoPanelProjectsVisible,
+    isInfoPanelPublishedVisible,
+    isInfoPanelProductsVisible,
+    isInfoPanelPurchasedVisible,
+    isInfoPanelCartVisible,
+    isInfoPanelDevelopmentVisible,
+  } = useVisibility();
+
+  // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
+  const shouldShowWelcomeMessage = !(
+    isInfoPanelProjectsVisible ||
+    isInfoPanelPublishedVisible ||
+    isInfoPanelProductsVisible ||
+    isInfoPanelPurchasedVisible ||
+    isInfoPanelCartVisible ||
+    isInfoPanelDevelopmentVisible
   );
-}
+
+  useEffect(() => {
+    if (user) {
+      const updateLastUsed = async () => {
+        const userDocRef = doc(database, "users", user);
+        await updateDoc(userDocRef, {
+          lastUsed: serverTimestamp(),
+        });
+      };
+
+      updateLastUsed().catch((error) => {
+        console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
+      });
+
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  return (
+    <Animated.ScrollView
+      style={[styles.container, { backgroundColor: Colors[theme].background }]}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true }
+      )}
+      scrollEventThrottle={16}
+    >
+      {/* Dashboard komponenten */}
+      <View style={styles.dashboardContainer}>
+        <Dashboard />
+      </View>
+
+      {/* Separator linje efter Snit */}
+      <View
+        style={[styles.separator, { backgroundColor: Colors[theme].icon }]}
+      />
+
+      {/* Velkomstmeddelelse - kun synlig hvis ingen InfoPanels er synlige */}
+      {shouldShowWelcomeMessage && <WelcomeMessage />}
+
+      {/* Vis en loading indikator */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[theme].text} />
+        </View>
+      )}
+
+      {/* Vis en fejlbesked, hvis der er en fejl */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {/* Render InfoPanelProjects kun hvis synlig */}
+      {isInfoPanelProjectsVisible && (
+        <View style={styles.infoPanelProjectsContainer}>
+          <InfoPanelProjects />
+        </View>
+      )}
+
+      {/* Render InfoPanelPublished kun hvis synlig */}
+      {isInfoPanelPublishedVisible && (
+        <View style={styles.infoPanelPublishedContainer}>
+          <InfoPanelPublished />
+        </View>
+      )}
+
+      {/* Render InfoPanelProducts kun hvis synlig */}
+      {isInfoPanelProductsVisible && (
+        <View style={styles.infoPanelProductsContainer}>
+          <InfoPanelProducts />
+        </View>
+      )}
+    </Animated.ScrollView>
+  );
+};
+
+export default Index;
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    paddingTop: 0,
+    padding: 0,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  contentContainer: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  dashboardContainer: {},
+  separator: {
+    height: 0.5,
+    width: "100%",
+    alignSelf: "center",
+    marginBottom: "1.5%",
+    marginTop: "3%",
+  },
+  infoPanelProjectsContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelPublishedContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelProductsContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  errorContainer: {
+    padding: 10,
+    backgroundColor: "red",
+    borderRadius: 5,
+    margin: 10,
+  },
+  errorText: {
+    color: "white",
+    textAlign: "center",
   },
 });
