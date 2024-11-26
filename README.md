@@ -57,6 +57,13 @@ Hvad er næste skridt?
    • cd collab
    • npm install expo
 
+   ## Installation: app relateret
+
+   • npx expo install firebase
+   • npx expo install expo-apple-authentication
+   • npx expo install @react-native-async-storage/async-storage
+   • npx expo install expo-secure-store
+
    ## Opstart af iOS Simulator
 
    • npx expo start -c
