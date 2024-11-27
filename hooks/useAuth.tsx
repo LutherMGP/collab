@@ -38,6 +38,16 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+// Hjælpefunktion til at håndtere brugerroller
+export const useRole = () => {
+  const { userRole } = useAuth();
+
+  const isDesigner = userRole === "Designer";
+  const isAdmin = userRole === "Admin";
+
+  return { isDesigner, isAdmin };
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<string | null>(null);
@@ -55,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           router.replace("/(app)/(tabs)");
         }
       } else {
-        router.replace("/(auth)/login");
+        router.replace("/(app)/(auth)/login");
       }
     };
 
@@ -107,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setUserRole(null);
       await SecureStore.deleteItemAsync("userId");
-      router.replace("/(auth)/login");
+      router.replace("/(app)/(auth)/login");
     } catch (error) {
       console.error("Fejl ved logout:", error);
     }

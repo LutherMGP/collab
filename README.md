@@ -63,6 +63,9 @@ Hvad er næste skridt?
    • npx expo install expo-apple-authentication
    • npx expo install @react-native-async-storage/async-storage
    • npx expo install expo-secure-store
+   • npx expo install expo-document-picker
+   • npx expo install expo-image-manipulator
+   • npm install moment
 
    ## Opstart af iOS Simulator
 
