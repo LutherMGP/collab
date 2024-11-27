@@ -8,13 +8,14 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useRole } from "@/hooks/useAuth";
 import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { user, userRole, setUserRole } = useAuth(); // Sørg for, at user og userRole hentes korrekt
+  const { user, setUserRole } = useAuth();
+  const { isDesigner, isAdmin } = useRole();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [purchaseCount, setPurchaseCount] = useState(0);
 
@@ -34,7 +35,7 @@ export default function TabLayout() {
     return () => unsubscribe();
   }, [user]);
 
-  // Hent antallet af ubetalte project's fra Firestore
+  // Hent antallet af ubetalte projekter fra Firestore
   useEffect(() => {
     if (!user) return;
 
@@ -71,14 +72,12 @@ export default function TabLayout() {
           title: "Market",
           tabBarLabel: "Home",
           tabBarIcon: ({ color, focused }) => {
-            // Bestem den farve, der skal anvendes
             const iconColor =
-              userRole === "Designer" && focused
-                ? Colors.light.designer // Bruger den grønne farve
-                : userRole === "Admin" && focused
-                ? Colors.light.admin // Bruger den røde farve
-                : color; // Standardfarve, når den ikke er fokuseret
-
+              isDesigner && focused
+                ? Colors.light.designer
+                : isAdmin && focused
+                ? Colors.light.admin
+                : color;
             return (
               <Ionicons
                 size={24}
@@ -116,10 +115,12 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* 'AssetManager' Tab - kun vises for Admin & Designer */}
+
+      {/* 'AssetManager' Tab */}
       <Tabs.Screen
         name="assetmanager"
         options={{
+          href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’
           title: "Files",
           tabBarLabel: "Assets",
           tabBarIcon: ({ color }) => (
@@ -130,10 +131,6 @@ export default function TabLayout() {
               style={{ marginBottom: -3 }}
             />
           ),
-          tabBarButton:
-            userRole === "Designer" || userRole === "Admin"
-              ? undefined
-              : () => null,
           headerLeft: () => (
             <Image
               source={
@@ -162,16 +159,18 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Collab Tab */}
+
+      {/* 'collab' Tab */}
       <Tabs.Screen
         name="collab"
         options={{
+          href: isAdmin || isDesigner ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
           title: "Pending Agreements",
           tabBarLabel: "Collab",
           tabBarIcon: ({ color }) => (
             <View>
               <MaterialIcons
-                size={36}
+                size={30}
                 name="join-left"
                 color={color}
                 style={{ marginBottom: -3 }}
@@ -211,10 +210,12 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* 'Administration' Tab */}
+
+      {/* 'admin' Tab */}
       <Tabs.Screen
         name="admin"
         options={{
+          href: isAdmin ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
           title: "Administration",
           tabBarLabel: "Admin",
           tabBarIcon: ({ color }) => (
@@ -225,7 +226,6 @@ export default function TabLayout() {
               style={{ marginBottom: -3 }}
             />
           ),
-          tabBarButton: userRole === "Admin" ? undefined : () => null,
           headerLeft: () => (
             <Image
               source={
@@ -254,6 +254,7 @@ export default function TabLayout() {
           ),
         }}
       />
+
       {/* 'account' Tab */}
       <Tabs.Screen
         name="account"
@@ -305,21 +306,21 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* 'Template' Tab */}
+
+      {/* 'template' Tab */}
       <Tabs.Screen
         name="template"
         options={{
+          href: null, // Skjuler fanen fra fanebjælken
           title: "Headline",
           tabBarLabel: "Template",
           tabBarIcon: ({ color, focused }) => {
-            // Bestem den farve, der skal anvendes
             const iconColor =
-              userRole === "Designer" && focused
-                ? Colors.light.designer // Bruger den grønne farve
-                : userRole === "Admin" && focused
-                ? Colors.light.admin // Bruger den røde farve
-                : color; // Standardfarve, når den ikke er fokuseret
-
+              isDesigner && focused
+                ? Colors.light.designer
+                : isAdmin && focused
+                ? Colors.light.admin
+                : color;
             return (
               <FontAwesome
                 size={32}
@@ -329,7 +330,6 @@ export default function TabLayout() {
               />
             );
           },
-          tabBarButton: () => null,
           headerLeft: () => (
             <Image
               source={

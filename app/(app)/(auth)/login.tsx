@@ -1,10 +1,9 @@
-// @/app/(auth)/login.tsx
+// @/app/(app)/(auth)/login.tsx
 
 import React, { useState } from "react";
 import {
   StyleSheet,
   View,
-  Image,
   ActivityIndicator,
   Alert,
   Button,
@@ -106,15 +105,6 @@ export default function LoginScreen() {
       style={[styles.container, { backgroundColor: Colors[theme].background }]}
     >
       <View style={styles.innerContainer}>
-        <Image
-          source={
-            theme === "dark"
-              ? require("@/assets/images/logo/genfoedthub_dark.png")
-              : require("@/assets/images/logo/genfoedthub_light.png")
-          }
-          style={styles.backgroundImage}
-        />
-
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
           buttonStyle={
@@ -152,18 +142,14 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   innerContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
-  },
-  backgroundImage: {
-    width: "80%",
-    height: "24%",
-    resizeMode: "contain",
-    marginBottom: 20,
   },
   appleButton: {
     width: "80%",
