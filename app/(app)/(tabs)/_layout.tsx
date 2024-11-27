@@ -119,6 +119,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="assetmanager"
           options={{
+            href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’:
             title: "Files",
             tabBarLabel: "Assets",
             tabBarIcon: ({ color }) => (
@@ -163,6 +164,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="collab"
         options={{
+          href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’:
           title: "Pending Agreements",
           tabBarLabel: "Collab",
           tabBarIcon: ({ color }) => (
@@ -213,6 +215,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="admin"
         options={{
+          href: isAdmin ? undefined : null, // Skjuler fanen for 'Bruger' og ‘Designer’, viser for 'Admin':
           title: "Administration",
           tabBarLabel: "Admin",
           tabBarIcon: ({ color }) => (
@@ -249,7 +252,7 @@ export default function TabLayout() {
               </Link>
             </View>
           ),
-          redirect: !isAdmin, // Omdirigerer, hvis brugeren ikke er admin
+          // redirect: !isAdmin, // Omdirigerer, hvis brugeren ikke er admin
         }}
       />
 
