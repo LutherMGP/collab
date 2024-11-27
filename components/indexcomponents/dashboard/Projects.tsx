@@ -67,11 +67,12 @@ const Projects = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelProjectsVisible ? styles.iconPressed : null, // Ændrer stil ved tryk
+          isInfoPanelProjectsVisible ? styles.iconPressed : null,
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.draftCountText}>{draftCount}</Text>
+        <Text style={styles.draftCountText}>{draftCount || 0}</Text>{" "}
+        {/* Brug fallback */}
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>

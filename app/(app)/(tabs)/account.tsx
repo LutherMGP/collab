@@ -119,7 +119,7 @@ export default function AccountScreen() {
   // Funktion til at vælge billede
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"], // Brug en array af "MediaType"
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -143,12 +143,15 @@ export default function AccountScreen() {
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
-      const timestamp = Date.now();
-      const storageRef = ref(storage, `profileImages/${user}_${timestamp}.jpg`);
+      const storageRef = ref(
+        storage,
+        `users/${user}/profileimage/${Date.now()}.jpg`
+      ); // Opdateret sti
 
       await uploadBytes(storageRef, blob);
       const downloadUrl = await getDownloadURL(storageRef);
 
+      // Gem download-URL'en i Firestore
       await setDoc(
         doc(database, "users", user),
         { profileImage: downloadUrl },
