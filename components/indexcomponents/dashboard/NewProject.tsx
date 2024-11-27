@@ -1,6 +1,6 @@
 // @/components/indexcomponents/dashboard/NewProject.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,17 +13,9 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { Entypo } from "@expo/vector-icons";
-import {
-  doc,
-  setDoc,
-  collection,
-  collectionGroup,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { doc, getDoc, collection, setDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { Entypo } from "@expo/vector-icons"; // Import af Entypo-ikoner
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
@@ -31,26 +23,25 @@ const NewProject: React.FC = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
-  const isNameUnique = async (projectName: string): Promise<boolean> => {
-    if (!projectName) {
-      console.error("Projektets navn mangler.");
-      return false;
-    }
-
-    try {
-      const allProjectCollectionRef = collectionGroup(database, "projects");
-      const q = query(
-        allProjectCollectionRef,
-        where("name", "==", projectName)
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.empty; // Returnerer true, hvis navnet er unikt
-    } catch (error) {
-      console.error("Fejl ved tjek af navnets unikke status:", error);
-      return false;
-    }
-  };
+  // Hent brugerens profilbillede fra Firestore
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(database, "users", user));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setProfileImage(data.profileImage || null);
+          }
+        } catch (error) {
+          console.error("Fejl ved hentning af profilbillede:", error);
+        }
+      }
+    };
+    fetchProfileImage();
+  }, [user]);
 
   const handleCreateProject = async () => {
     if (!user) {
@@ -66,23 +57,22 @@ const NewProject: React.FC = () => {
     setIsCreating(true);
 
     try {
-      const isUnique = await isNameUnique(name);
-      if (!isUnique) {
-        Alert.alert("Navnet er allerede taget", "Vælg venligst et andet navn.");
-        setIsCreating(false);
-        return;
-      }
-
+      // Opret ny reference til projektet
       const projectRef = doc(collection(database, "users", user, "projects"));
+
+      // Projektdata, inklusive statusfelt
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
         description: description.trim(),
         createdAt: new Date().toISOString(),
         userId: user,
+        status: "Project", // Statusfeltet er påkrævet for korrekt filtrering
       };
 
+      // Gem projektet i Firestore
       await setDoc(projectRef, projectData);
+
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
@@ -101,7 +91,11 @@ const NewProject: React.FC = () => {
     >
       {/* Baggrundsbillede */}
       <Image
-        source={require("@/assets/images/projects.webp")}
+        source={
+          profileImage
+            ? { uri: profileImage }
+            : require("@/assets/images/blomst.webp")
+        }
         style={styles.profileImg}
         resizeMode="cover"
       />
@@ -111,7 +105,8 @@ const NewProject: React.FC = () => {
         style={styles.iconContainer}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.draftCountText}>+</Text>
+        <Entypo name="plus" size={24} color="white" />{" "}
+        {/* Sørg for kun at bruge ikon */}
       </TouchableOpacity>
 
       {/* Tekst */}
@@ -197,12 +192,6 @@ const styles = StyleSheet.create({
     width: 40,
     borderWidth: 3,
     borderColor: Colors.light.background,
-  },
-  draftCountText: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
   },
   createStoryTextContainer: {
     justifyContent: "center",

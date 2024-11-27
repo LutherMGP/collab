@@ -289,13 +289,15 @@ const InfoPanel = ({
   // Hent brugerens profilbillede
   useEffect(() => {
     const fetchProfileImage = async () => {
-      if (!currentUser) return;
+      if (!currentUser || !projectData.id) return;
 
       try {
-        const userDoc = await getDoc(doc(database, "users", currentUser));
+        const userDoc = await getDoc(
+          doc(database, "users", currentUser, "projects", projectData.id)
+        );
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setProfileImage(data.profileImage || null);
+          setProfileImage(data.profileimage?.profileImage || null);
         }
       } catch (error) {
         console.error("Fejl ved hentning af profilbillede:", error);
@@ -303,7 +305,7 @@ const InfoPanel = ({
     };
 
     fetchProfileImage();
-  }, [currentUser]);
+  }, [currentUser, projectData.id]);
 
   // Generisk handlePress funktion med conditional
   const handlePress = (button: string) => {
@@ -388,14 +390,14 @@ const InfoPanel = ({
           ...projectData,
           name: data.name || "",
           comment: data.comment || "",
-          f8: data.documents?.f8CoverImage || null,
-          f8PDF: data.documents?.f8PDF || null,
-          f5: data.documents?.f5CoverImage || null,
-          f5PDF: data.documents?.f5PDF || null,
-          f3: data.documents?.f3CoverImage || null,
-          f3PDF: data.documents?.f3PDF || null,
-          f2: data.documents?.f2CoverImage || null,
-          f2PDF: data.documents?.f2PDF || null,
+          f8: data.data?.f8?.coverImage || null, // Hent coverImage for f8
+          f8PDF: data.data?.f8?.pdf || null, // Hent PDF for f8
+          f5: data.data?.f5?.coverImage || null, // Hent coverImage for f5
+          f5PDF: data.data?.f5?.pdf || null, // Hent PDF for f5
+          f3: data.data?.f3?.coverImage || null, // Hent coverImage for f3
+          f3PDF: data.data?.f3?.pdf || null, // Hent PDF for f3
+          f2: data.data?.f2?.coverImage || null, // Hent coverImage for f2
+          f2PDF: data.data?.f2?.pdf || null, // Hent PDF for f2
           status: data.status || "",
           price: data.price || 0,
           isFavorite: data.isFavorite || false,

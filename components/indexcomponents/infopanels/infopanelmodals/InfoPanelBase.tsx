@@ -40,7 +40,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   const [comment, setComment] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Hent eksisterende data
+  // Fetch existing data from Firestore
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -48,19 +48,20 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
           const data = snapshot.data();
-          setPdfURL(data.documents?.[`${category}PDF`] || null);
-          setCoverImageURL(data.documents?.[`${category}CoverImage`] || null);
-          setComment(data.comment || "");
+          const categoryData = data.data?.[category];
+          setPdfURL(categoryData?.pdf || null);
+          setCoverImageURL(categoryData?.coverImage || null);
+          setComment(categoryData?.comment || "");
         }
       } catch (error) {
-        console.error(`Fejl ved hentning af ${categoryName} data:`, error);
-        Alert.alert("Fejl", `Kunne ikke hente data for ${categoryName}.`);
+        console.error(`Failed to fetch ${categoryName} data:`, error);
+        Alert.alert("Error", `Could not fetch data for ${categoryName}.`);
       }
     };
     fetchData();
   }, [projectId, userId, category, categoryName]);
 
-  // Upload ny fil til Firebase Storage
+  // Upload a new file to Firebase Storage
   const uploadFile = async (uri: string, fileName: string): Promise<string> => {
     try {
       const response = await fetch(uri);
@@ -68,14 +69,14 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 
       const fileRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/${category}/${fileName}`
+        `users/${userId}/projects/${projectId}/data/${category}/${fileName}`
       );
 
       const metadata = {
         customMetadata: {
           uploadedBy: userId,
           uploadDate: new Date().toISOString(),
-          category: category,
+          category,
           description: `${categoryName} file`,
         },
       };
@@ -84,12 +85,12 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       const downloadURL = await getDownloadURL(fileRef);
       return downloadURL;
     } catch (error) {
-      console.error("Fejl ved upload:", error);
+      console.error("File upload failed:", error);
       throw error;
     }
   };
 
-  // Håndter valg af PDF
+  // Handle PDF selection
   const handleSelectPDF = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: "application/pdf",
@@ -103,16 +104,16 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       try {
         const downloadURL = await uploadFile(pdfUri, pdfName);
         setPdfURL(downloadURL);
-        Alert.alert("Success", `${categoryName} PDF uploadet.`);
+        Alert.alert("Success", `${categoryName} PDF uploaded.`);
       } catch {
-        Alert.alert("Fejl", `Kunne ikke uploade ${categoryName} PDF.`);
+        Alert.alert("Error", `Could not upload ${categoryName} PDF.`);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  // Håndter valg af billede
+  // Handle image selection
   const handleSelectImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -129,45 +130,38 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       try {
         const downloadURL = await uploadFile(imageUri, imageName);
         setCoverImageURL(downloadURL);
-        Alert.alert("Success", `${categoryName} Coverbillede uploadet.`);
+        Alert.alert("Success", `${categoryName} cover image uploaded.`);
       } catch {
-        Alert.alert("Fejl", `Kunne ikke uploade ${categoryName} Coverbillede.`);
+        Alert.alert("Error", `Could not upload ${categoryName} cover image.`);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  // Gem ændringer
+  // Save changes to Firestore
   const handleSave = async () => {
     try {
       const docRef = doc(database, "users", userId, "projects", projectId);
       await setDoc(
         docRef,
         {
-          documents: {
-            [`${category}PDF`]: pdfURL,
-            [`${category}CoverImage`]: coverImageURL,
-          },
-          metadata: {
+          data: {
             [category]: {
-              uploadDate: new Date().toISOString(),
-              uploadedBy: userId,
-              fileSize: "2MB", // Juster dette, hvis filstørrelsen er dynamisk
-              fileType:
-                category === "f8" || category === "f5" ? "PDF" : "Image",
+              pdf: pdfURL,
+              coverImage: coverImageURL,
+              comment: comment.trim(),
+              updatedAt: new Date().toISOString(),
             },
           },
-          comment: comment.trim(),
-          updatedAt: new Date().toISOString(),
         },
         { merge: true }
       );
-      Alert.alert("Success", `${categoryName} data gemt.`);
-      onClose(); // Luk modal efter succes
+      Alert.alert("Success", `${categoryName} data saved.`);
+      onClose(); // Close the modal after saving
     } catch (error) {
-      console.error(`Fejl ved gemning af ${categoryName} data:`, error);
-      Alert.alert("Fejl", `Kunne ikke gemme ${categoryName} data.`);
+      console.error(`Failed to save ${categoryName} data:`, error);
+      Alert.alert("Error", `Could not save ${categoryName} data.`);
     }
   };
 
@@ -175,56 +169,55 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>{categoryName} Data</Text>
 
-      {/* Vis PDF */}
+      {/* Display PDF */}
       {pdfURL ? (
         <TouchableOpacity
           onPress={() => {
-            // Åbn PDF'en i en browser eller PDF-viewer
-            Linking.openURL(pdfURL).catch((err) =>
-              Alert.alert("Fejl", "Kunne ikke åbne PDF'en.")
+            Linking.openURL(pdfURL).catch(() =>
+              Alert.alert("Error", "Could not open the PDF.")
             );
           }}
         >
-          <Text style={styles.linkText}>Åbn PDF</Text>
+          <Text style={styles.linkText}>Open PDF</Text>
         </TouchableOpacity>
       ) : (
-        <Text>Ingen PDF valgt.</Text>
+        <Text>No PDF selected.</Text>
       )}
       <TouchableOpacity style={styles.button} onPress={handleSelectPDF}>
-        <Text style={styles.buttonText}>Vælg PDF</Text>
+        <Text style={styles.buttonText}>Select PDF</Text>
       </TouchableOpacity>
 
-      {/* Vis Coverbillede */}
+      {/* Display Cover Image */}
       {coverImageURL ? (
         <Image source={{ uri: coverImageURL }} style={styles.image} />
       ) : (
-        <Text>Ingen coverbillede valgt.</Text>
+        <Text>No cover image selected.</Text>
       )}
       <TouchableOpacity style={styles.button} onPress={handleSelectImage}>
-        <Text style={styles.buttonText}>Vælg Coverbillede</Text>
+        <Text style={styles.buttonText}>Select Cover Image</Text>
       </TouchableOpacity>
 
-      {/* Kommentar */}
+      {/* Comment */}
       <TextInput
         style={styles.input}
         value={comment}
         onChangeText={setComment}
-        placeholder="Kommentar..."
+        placeholder="Comment..."
         multiline
       />
 
-      {/* Gem ændringer */}
+      {/* Save Changes */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.saveButtonText}>Gem Ændringer</Text>
+          <Text style={styles.saveButtonText}>Save Changes</Text>
         )}
       </TouchableOpacity>
 
-      {/* Luk Modal */}
+      {/* Close Modal */}
       <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.closeButtonText}>Luk</Text>
+        <Text style={styles.closeButtonText}>Close</Text>
       </TouchableOpacity>
     </ScrollView>
   );
