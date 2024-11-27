@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           router.replace("/(app)/(tabs)");
         }
       } else {
-        router.replace("./(auth)/login");
+        router.replace("/(app)/(auth)/login");
       }
     };
 
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setUserRole(null);
       await SecureStore.deleteItemAsync("userId");
-      router.replace("./(auth)/login");
+      router.replace("/(app)/(auth)/login");
     } catch (error) {
       console.error("Fejl ved logout:", error);
     }
