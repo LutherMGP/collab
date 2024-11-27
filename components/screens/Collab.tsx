@@ -1,4 +1,4 @@
-// @/app/(app)/(tabs)/collab.tsx
+// @/app/screens/Collab.tsx
 
 import React, { useEffect, useState } from "react";
 import {

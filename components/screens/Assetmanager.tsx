@@ -1,4 +1,4 @@
-// @/app/(app)/(tabs)/assetmanager.tsx
+// @/app/screens/Assetmanager.tsx
 
 import React, { useState, useEffect } from "react";
 import {

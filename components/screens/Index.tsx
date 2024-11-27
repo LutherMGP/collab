@@ -1,4 +1,4 @@
-// @/app/(app)/(tabs)/index.tsx
+// @/app/screens/Index.tsx
 
 import React, { useEffect, useState } from "react";
 import {
@@ -27,7 +27,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-const Index = () => {
+const IndexScreen = () => {
   const theme = useColorScheme() || "light";
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const { user } = useAuth();
@@ -43,7 +43,6 @@ const Index = () => {
     isInfoPanelDevelopmentVisible,
   } = useVisibility();
 
-  // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
   const shouldShowWelcomeMessage = !(
     isInfoPanelProjectsVisible ||
     isInfoPanelPublishedVisible ||
@@ -86,53 +85,37 @@ const Index = () => {
         <Dashboard />
       </View>
 
-      {/* Separator linje efter Snit */}
+      {/* Separator linje */}
       <View
         style={[styles.separator, { backgroundColor: Colors[theme].icon }]}
       />
 
-      {/* Velkomstmeddelelse - kun synlig hvis ingen InfoPanels er synlige */}
+      {/* Velkomstmeddelelse */}
       {shouldShowWelcomeMessage && <WelcomeMessage />}
 
-      {/* Vis en loading indikator */}
+      {/* Loading indikator */}
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors[theme].text} />
         </View>
       )}
 
-      {/* Vis en fejlbesked, hvis der er en fejl */}
+      {/* Fejlbesked */}
       {error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Render InfoPanelProjects kun hvis synlig */}
-      {isInfoPanelProjectsVisible && (
-        <View style={styles.infoPanelProjectsContainer}>
-          <InfoPanelProjects />
-        </View>
-      )}
-
-      {/* Render InfoPanelPublished kun hvis synlig */}
-      {isInfoPanelPublishedVisible && (
-        <View style={styles.infoPanelPublishedContainer}>
-          <InfoPanelPublished />
-        </View>
-      )}
-
-      {/* Render InfoPanelProducts kun hvis synlig */}
-      {isInfoPanelProductsVisible && (
-        <View style={styles.infoPanelProductsContainer}>
-          <InfoPanelProducts />
-        </View>
-      )}
+      {/* InfoPanels */}
+      {isInfoPanelProjectsVisible && <InfoPanelProjects />}
+      {isInfoPanelPublishedVisible && <InfoPanelPublished />}
+      {isInfoPanelProductsVisible && <InfoPanelProducts />}
     </Animated.ScrollView>
   );
 };
 
-export default Index;
+export default IndexScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -151,24 +134,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: "1.5%",
     marginTop: "3%",
-  },
-  infoPanelProjectsContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  infoPanelPublishedContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  infoPanelProductsContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
   },
   loadingContainer: {
     padding: 20,

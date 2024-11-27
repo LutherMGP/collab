@@ -1,4 +1,4 @@
-// @/app/(app)/(tabs)/account.tsx
+// @/app/screens/Account.tsx
 
 import React, { useState, useEffect } from "react";
 import {
