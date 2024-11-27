@@ -1,5 +1,3 @@
-// @/app/(app)/(tabs)/_layout.tsx
-
 import React, { useState, useEffect } from "react";
 import { Tabs, Link } from "expo-router";
 import { View, Image, Pressable, StyleSheet, Text } from "react-native";
@@ -8,13 +6,14 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useRole } from "@/hooks/useAuth";
 import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { user, userRole, setUserRole } = useAuth(); // Sørg for, at user og userRole hentes korrekt
+  const { user, setUserRole } = useAuth();
+  const { isDesigner, isAdmin } = useRole();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [purchaseCount, setPurchaseCount] = useState(0);
 
@@ -34,7 +33,7 @@ export default function TabLayout() {
     return () => unsubscribe();
   }, [user]);
 
-  // Hent antallet af ubetalte project's fra Firestore
+  // Hent antallet af ubetalte projekter fra Firestore
   useEffect(() => {
     if (!user) return;
 
@@ -71,14 +70,12 @@ export default function TabLayout() {
           title: "Market",
           tabBarLabel: "Home",
           tabBarIcon: ({ color, focused }) => {
-            // Bestem den farve, der skal anvendes
             const iconColor =
-              userRole === "Designer" && focused
-                ? Colors.light.designer // Bruger den grønne farve
-                : userRole === "Admin" && focused
-                ? Colors.light.admin // Bruger den røde farve
-                : color; // Standardfarve, når den ikke er fokuseret
-
+              isDesigner && focused
+                ? Colors.light.designer
+                : isAdmin && focused
+                ? Colors.light.admin
+                : color;
             return (
               <Ionicons
                 size={24}
@@ -116,53 +113,53 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* 'AssetManager' Tab - kun vises for Admin & Designer */}
-      <Tabs.Screen
-        name="assetmanager"
-        options={{
-          title: "Files",
-          tabBarLabel: "Assets",
-          tabBarIcon: ({ color }) => (
-            <Ionicons
-              size={28}
-              name="cloud-upload"
-              color={color}
-              style={{ marginBottom: -3 }}
-            />
-          ),
-          tabBarButton:
-            userRole === "Designer" || userRole === "Admin"
-              ? undefined
-              : () => null,
-          headerLeft: () => (
-            <Image
-              source={
-                colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
-              }
-              style={{ width: 70, height: 30, marginLeft: 14 }}
-            />
-          ),
-          headerRight: () => (
-            <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_assetmanager" asChild>
-                <Pressable>
-                  {({ pressed }) => (
-                    <FontAwesome
-                      name="info-circle"
-                      size={28}
-                      color={Colors[colorScheme ?? "light"].text}
-                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                    />
-                  )}
-                </Pressable>
-              </Link>
-            </View>
-          ),
-        }}
-      />
-      {/* Collab Tab */}
+
+      {/* 'AssetManager' Tab */}
+      {(isDesigner || isAdmin) && (
+        <Tabs.Screen
+          name="assetmanager"
+          options={{
+            title: "Files",
+            tabBarLabel: "Assets",
+            tabBarIcon: ({ color }) => (
+              <Ionicons
+                size={28}
+                name="cloud-upload"
+                color={color}
+                style={{ marginBottom: -3 }}
+              />
+            ),
+            headerLeft: () => (
+              <Image
+                source={
+                  colorScheme === "dark"
+                    ? require("@/assets/images/logo/genfoedthub_dark.png")
+                    : require("@/assets/images/logo/genfoedthub_light.png")
+                }
+                style={{ width: 70, height: 30, marginLeft: 14 }}
+              />
+            ),
+            headerRight: () => (
+              <View style={{ flexDirection: "row" }}>
+                <Link href="/modal_assetmanager" asChild>
+                  <Pressable>
+                    {({ pressed }) => (
+                      <FontAwesome
+                        name="info-circle"
+                        size={28}
+                        color={Colors[colorScheme ?? "light"].text}
+                        style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                      />
+                    )}
+                  </Pressable>
+                </Link>
+              </View>
+            ),
+          }}
+        />
+      )}
+
+      {/* 'collab' Tab */}
       <Tabs.Screen
         name="collab"
         options={{
@@ -171,7 +168,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <View>
               <MaterialIcons
-                size={36}
+                size={30}
                 name="join-left"
                 color={color}
                 style={{ marginBottom: -3 }}
@@ -211,7 +208,8 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* 'Administration' Tab */}
+
+      {/* 'admin' Tab */}
       <Tabs.Screen
         name="admin"
         options={{
@@ -225,7 +223,6 @@ export default function TabLayout() {
               style={{ marginBottom: -3 }}
             />
           ),
-          tabBarButton: userRole === "Admin" ? undefined : () => null,
           headerLeft: () => (
             <Image
               source={
@@ -252,8 +249,10 @@ export default function TabLayout() {
               </Link>
             </View>
           ),
+          redirect: !isAdmin, // Omdirigerer, hvis brugeren ikke er admin
         }}
       />
+
       {/* 'account' Tab */}
       <Tabs.Screen
         name="account"
@@ -305,21 +304,21 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* 'Template' Tab */}
+
+      {/* 'template' Tab */}
       <Tabs.Screen
         name="template"
         options={{
+          href: null, // Skjuler fanen fra fanebjælken
           title: "Headline",
           tabBarLabel: "Template",
           tabBarIcon: ({ color, focused }) => {
-            // Bestem den farve, der skal anvendes
             const iconColor =
-              userRole === "Designer" && focused
-                ? Colors.light.designer // Bruger den grønne farve
-                : userRole === "Admin" && focused
-                ? Colors.light.admin // Bruger den røde farve
-                : color; // Standardfarve, når den ikke er fokuseret
-
+              isDesigner && focused
+                ? Colors.light.designer
+                : isAdmin && focused
+                ? Colors.light.admin
+                : color;
             return (
               <FontAwesome
                 size={32}
@@ -329,7 +328,6 @@ export default function TabLayout() {
               />
             );
           },
-          tabBarButton: () => null,
           headerLeft: () => (
             <Image
               source={
