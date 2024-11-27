@@ -1,3 +1,5 @@
+// @/app/(app)/(tabs)/_layout.tsx
+
 import React, { useState, useEffect } from "react";
 import { Tabs, Link } from "expo-router";
 import { View, Image, Pressable, StyleSheet, Text } from "react-native";
@@ -115,56 +117,54 @@ export default function TabLayout() {
       />
 
       {/* 'AssetManager' Tab */}
-      {(isDesigner || isAdmin) && (
-        <Tabs.Screen
-          name="assetmanager"
-          options={{
-            href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’:
-            title: "Files",
-            tabBarLabel: "Assets",
-            tabBarIcon: ({ color }) => (
-              <Ionicons
-                size={28}
-                name="cloud-upload"
-                color={color}
-                style={{ marginBottom: -3 }}
-              />
-            ),
-            headerLeft: () => (
-              <Image
-                source={
-                  colorScheme === "dark"
-                    ? require("@/assets/images/logo/genfoedthub_dark.png")
-                    : require("@/assets/images/logo/genfoedthub_light.png")
-                }
-                style={{ width: 70, height: 30, marginLeft: 14 }}
-              />
-            ),
-            headerRight: () => (
-              <View style={{ flexDirection: "row" }}>
-                <Link href="/modal_assetmanager" asChild>
-                  <Pressable>
-                    {({ pressed }) => (
-                      <FontAwesome
-                        name="info-circle"
-                        size={28}
-                        color={Colors[colorScheme ?? "light"].text}
-                        style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                      />
-                    )}
-                  </Pressable>
-                </Link>
-              </View>
-            ),
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="assetmanager"
+        options={{
+          href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’
+          title: "Files",
+          tabBarLabel: "Assets",
+          tabBarIcon: ({ color }) => (
+            <Ionicons
+              size={28}
+              name="cloud-upload"
+              color={color}
+              style={{ marginBottom: -3 }}
+            />
+          ),
+          headerLeft: () => (
+            <Image
+              source={
+                colorScheme === "dark"
+                  ? require("@/assets/images/logo/genfoedthub_dark.png")
+                  : require("@/assets/images/logo/genfoedthub_light.png")
+              }
+              style={{ width: 70, height: 30, marginLeft: 14 }}
+            />
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: "row" }}>
+              <Link href="/modal_assetmanager" asChild>
+                <Pressable>
+                  {({ pressed }) => (
+                    <FontAwesome
+                      name="info-circle"
+                      size={28}
+                      color={Colors[colorScheme ?? "light"].text}
+                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                    />
+                  )}
+                </Pressable>
+              </Link>
+            </View>
+          ),
+        }}
+      />
 
       {/* 'collab' Tab */}
       <Tabs.Screen
         name="collab"
         options={{
-          href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’:
+          href: isAdmin || isDesigner ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
           title: "Pending Agreements",
           tabBarLabel: "Collab",
           tabBarIcon: ({ color }) => (
@@ -215,7 +215,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="admin"
         options={{
-          href: isAdmin ? undefined : null, // Skjuler fanen for 'Bruger' og ‘Designer’, viser for 'Admin':
+          href: isAdmin ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
           title: "Administration",
           tabBarLabel: "Admin",
           tabBarIcon: ({ color }) => (
@@ -252,7 +252,6 @@ export default function TabLayout() {
               </Link>
             </View>
           ),
-          // redirect: !isAdmin, // Omdirigerer, hvis brugeren ikke er admin
         }}
       />
 
