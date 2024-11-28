@@ -14,7 +14,7 @@ import {
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, collection, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 
@@ -28,32 +28,29 @@ const NewProject: React.FC = () => {
   const defaultImage = require("@/assets/images/blomst.webp");
 
   useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (!user) return;
-
-      try {
-        const userDocRef = doc(database, "users", user);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const imageUrl = userData?.profileImage;
-
-          // Brug billed-URL fra Firestore, eller standardbillede
-          setProfileImage(
-            imageUrl || Image.resolveAssetSource(defaultImage).uri
-          );
-        } else {
-          setProfileImage(Image.resolveAssetSource(defaultImage).uri);
-        }
-      } catch (error) {
-        console.error("Fejl ved hentning af profilbillede:", error);
-        setProfileImage(Image.resolveAssetSource(defaultImage).uri);
-      }
-    };
-
     fetchProfileImage();
   }, [user]);
+
+  const fetchProfileImage = async () => {
+    if (!user) return;
+
+    try {
+      const userDocRef = doc(database, "users", user);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const imageUrl = userData?.profileImage;
+
+        setProfileImage(imageUrl || Image.resolveAssetSource(defaultImage).uri);
+      } else {
+        setProfileImage(Image.resolveAssetSource(defaultImage).uri);
+      }
+    } catch (error) {
+      console.error("Fejl ved hentning af profilbillede:", error);
+      setProfileImage(Image.resolveAssetSource(defaultImage).uri);
+    }
+  };
 
   const handleCreateProject = async () => {
     if (!user) {
@@ -87,7 +84,9 @@ const NewProject: React.FC = () => {
         `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
       );
 
-      const response = await fetch(Image.resolveAssetSource(defaultImage).uri);
+      const response = await fetch(
+        profileImage || Image.resolveAssetSource(defaultImage).uri
+      );
       const blob = await response.blob();
       await uploadBytes(projectProfileImageRef, blob);
 
@@ -105,6 +104,12 @@ const NewProject: React.FC = () => {
     }
   };
 
+  const handlePlusButtonPress = async () => {
+    // Tjek og opdater baggrundsbilledet
+    await fetchProfileImage();
+    setModalVisible(true);
+  };
+
   return (
     <View
       style={[styles.createStoryContainer, { borderColor: Colors.light.icon }]}
@@ -119,7 +124,7 @@ const NewProject: React.FC = () => {
 
       <TouchableOpacity
         style={styles.iconContainer}
-        onPress={() => setModalVisible(true)}
+        onPress={handlePlusButtonPress} // Brug ny funktion her
       >
         <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>
