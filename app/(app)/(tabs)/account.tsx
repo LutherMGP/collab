@@ -12,12 +12,12 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
+import { deleteObject } from "firebase/storage";
 
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
@@ -43,7 +43,9 @@ export default function AccountScreen() {
     const fetchUserData = async () => {
       if (user) {
         try {
-          const userDoc = await getDoc(doc(database, "users", user));
+          const userDocRef = doc(database, "users", user);
+          const userDoc = await getDoc(userDocRef);
+
           if (userDoc.exists()) {
             const data = userDoc.data();
             setNickname(data.nickname || "");
@@ -55,12 +57,39 @@ export default function AccountScreen() {
             setPreferredLanguage(data.preferredLanguage || "");
             setThemePreference(data.themePreference || "");
             setNotificationsEnabled(data.notificationsEnabled ?? true);
+
+            // Hvis profilbilledet mangler, upload standardbilledet
+            if (!data.profileImage) {
+              const defaultImage = Image.resolveAssetSource(
+                require("@/assets/images/blomst.webp")
+              ).uri;
+
+              const response = await fetch(defaultImage);
+              const blob = await response.blob();
+              const storageRef = ref(
+                storage,
+                `users/${user}/profileimage/default.jpg`
+              );
+
+              await uploadBytes(storageRef, blob);
+              const downloadUrl = await getDownloadURL(storageRef);
+
+              // Opdater Firestore med download-URL
+              await setDoc(
+                userDocRef,
+                { profileImage: downloadUrl },
+                { merge: true }
+              );
+
+              setProfileImage(downloadUrl); // Opdater tilstanden
+            }
           }
         } catch (error) {
           console.error("Fejl ved hentning af brugerdata:", error);
         }
       }
     };
+
     fetchUserData();
   }, [user]);
 
@@ -100,26 +129,10 @@ export default function AccountScreen() {
     }
   };
 
-  // Funktion til at optimere billedet
-  const optimizeImage = async (uri: string) => {
-    try {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1024 } }], // Justerer størrelsen til 1024 pixels i bredden
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Komprimerer til 70% kvalitet
-      );
-      return manipResult;
-    } catch (error) {
-      console.error("Fejl ved optimering af billedet:", error);
-      Alert.alert("Fejl", "Der opstod en fejl under optimering af billedet.");
-      throw error;
-    }
-  };
-
   // Funktion til at vælge billede
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images", // Angiver kun billedmedietyper
+      mediaTypes: ["images"], // Angiver kun billedmedietyper
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -127,10 +140,8 @@ export default function AccountScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-
-      // Upload billedet direkte uden optimering
       setProfileImage(imageUri);
-      await uploadImageToStorage(imageUri); // Upload originalbilledet
+      await uploadImageToStorage(imageUri);
     }
   };
 
@@ -139,6 +150,16 @@ export default function AccountScreen() {
     if (!user) return;
 
     try {
+      // Slet det gamle profilbillede, hvis det findes
+      if (profileImage) {
+        const oldImageRef = ref(
+          storage,
+          decodeURIComponent(new URL(profileImage).pathname.substring(1))
+        );
+        await deleteObject(oldImageRef);
+      }
+
+      // Upload det nye billede
       const response = await fetch(uri);
       const blob = await response.blob();
       const storageRef = ref(
@@ -149,14 +170,14 @@ export default function AccountScreen() {
       await uploadBytes(storageRef, blob);
       const downloadUrl = await getDownloadURL(storageRef);
 
-      // Gem download-URL'en i Firestore
+      // Opdater Firestore med download-URL
       await setDoc(
         doc(database, "users", user),
         { profileImage: downloadUrl },
         { merge: true }
       );
 
-      setProfileImage(downloadUrl);
+      setProfileImage(downloadUrl); // Opdater tilstanden
       Alert.alert("Profilbillede opdateret.");
     } catch (error) {
       console.error("Fejl ved upload af profilbillede: ", error);
