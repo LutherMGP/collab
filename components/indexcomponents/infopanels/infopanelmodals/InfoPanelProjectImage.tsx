@@ -14,6 +14,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
+import { database } from "@/firebaseConfig";
 
 type InfoPanelProjectImageProps = {
   onClose: () => void;
@@ -75,6 +77,13 @@ const InfoPanelProjectImage = ({
 
       // Få download-URL for det nye billede
       const downloadURL = await getDownloadURL(imageRef);
+
+      // **Opdater Firestore med den nye URL**
+      await setDoc(
+        doc(database, "users", userId, "projects", projectId),
+        { projectImage: downloadURL }, // Gemmer billedets URL
+        { merge: true } // Sikrer, at andre felter ikke overskrives
+      );
 
       Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
       setNewImageUri(null); // Ryd den midlertidige URI

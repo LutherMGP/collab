@@ -293,30 +293,22 @@ const InfoPanel = ({
       if (!currentUser || !projectData.id) return;
 
       try {
-        // Reference til stien i Firebase Storage
         const projectImageRef = ref(
           storage,
           `users/${currentUser}/projects/${projectData.id}/projectimage/projectImage.jpg`
         );
-
-        // Hent download-URL fra Storage med cache-busting
         const projectImageUrl = `${await getDownloadURL(
           projectImageRef
         )}?t=${Date.now()}`;
-
-        // Opdater projektbilledet i state
         setProjectImage(projectImageUrl);
       } catch (error) {
-        console.error(
-          "Fejl ved hentning af projektbillede fra Firebase Storage:",
-          error
-        );
-        setProjectImage(null); // Sæt til null, hvis billedet ikke findes
+        console.error("Fejl ved hentning af projektbillede:", error);
+        setProjectImage(null);
       }
     };
 
     fetchProjectImage();
-  }, [currentUser, projectData.id]);
+  }, [currentUser, projectData.id, refreshKey]); // Tilføj refreshKey
 
   // Generisk handlePress funktion med conditional
   const handlePress = (button: string) => {
@@ -400,21 +392,23 @@ const InfoPanel = ({
         const data = snapshot.data();
         setProjectData({
           ...projectData,
-          name: data.name || "",
-          comment: data.comment || "",
-          f8: data.data?.f8?.coverImage || null, // Hent coverImage for f8
-          f8PDF: data.data?.f8?.pdf || null, // Hent PDF for f8
-          f5: data.data?.f5?.coverImage || null, // Hent coverImage for f5
-          f5PDF: data.data?.f5?.pdf || null, // Hent PDF for f5
-          f3: data.data?.f3?.coverImage || null, // Hent coverImage for f3
-          f3PDF: data.data?.f3?.pdf || null, // Hent PDF for f3
-          f2: data.data?.f2?.coverImage || null, // Hent coverImage for f2
-          f2PDF: data.data?.f2?.pdf || null, // Hent PDF for f2
-          status: data.status || "",
-          price: data.price || 0,
-          isFavorite: data.isFavorite || false,
-          toBePurchased: data.toBePurchased || false,
+          name: data.name || "", // Henter projektets navn
+          comment: data.comment || "", // Henter kommentar
+          f8: data.f8?.coverImage || null, // Henter coverImage for f8
+          f8PDF: data.f8?.pdf || null, // Henter PDF for f8
+          f5: data.f5?.coverImage || null, // Henter coverImage for f5
+          f5PDF: data.f5?.pdf || null, // Henter PDF for f5
+          f3: data.f3?.coverImage || null, // Henter coverImage for f3
+          f3PDF: data.f3?.pdf || null, // Henter PDF for f3
+          f2: data.f2?.coverImage || null, // Henter coverImage for f2
+          f2PDF: data.f2?.pdf || null, // Henter PDF for f2
+          status: data.status || "", // Henter status
+          price: data.price || 0, // Henter pris
+          isFavorite: data.isFavorite || false, // Henter favoritstatus
+          toBePurchased: data.toBePurchased || false, // Henter køb-status
         });
+      } else {
+        console.warn("Projektdata findes ikke i Firestore.");
       }
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
