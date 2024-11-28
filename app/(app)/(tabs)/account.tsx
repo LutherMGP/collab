@@ -79,15 +79,18 @@ export default function AccountScreen() {
               await uploadBytes(storageRef, blob);
               const downloadUrl = await getDownloadURL(storageRef);
 
+              // Tilføj unik query-parameter til billedets URI
+              const uniqueUrl = `${downloadUrl}?t=${Date.now()}`;
+
               // Opdater Firestore med download-URL
               await setDoc(
                 doc(database, "users", user),
-                { profileImage: downloadUrl },
+                { profileImage: uniqueUrl },
                 { merge: true }
               );
-              console.log("Profilbillede opdateret i Firestore:", downloadUrl);
+              console.log("Profilbillede opdateret i Firestore:", uniqueUrl);
 
-              setProfileImage(downloadUrl); // Opdater tilstanden
+              setProfileImage(uniqueUrl); // Opdater tilstanden
             }
           }
         } catch (error) {
@@ -151,12 +154,11 @@ export default function AccountScreen() {
     }
   };
 
-  // Funktion til at uploade billedet til Firebase Storage (ingen ændringer her)
+  // Funktion til at uploade billedet til Firebase Storage
   const uploadImageToStorage = async (uri: string) => {
     if (!user) return;
 
     try {
-      // Reference til mappen `profileimage` for brugeren
       const profileImageFolderRef = ref(storage, `users/${user}/profileimage/`);
 
       // Slet alle filer i mappen
@@ -181,24 +183,23 @@ export default function AccountScreen() {
       await uploadBytes(newImageRef, blob);
       const downloadUrl = await getDownloadURL(newImageRef);
 
+      // Tilføj unik query-parameter til billedets URI
+      const uniqueUrl = `${downloadUrl}?t=${Date.now()}`;
+
       // Opdater Firestore med den nye URL
       await setDoc(
         doc(database, "users", user),
-        { profileImage: downloadUrl },
+        { profileImage: uniqueUrl },
         { merge: true }
       );
 
       // Opdater state
-      setProfileImage(downloadUrl);
-      console.log("Nyt profilbillede uploadet:", downloadUrl);
+      setProfileImage(uniqueUrl);
+      console.log("Nyt profilbillede uploadet:", uniqueUrl);
 
       Alert.alert("Profilbillede opdateret.");
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Fejl ved upload af profilbillede:", error.message);
-      } else {
-        console.error("Ukendt fejl ved upload af profilbillede:", error);
-      }
+      console.error("Fejl ved upload af profilbillede:", error);
       Alert.alert("Fejl", "Kunne ikke uploade profilbillede.");
     }
   };

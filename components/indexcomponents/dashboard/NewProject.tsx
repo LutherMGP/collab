@@ -13,8 +13,8 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, collection, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
+import { doc, collection, setDoc, getDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 
@@ -24,30 +24,30 @@ const NewProject: React.FC = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null); // Profilbillede state
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const defaultImage = require("@/assets/images/blomst.webp");
 
   useEffect(() => {
-    // Hent profilbillede fra Firebase Storage
     const fetchProfileImage = async () => {
-      if (!user) return; // Hvis brugerdata mangler, gør ingenting
+      if (!user) return;
 
       try {
-        const profileImageRef = ref(storage, `users/${user}/profileimage/`);
-        const files = await listAll(profileImageRef); // Liste alle filer i mappen
+        const userDocRef = doc(database, "users", user);
+        const userDoc = await getDoc(userDocRef);
 
-        if (files.items.length > 0) {
-          // Brug den første fil i mappen
-          const imageUrl = await getDownloadURL(files.items[0]);
-          setProfileImage(imageUrl);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const imageUrl = userData?.profileImage;
+
+          // Brug billed-URL fra Firestore, eller standardbillede
+          setProfileImage(
+            imageUrl || Image.resolveAssetSource(defaultImage).uri
+          );
         } else {
-          // Ingen filer i mappen - brug standardbillede
-          console.log("Ingen profilbillede fundet. Bruger standardbillede.");
           setProfileImage(Image.resolveAssetSource(defaultImage).uri);
         }
       } catch (error) {
         console.error("Fejl ved hentning af profilbillede:", error);
-        // Brug standardbillede i tilfælde af fejl
         setProfileImage(Image.resolveAssetSource(defaultImage).uri);
       }
     };
@@ -69,10 +69,8 @@ const NewProject: React.FC = () => {
     setIsCreating(true);
 
     try {
-      // Opret ny reference til projektet
       const projectRef = doc(collection(database, "users", user, "projects"));
 
-      // Projektdata
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -82,10 +80,8 @@ const NewProject: React.FC = () => {
         status: "Project",
       };
 
-      // Gem projektet i Firestore
       await setDoc(projectRef, projectData);
 
-      // Brug standardbillede til projektet
       const projectProfileImageRef = ref(
         storage,
         `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
@@ -113,7 +109,6 @@ const NewProject: React.FC = () => {
     <View
       style={[styles.createStoryContainer, { borderColor: Colors.light.icon }]}
     >
-      {/* Baggrundsbillede */}
       <Image
         source={{
           uri: profileImage || Image.resolveAssetSource(defaultImage).uri,
@@ -122,7 +117,6 @@ const NewProject: React.FC = () => {
         resizeMode="cover"
       />
 
-      {/* Knappen */}
       <TouchableOpacity
         style={styles.iconContainer}
         onPress={() => setModalVisible(true)}
@@ -130,14 +124,12 @@ const NewProject: React.FC = () => {
         <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Tekst */}
       <View style={styles.createStoryTextContainer}>
         <Text style={[styles.createStoryText, { color: Colors.light.text }]}>
           New
         </Text>
       </View>
 
-      {/* Modal */}
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
