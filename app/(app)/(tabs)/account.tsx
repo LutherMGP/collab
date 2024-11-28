@@ -119,7 +119,7 @@ export default function AccountScreen() {
   // Funktion til at vælge billede
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], // Brug en array af "MediaType"
+      mediaTypes: "images", // Angiver kun billedmedietyper
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -128,15 +128,13 @@ export default function AccountScreen() {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
 
-      // Optimér billedet før upload
-      const optimizedImage = await optimizeImage(imageUri);
-
-      setProfileImage(optimizedImage.uri);
-      await uploadImageToStorage(optimizedImage.uri); // Upload det optimerede billede
+      // Upload billedet direkte uden optimering
+      setProfileImage(imageUri);
+      await uploadImageToStorage(imageUri); // Upload originalbilledet
     }
   };
 
-  // Funktion til at uploade billedet til Firebase Storage
+  // Funktion til at uploade billedet til Firebase Storage (ingen ændringer her)
   const uploadImageToStorage = async (uri: string) => {
     if (!user) return;
 
@@ -146,7 +144,7 @@ export default function AccountScreen() {
       const storageRef = ref(
         storage,
         `users/${user}/profileimage/${Date.now()}.jpg`
-      ); // Opdateret sti
+      );
 
       await uploadBytes(storageRef, blob);
       const downloadUrl = await getDownloadURL(storageRef);
