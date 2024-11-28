@@ -13,17 +13,10 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  doc,
-  getDoc,
-  collection,
-  setDoc,
-  onSnapshot,
-} from "firebase/firestore";
-import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
-import { database } from "@/firebaseConfig";
-import { Entypo } from "@expo/vector-icons"; // Import af Entypo-ikoner
+import { doc, collection, setDoc, onSnapshot } from "firebase/firestore";
+import { ref, uploadBytes } from "firebase/storage";
+import { storage, database } from "@/firebaseConfig";
+import { Entypo } from "@expo/vector-icons";
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
@@ -31,29 +24,7 @@ const NewProject: React.FC = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-
-  // Hent brugerens profilbillede fra Firestore
-
-  useEffect(() => {
-    if (!user) return;
-
-    const userDocRef = doc(database, "users", user);
-
-    const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
-      setTimeout(() => {
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data();
-          setProfileImage(data.profileImage || null);
-          console.log("Snapshot opdateret med billede:", data.profileImage);
-        }
-      }, 100); // 100ms forsinkelse
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [user]);
+  const defaultImage = require("@/assets/images/blomst.webp");
 
   const handleCreateProject = async () => {
     if (!user) {
@@ -72,54 +43,30 @@ const NewProject: React.FC = () => {
       // Opret ny reference til projektet
       const projectRef = doc(collection(database, "users", user, "projects"));
 
-      // Projektdata, inklusive statusfelt
+      // Projektdata
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
         description: description.trim(),
         createdAt: new Date().toISOString(),
         userId: user,
-        status: "Project", // Statusfeltet er påkrævet for korrekt filtrering
+        status: "Project",
       };
 
       // Gem projektet i Firestore
       await setDoc(projectRef, projectData);
 
-      // Håndter profilbilledet
-      const userProfileImageRef = ref(
-        storage,
-        `users/${user}/profileimage/profileImage.jpg`
-      );
+      // Brug standardbillede til projektet
       const projectProfileImageRef = ref(
         storage,
         `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
       );
 
-      try {
-        // Tjek om brugerens profilbillede findes
-        const userProfileImageURL = await getDownloadURL(userProfileImageRef);
+      const response = await fetch(Image.resolveAssetSource(defaultImage).uri);
+      const blob = await response.blob();
+      await uploadBytes(projectProfileImageRef, blob);
 
-        // Hvis det findes, kopier det til projektets mappe
-        const response = await fetch(userProfileImageURL);
-        const blob = await response.blob();
-        await uploadBytes(projectProfileImageRef, blob);
-
-        console.log("Profilbillede kopieret til projektmappen.");
-      } catch (error) {
-        console.log(
-          "Brugerens profilbillede findes ikke. Kopierer standardbillede..."
-        );
-
-        // Hvis ikke, brug standardbilledet
-        const defaultImage = require("@/assets/images/blomst.webp");
-        const response = await fetch(
-          Image.resolveAssetSource(defaultImage).uri
-        );
-        const blob = await response.blob();
-        await uploadBytes(projectProfileImageRef, blob);
-
-        console.log("Standardbillede kopieret til projektmappen.");
-      }
+      console.log("Standardbillede kopieret til projektmappen.");
 
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
@@ -139,11 +86,7 @@ const NewProject: React.FC = () => {
     >
       {/* Baggrundsbillede */}
       <Image
-        source={
-          profileImage
-            ? { uri: profileImage }
-            : require("@/assets/images/blomst.webp")
-        }
+        source={defaultImage}
         style={styles.profileImg}
         resizeMode="cover"
       />
@@ -153,8 +96,7 @@ const NewProject: React.FC = () => {
         style={styles.iconContainer}
         onPress={() => setModalVisible(true)}
       >
-        <Entypo name="plus" size={24} color="white" />{" "}
-        {/* Sørg for kun at bruge ikon */}
+        <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>
 
       {/* Tekst */}

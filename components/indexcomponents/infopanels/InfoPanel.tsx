@@ -286,28 +286,48 @@ const InfoPanel = ({
 
   const [projectImage, setProjectImage] = useState<string | null>(null);
 
+  // Log projekt-ID for debugging
+  useEffect(() => {
+    console.log("Henter billede for projekt:", projectData.id);
+  }, [projectData.id]);
+
   // Hent projektets billede
   useEffect(() => {
     const fetchProjectImage = async () => {
       if (!currentUser || !projectData.id) return;
 
-      try {
-        const projectImageRef = ref(
-          storage,
-          `users/${currentUser}/projects/${projectData.id}/projectimage/projectImage.jpg`
-        );
-        const projectImageUrl = `${await getDownloadURL(
-          projectImageRef
-        )}?t=${Date.now()}`;
-        setProjectImage(projectImageUrl);
-      } catch (error) {
-        console.error("Fejl ved hentning af projektbillede:", error);
-        setProjectImage(null);
+      let attempts = 0;
+      const maxAttempts = 5;
+      const delay = 1000; // 1 sekund mellem forsøg
+
+      while (attempts < maxAttempts) {
+        try {
+          const projectImageRef = ref(
+            storage,
+            `users/${currentUser}/projects/${projectData.id}/projectimage/projectImage.jpg`
+          );
+          const projectImageUrl = `${await getDownloadURL(
+            projectImageRef
+          )}?t=${Date.now()}`;
+          setProjectImage(projectImageUrl);
+          console.log("Projektbillede hentet:", projectImageUrl);
+          return; // Stop loopet, hvis billedet blev hentet
+        } catch (error) {
+          console.warn(
+            `Forsøg ${attempts + 1}: Fejl ved hentning af projektbillede.`,
+            error
+          );
+          attempts += 1;
+          await new Promise((res) => setTimeout(res, delay)); // Vent før nyt forsøg
+        }
       }
+
+      console.error("Kunne ikke hente projektbillede efter flere forsøg.");
+      setProjectImage(null); // Brug standardbillede, hvis hentning fejler
     };
 
     fetchProjectImage();
-  }, [currentUser, projectData.id, refreshKey]); // Tilføj refreshKey
+  }, [currentUser, projectData.id, refreshKey]);
 
   // Generisk handlePress funktion med conditional
   const handlePress = (button: string) => {
