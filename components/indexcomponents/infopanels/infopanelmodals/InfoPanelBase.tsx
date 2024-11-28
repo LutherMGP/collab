@@ -149,7 +149,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           data: {
             [category]: {
               pdf: pdfURL,
-              coverImage: coverImageURL,
+              coverImage: coverImageURL, // Gem den dynamiske filsti
               comment: comment.trim(),
               updatedAt: new Date().toISOString(),
             },
@@ -158,7 +158,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         { merge: true }
       );
       Alert.alert("Success", `${categoryName} data saved.`);
-      onClose(); // Close the modal after saving
+      onClose(); // Luk modalen efter lagring
     } catch (error) {
       console.error(`Failed to save ${categoryName} data:`, error);
       Alert.alert("Error", `Could not save ${categoryName} data.`);

@@ -34,15 +34,14 @@ type ProjectData = {
   id: string;
   name?: string;
   comment?: string;
-  f8?: string;
-  f8PDF?: string;
-  f8BrandImage?: string;
-  f5?: string;
-  f5PDF?: string;
-  f3?: string;
-  f3PDF?: string;
-  f2?: string;
-  f2PDF?: string;
+  f8?: string | null;
+  f8PDF?: string | null;
+  f5?: string | null;
+  f5PDF?: string | null;
+  f3?: string | null;
+  f3PDF?: string | null;
+  f2?: string | null;
+  f2PDF?: string | null;
   status?: string;
   price?: number;
   isFavorite?: boolean;
@@ -392,23 +391,21 @@ const InfoPanel = ({
         const data = snapshot.data();
         setProjectData({
           ...projectData,
-          name: data.name || "", // Henter projektets navn
-          comment: data.comment || "", // Henter kommentar
-          f8: data.f8?.coverImage || null, // Henter coverImage for f8
-          f8PDF: data.f8?.pdf || null, // Henter PDF for f8
-          f5: data.f5?.coverImage || null, // Henter coverImage for f5
-          f5PDF: data.f5?.pdf || null, // Henter PDF for f5
-          f3: data.f3?.coverImage || null, // Henter coverImage for f3
-          f3PDF: data.f3?.pdf || null, // Henter PDF for f3
-          f2: data.f2?.coverImage || null, // Henter coverImage for f2
-          f2PDF: data.f2?.pdf || null, // Henter PDF for f2
-          status: data.status || "", // Henter status
-          price: data.price || 0, // Henter pris
-          isFavorite: data.isFavorite || false, // Henter favoritstatus
-          toBePurchased: data.toBePurchased || false, // Henter køb-status
+          name: data.name || "",
+          comment: data.comment || "",
+          f8: data.data?.f8?.coverImage || null, // Brug dynamisk sti fra Firestore
+          f8PDF: data.data?.f8?.pdf || null,
+          f5: data.data?.f5?.coverImage || null,
+          f5PDF: data.data?.f5?.pdf || null,
+          f3: data.data?.f3?.coverImage || null,
+          f3PDF: data.data?.f3?.pdf || null,
+          f2: data.data?.f2?.coverImage || null,
+          f2PDF: data.data?.f2?.pdf || null,
+          status: data.status || "",
+          price: data.price || 0,
+          isFavorite: data.isFavorite || false,
+          toBePurchased: data.toBePurchased || false,
         });
-      } else {
-        console.warn("Projektdata findes ikke i Firestore.");
       }
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
