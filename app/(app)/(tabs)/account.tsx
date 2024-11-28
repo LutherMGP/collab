@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -129,10 +130,25 @@ export default function AccountScreen() {
     }
   };
 
+  // Funktion til at optimere billed
+  const optimizeImage = async (uri: string) => {
+    try {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 150, height: 150 } }], // Ændrer størrelsen til 150x150 pixels
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG } // Komprimerer til 80% kvalitet
+      );
+      return manipResult.uri;
+    } catch (error) {
+      console.error("Fejl ved optimering af billedet:", error);
+      throw error;
+    }
+  };
+
   // Funktion til at vælge billede
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], // Angiver kun billedmedietyper
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Angiver kun billedmedietyper
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -140,8 +156,9 @@ export default function AccountScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-      setProfileImage(imageUri);
-      await uploadImageToStorage(imageUri);
+      const optimizedUri = await optimizeImage(imageUri);
+      setProfileImage(optimizedUri);
+      await uploadImageToStorage(optimizedUri);
     }
   };
 
