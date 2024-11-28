@@ -14,6 +14,8 @@ import {
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, collection, setDoc } from "firebase/firestore";
+import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { storage } from "@/firebaseConfig";
 import { database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons"; // Import af Entypo-ikoner
 
@@ -72,6 +74,42 @@ const NewProject: React.FC = () => {
 
       // Gem projektet i Firestore
       await setDoc(projectRef, projectData);
+
+      // Håndter profilbilledet
+      const userProfileImageRef = ref(
+        storage,
+        `users/${user}/profileimage/profileImage.jpg`
+      );
+      const projectProfileImageRef = ref(
+        storage,
+        `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
+      );
+
+      try {
+        // Tjek om brugerens profilbillede findes
+        const userProfileImageURL = await getDownloadURL(userProfileImageRef);
+
+        // Hvis det findes, kopier det til projektets mappe
+        const response = await fetch(userProfileImageURL);
+        const blob = await response.blob();
+        await uploadBytes(projectProfileImageRef, blob);
+
+        console.log("Profilbillede kopieret til projektmappen.");
+      } catch (error) {
+        console.log(
+          "Brugerens profilbillede findes ikke. Kopierer standardbillede..."
+        );
+
+        // Hvis ikke, brug standardbilledet
+        const defaultImage = require("@/assets/images/blomst.webp");
+        const response = await fetch(
+          Image.resolveAssetSource(defaultImage).uri
+        );
+        const blob = await response.blob();
+        await uploadBytes(projectProfileImageRef, blob);
+
+        console.log("Standardbillede kopieret til projektmappen.");
+      }
 
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
