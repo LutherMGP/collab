@@ -10,10 +10,6 @@ import Projects from "@/components/indexcomponents/dashboard/Projects";
 import Published from "@/components/indexcomponents/dashboard/Published";
 import Products from "@/components/indexcomponents/dashboard/Products";
 import Purchased from "@/components/indexcomponents/dashboard/Purchased";
-// import Template from "@/components/Udvikling";
-// import Designer from "@/components/Designer";
-// import Help from "@/components/Help";
-// import Ekstra from "@/components/Ekstra";
 
 const Snit = () => {
   const theme = useColorScheme() || "light";

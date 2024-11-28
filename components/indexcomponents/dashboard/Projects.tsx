@@ -71,7 +71,7 @@ const Projects = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.draftCountText}>{draftCount || 0}</Text>{" "}
+        <Text style={styles.draftCountText}>{draftCount || 0}</Text>
         {/* Brug fallback */}
       </TouchableOpacity>
 

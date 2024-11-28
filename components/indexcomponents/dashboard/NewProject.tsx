@@ -13,8 +13,8 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, collection, setDoc, onSnapshot } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
+import { doc, collection, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 
@@ -24,7 +24,36 @@ const NewProject: React.FC = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null); // Profilbillede state
   const defaultImage = require("@/assets/images/blomst.webp");
+
+  useEffect(() => {
+    // Hent profilbillede fra Firebase Storage
+    const fetchProfileImage = async () => {
+      if (!user) return; // Hvis brugerdata mangler, gør ingenting
+
+      try {
+        const profileImageRef = ref(storage, `users/${user}/profileimage/`);
+        const files = await listAll(profileImageRef); // Liste alle filer i mappen
+
+        if (files.items.length > 0) {
+          // Brug den første fil i mappen
+          const imageUrl = await getDownloadURL(files.items[0]);
+          setProfileImage(imageUrl);
+        } else {
+          // Ingen filer i mappen - brug standardbillede
+          console.log("Ingen profilbillede fundet. Bruger standardbillede.");
+          setProfileImage(Image.resolveAssetSource(defaultImage).uri);
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af profilbillede:", error);
+        // Brug standardbillede i tilfælde af fejl
+        setProfileImage(Image.resolveAssetSource(defaultImage).uri);
+      }
+    };
+
+    fetchProfileImage();
+  }, [user]);
 
   const handleCreateProject = async () => {
     if (!user) {
@@ -86,7 +115,9 @@ const NewProject: React.FC = () => {
     >
       {/* Baggrundsbillede */}
       <Image
-        source={defaultImage}
+        source={{
+          uri: profileImage || Image.resolveAssetSource(defaultImage).uri,
+        }}
         style={styles.profileImg}
         resizeMode="cover"
       />
