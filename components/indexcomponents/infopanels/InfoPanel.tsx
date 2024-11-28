@@ -20,7 +20,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
-// Importer de nye modal-komponenter
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF3";
@@ -114,8 +113,9 @@ const InfoPanel = ({
   const [isNameCommentModalVisible, setIsNameCommentModalVisible] =
     useState(false);
   const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
-  const [isProfileImageModalVisible, setIsProfileImageModalVisible] =
+  const [isProjectImageModalVisible, setIsProjectImageModalVisible] =
     useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
 
   // Funktion til at togglere Edit-tilstand
   const toggleEdit = () => {
@@ -285,30 +285,33 @@ const InfoPanel = ({
     );
   };
 
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [projectImage, setProjectImage] = useState<string | null>(null);
 
-  // Hent brugerens profilbillede
+  // Hent projektets billede
   useEffect(() => {
     const fetchProjectImage = async () => {
       if (!currentUser || !projectData.id) return;
 
       try {
-        // Definer referencen til projectImage.jpg i den rigtige sti
+        // Reference til stien i Firebase Storage
         const projectImageRef = ref(
           storage,
           `users/${currentUser}/projects/${projectData.id}/projectimage/projectImage.jpg`
         );
 
-        // Hent download-URL'en for billedet
-        const downloadURL = await getDownloadURL(projectImageRef);
+        // Hent download-URL fra Storage med cache-busting
+        const projectImageUrl = `${await getDownloadURL(
+          projectImageRef
+        )}?t=${Date.now()}`;
 
-        // Opdater state med den hentede URL
-        setProfileImage(downloadURL);
-        console.log("Project image fundet:", downloadURL);
+        // Opdater projektbilledet i state
+        setProjectImage(projectImageUrl);
       } catch (error) {
-        console.error("Fejl ved hentning af projectImage.jpg:", error);
-        // Hvis billedet ikke findes, kan du håndtere det her (fx bruge et standardbillede)
-        setProfileImage(null); // Eller et standardbillede, hvis nødvendigt
+        console.error(
+          "Fejl ved hentning af projektbillede fra Firebase Storage:",
+          error
+        );
+        setProjectImage(null); // Sæt til null, hvis billedet ikke findes
       }
     };
 
@@ -337,8 +340,8 @@ const InfoPanel = ({
         case "Prize":
           setIsPrizeModalVisible(true);
           break;
-        case "Profile Image":
-          setIsProfileImageModalVisible(true);
+        case "Project Image":
+          setIsProjectImageModalVisible(true);
           break;
         default:
           Alert.alert("Knappen blev trykket", `Du trykkede på: ${button}`);
@@ -379,9 +382,10 @@ const InfoPanel = ({
     refreshProjectData();
   };
 
-  const closeProfileImageModal = () => {
-    setIsProfileImageModalVisible(false);
-    refreshProjectData();
+  const closeProjectImageModal = () => {
+    setIsProjectImageModalVisible(false);
+    setRefreshKey((prevKey) => prevKey + 1); // Tving opdatering
+    refreshProjectData(); // Opdater data, inkl. billed-URL
   };
 
   // Funktion til at opdatere projektdata efter ændringer
@@ -457,16 +461,16 @@ const InfoPanel = ({
             <Text style={baseStyles.text}>Ingen Specification tilgængelig</Text>
           )}
 
-          {/* Profilbilledet i det runde felt med onPress */}
-          {profileImage && (
+          {/* Projektbilledet i det runde felt med onPress */}
+          {projectImage && (
             <Pressable
               style={baseStyles.profileImageContainer}
-              onPress={() => handlePress("Profile Image")}
-              accessibilityLabel="Profile Image Button"
+              onPress={() => handlePress("Project Image")}
+              accessibilityLabel="Project Image Button"
             >
               <Image
-                source={{ uri: profileImage }}
-                style={baseStyles.profileImage} // Fylder hele containeren
+                source={{ uri: projectImage }}
+                style={baseStyles.profileImage} // Tilpas eventuelt denne style
               />
             </Pressable>
           )}
@@ -720,18 +724,18 @@ const InfoPanel = ({
         </View>
       </Modal>
 
-      {/* Profile Image Modal */}
+      {/* Project Image Modal */}
       <Modal
-        visible={isProfileImageModalVisible}
+        visible={isProjectImageModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={closeProfileImageModal}
+        onRequestClose={closeProjectImageModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
-              onClose={closeProfileImageModal}
-              projectImageUri={profileImage}
+              onClose={closeProjectImageModal}
+              projectImageUri={projectImage} // Brug projectImage
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />
