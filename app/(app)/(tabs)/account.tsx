@@ -81,10 +81,11 @@ export default function AccountScreen() {
 
               // Opdater Firestore med download-URL
               await setDoc(
-                userDocRef,
+                doc(database, "users", user),
                 { profileImage: downloadUrl },
                 { merge: true }
               );
+              console.log("Profilbillede opdateret i Firestore:", downloadUrl);
 
               setProfileImage(downloadUrl); // Opdater tilstanden
             }

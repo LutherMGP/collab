@@ -40,17 +40,16 @@ const NewProject: React.FC = () => {
 
     const userDocRef = doc(database, "users", user);
 
-    // Brug onSnapshot til at lytte på ændringer
     const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        setProfileImage(data.profileImage || null);
-      } else {
-        console.warn("Brugerdokument findes ikke.");
-      }
+      setTimeout(() => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setProfileImage(data.profileImage || null);
+          console.log("Snapshot opdateret med billede:", data.profileImage);
+        }
+      }, 100); // 100ms forsinkelse
     });
 
-    // Fjern snapshot-lytteren ved unmount
     return () => {
       unsubscribe();
     };
