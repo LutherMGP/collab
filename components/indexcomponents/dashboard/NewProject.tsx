@@ -13,7 +13,13 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, collection, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  setDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import { database } from "@/firebaseConfig";
@@ -28,21 +34,26 @@ const NewProject: React.FC = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   // Hent brugerens profilbillede fra Firestore
+
   useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(database, "users", user));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setProfileImage(data.profileImage || null);
-          }
-        } catch (error) {
-          console.error("Fejl ved hentning af profilbillede:", error);
-        }
+    if (!user) return;
+
+    const userDocRef = doc(database, "users", user);
+
+    // Brug onSnapshot til at lytte på ændringer
+    const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setProfileImage(data.profileImage || null);
+      } else {
+        console.warn("Brugerdokument findes ikke.");
       }
+    });
+
+    // Fjern snapshot-lytteren ved unmount
+    return () => {
+      unsubscribe();
     };
-    fetchProfileImage();
   }, [user]);
 
   const handleCreateProject = async () => {
