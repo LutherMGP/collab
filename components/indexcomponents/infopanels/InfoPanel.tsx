@@ -18,7 +18,8 @@ import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { ref, getDownloadURL } from "firebase/storage";
+import { database, storage } from "@/firebaseConfig";
 // Importer de nye modal-komponenter
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF5";
@@ -288,23 +289,30 @@ const InfoPanel = ({
 
   // Hent brugerens profilbillede
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchProjectImage = async () => {
       if (!currentUser || !projectData.id) return;
 
       try {
-        const userDoc = await getDoc(
-          doc(database, "users", currentUser, "projects", projectData.id)
+        // Definer referencen til projectImage.jpg i den rigtige sti
+        const projectImageRef = ref(
+          storage,
+          `users/${currentUser}/projects/${projectData.id}/projectimage/projectImage.jpg`
         );
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setProfileImage(data.profileimage?.profileImage || null);
-        }
+
+        // Hent download-URL'en for billedet
+        const downloadURL = await getDownloadURL(projectImageRef);
+
+        // Opdater state med den hentede URL
+        setProfileImage(downloadURL);
+        console.log("Project image fundet:", downloadURL);
       } catch (error) {
-        console.error("Fejl ved hentning af profilbillede:", error);
+        console.error("Fejl ved hentning af projectImage.jpg:", error);
+        // Hvis billedet ikke findes, kan du håndtere det her (fx bruge et standardbillede)
+        setProfileImage(null); // Eller et standardbillede, hvis nødvendigt
       }
     };
 
-    fetchProfileImage();
+    fetchProjectImage();
   }, [currentUser, projectData.id]);
 
   // Generisk handlePress funktion med conditional
