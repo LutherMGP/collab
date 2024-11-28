@@ -27,7 +27,7 @@ import InfoPanelF3 from "@/components/indexcomponents/infopanels/infopanelmodals
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF2";
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelNameComment";
 import InfoPanelPrize from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelPrize";
-import InfoPanelProfileImage from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelProfileImage";
+import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelProjectImage";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/InfoPanelStyles";
 
@@ -729,9 +729,9 @@ const InfoPanel = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <InfoPanelProfileImage
+            <InfoPanelProjectImage
               onClose={closeProfileImageModal}
-              profileImageUri={profileImage}
+              projectImageUri={profileImage}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />

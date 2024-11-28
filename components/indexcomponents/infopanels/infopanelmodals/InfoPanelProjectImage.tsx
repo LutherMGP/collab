@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/infopanelmodals/InfoPanelProfileImage.tsx
+// @/components/indexcomponents/infopanels/infopanelmodals/InfoPanelProjectImage.tsx
 
 import React from "react";
 import {
@@ -10,35 +10,35 @@ import {
   Dimensions,
 } from "react-native";
 
-type InfoPanelProfileImageProps = {
+type InfoPanelProjectImageProps = {
   onClose: () => void;
-  profileImageUri: string | null;
+  projectImageUri: string | null; // Ændret for at reflektere nyt fokus
   projectId: string;
-  userId: string; // Tilføj denne linje
+  userId: string;
 };
 
-const InfoPanelProfileImage = ({
+const InfoPanelProjectImage = ({
   onClose,
-  profileImageUri,
-}: InfoPanelProfileImageProps) => {
+  projectImageUri,
+}: InfoPanelProjectImageProps) => {
   const { width } = Dimensions.get("window");
   const imageSize = width * 0.6; // 60% af skærmens bredde
 
   return (
     <View style={styles.modalContainer}>
       <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Profile Image</Text>
-        {profileImageUri ? (
+        <Text style={styles.modalTitle}>Project Image</Text>
+        {projectImageUri ? (
           <Image
-            source={{ uri: profileImageUri }}
+            source={{ uri: projectImageUri }}
             style={[
-              styles.profileImage,
+              styles.projectImage,
               { width: imageSize, height: imageSize },
             ]}
           />
         ) : (
           <Text style={styles.noImageText}>
-            Ingen profilbillede tilgængeligt
+            Ingen projektbillede tilgængeligt
           </Text>
         )}
         <Pressable style={styles.closeButton} onPress={onClose}>
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 15,
   },
-  profileImage: {
+  projectImage: {
     borderRadius: 10,
     resizeMode: "cover",
     marginBottom: 20,
@@ -93,4 +93,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InfoPanelProfileImage;
+export default InfoPanelProjectImage;
