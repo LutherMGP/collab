@@ -15,9 +15,14 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  listAll,
+  deleteObject,
+} from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
-import { deleteObject } from "firebase/storage";
 
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
@@ -150,37 +155,49 @@ export default function AccountScreen() {
     if (!user) return;
 
     try {
-      // Slet det gamle profilbillede, hvis det findes
-      if (profileImage) {
-        const oldImageRef = ref(
-          storage,
-          decodeURIComponent(new URL(profileImage).pathname.substring(1))
-        );
-        await deleteObject(oldImageRef);
+      // Reference til mappen `profileimage` for brugeren
+      const profileImageFolderRef = ref(storage, `users/${user}/profileimage/`);
+
+      // Slet alle filer i mappen
+      try {
+        const files = await listAll(profileImageFolderRef);
+        for (const item of files.items) {
+          await deleteObject(item);
+          console.log("Slettet:", item.fullPath);
+        }
+      } catch (error) {
+        console.warn("Kunne ikke liste eller slette filer i mappen:", error);
       }
 
       // Upload det nye billede
       const response = await fetch(uri);
       const blob = await response.blob();
-      const storageRef = ref(
+      const newImageRef = ref(
         storage,
         `users/${user}/profileimage/${Date.now()}.jpg`
       );
 
-      await uploadBytes(storageRef, blob);
-      const downloadUrl = await getDownloadURL(storageRef);
+      await uploadBytes(newImageRef, blob);
+      const downloadUrl = await getDownloadURL(newImageRef);
 
-      // Opdater Firestore med download-URL
+      // Opdater Firestore med den nye URL
       await setDoc(
         doc(database, "users", user),
         { profileImage: downloadUrl },
         { merge: true }
       );
 
-      setProfileImage(downloadUrl); // Opdater tilstanden
+      // Opdater state
+      setProfileImage(downloadUrl);
+      console.log("Nyt profilbillede uploadet:", downloadUrl);
+
       Alert.alert("Profilbillede opdateret.");
     } catch (error) {
-      console.error("Fejl ved upload af profilbillede: ", error);
+      if (error instanceof Error) {
+        console.error("Fejl ved upload af profilbillede:", error.message);
+      } else {
+        console.error("Ukendt fejl ved upload af profilbillede:", error);
+      }
       Alert.alert("Fejl", "Kunne ikke uploade profilbillede.");
     }
   };
