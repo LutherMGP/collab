@@ -186,6 +186,7 @@ const styles = StyleSheet.create({
   },
   createStoryContainer: {
     borderWidth: 1,
+    borderColor: "Colors.light.icon",
     borderRadius: 10,
     backgroundColor: Colors.light.background,
     alignItems: "center",
@@ -210,6 +211,11 @@ const styles = StyleSheet.create({
     width: 40,
     borderWidth: 3,
     borderColor: Colors.light.background,
+    elevation: 3, // Tilføj skygge for et bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   createStoryTextContainer: {
     justifyContent: "center",
