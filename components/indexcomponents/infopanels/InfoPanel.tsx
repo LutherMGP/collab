@@ -483,7 +483,7 @@ const InfoPanel = ({
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.profileImage} // Tilpas eventuelt denne style
+                style={baseStyles.profileImage}
               />
             </Pressable>
           )}
@@ -497,6 +497,7 @@ const InfoPanel = ({
             <Text style={baseStyles.priceText}>{price}</Text>
           </Pressable>
 
+          {/* Delete knap */}
           {config.showDelete && (
             <Pressable
               style={baseStyles.deleteIconContainer}
@@ -507,6 +508,7 @@ const InfoPanel = ({
             </Pressable>
           )}
 
+          {/* Edit knap */}
           {config.showEdit && (
             <Pressable
               style={[
@@ -537,17 +539,16 @@ const InfoPanel = ({
 
         {/* Ny rund knap nederst i midten */}
         <Pressable
-          style={baseStyles.roundButtonF8} // Defineret i styles
+          style={baseStyles.roundButtonF8}
           onPress={() => Alert.alert("Knap trykket", "Dette er en dummy-knap.")}
           accessibilityLabel="New Button"
         >
-          <MaterialIcons name="join-full" size={20} color="black" />
+          <MaterialIcons name="join-full" size={24} color="black" />
         </Pressable>
       </View>
 
-      {/* Nederste container med F2, F3, og F5 felter */}
+      {/* Nedre container med F2, F3, F5 og F1A/F1B */}
       <View style={baseStyles.lowerContainer}>
-        {/* Venstre sektion med F2 og F3 felter */}
         <View style={baseStyles.leftSide}>
           <View style={baseStyles.topSide}>
             {/* F2 felt */}
@@ -563,23 +564,23 @@ const InfoPanel = ({
                 ) : (
                   <Text style={baseStyles.text}>Agreement</Text>
                 )}
+              </Pressable>
 
-                {/* Ny rund knap tilføjet i F2 feltet */}
-                <Pressable
-                  style={baseStyles.roundButtonF2}
-                  onPress={() =>
-                    Alert.alert("Knap trykket", "Dette er en dummy-knap.")
-                  }
-                  accessibilityLabel="New Button"
-                >
-                  <MaterialIcons name="join-right" size={20} color="black" />
-                </Pressable>
+              {/* Ny rund knap nederst i midten */}
+              <Pressable
+                style={baseStyles.roundButtonF2}
+                onPress={() =>
+                  Alert.alert("Knap trykket", "Dette er en dummy-knap for F2.")
+                }
+                accessibilityLabel="New Button"
+              >
+                <MaterialIcons name="join-right" size={24} color="black" />
               </Pressable>
             </View>
 
-            {/* Højre top med favoritter og køb */}
+            {/* Favorit og køb sektion */}
             <View style={baseStyles.rightTop}>
-              {/* Favorit-knap */}
+              {/* Favorit-knap (F1A) */}
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
@@ -594,7 +595,7 @@ const InfoPanel = ({
                 </Pressable>
               </View>
 
-              {/* Køb-knap */}
+              {/* Køb-knap (F1B) */}
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
@@ -602,7 +603,7 @@ const InfoPanel = ({
                   accessibilityLabel="Purchase Button"
                 >
                   <MaterialIcons
-                    name="join-left"
+                    name="shopping-cart"
                     size={36}
                     color={toBePurchased ? "green" : "black"}
                   />
@@ -624,22 +625,22 @@ const InfoPanel = ({
               ) : (
                 <Text style={baseStyles.text}>Sustainability</Text>
               )}
+            </Pressable>
 
-              {/* Ny rund knap tilføjet i F3 feltet */}
-              <Pressable
-                style={baseStyles.roundButtonF3}
-                onPress={() =>
-                  Alert.alert("Knap trykket", "Dette er en dummy-knap.")
-                }
-                accessibilityLabel="New Button"
-              >
-                <MaterialIcons name="join-inner" size={20} color="black" />
-              </Pressable>
+            {/* Ny rund knap nederst i midten */}
+            <Pressable
+              style={baseStyles.roundButtonF3}
+              onPress={() =>
+                Alert.alert("Knap trykket", "Dette er en dummy-knap for F3.")
+              }
+              accessibilityLabel="New Button"
+            >
+              <MaterialIcons name="join-inner" size={24} color="black" />
             </Pressable>
           </View>
         </View>
 
-        {/* Højre sektion med F5 felt */}
+        {/* F5 felt */}
         <View style={baseStyles.f5Side}>
           <Pressable
             style={[baseStyles.F5, { right: rightMargin }]}
@@ -652,17 +653,17 @@ const InfoPanel = ({
             ) : (
               <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
+          </Pressable>
 
-            {/* Ny rund knap tilføjet i F5 feltet */}
-            <Pressable
-              style={baseStyles.roundButtonF5}
-              onPress={() =>
-                Alert.alert("Knap trykket", "Dette er en dummy-knap.")
-              }
-              accessibilityLabel="New Button"
-            >
-              <MaterialIcons name="join-left" size={20} color="black" />
-            </Pressable>
+          {/* Ny rund knap nederst i midten */}
+          <Pressable
+            style={baseStyles.roundButtonF5}
+            onPress={() =>
+              Alert.alert("Knap trykket", "Dette er en dummy-knap for F5.")
+            }
+            accessibilityLabel="New Button"
+          >
+            <MaterialIcons name="join-left" size={24} color="black" />
           </Pressable>
         </View>
       </View>
