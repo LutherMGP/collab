@@ -464,8 +464,8 @@ const InfoPanel = ({
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
-          onLongPress={handleLongPressF8} // Longpress forbliver uændret
+          onPress={() => handlePress("F8")} // Åbner modal for F8
+          onLongPress={handleLongPressF8} // Håndterer longpress for F8
           accessibilityLabel="F8 Button"
         >
           {f8 ? (
@@ -474,11 +474,11 @@ const InfoPanel = ({
             <Text style={baseStyles.text}>Specification</Text>
           )}
 
-          {/* Projektbilledet i det runde felt med onPress */}
+          {/* Projektbilledet */}
           {projectImage && (
             <Pressable
               style={baseStyles.profileImageContainer}
-              onPress={() => handlePress("Project Image")}
+              onPress={() => handlePress("Project Image")} // Åbner modal for projektbilledet
               accessibilityLabel="Project Image Button"
             >
               <Image
@@ -488,10 +488,10 @@ const InfoPanel = ({
             </Pressable>
           )}
 
-          {/* Prize feltet med onPress */}
+          {/* Prisfeltet */}
           <Pressable
             style={baseStyles.priceTag}
-            onPress={() => handlePress("Prize")}
+            onPress={() => handlePress("Prize")} // Åbner modal for pris
             accessibilityLabel="Prize Button"
           >
             <Text style={baseStyles.priceText}>{price}</Text>
@@ -501,7 +501,7 @@ const InfoPanel = ({
           {config.showDelete && (
             <Pressable
               style={baseStyles.deleteIconContainer}
-              onPress={handleDelete}
+              onPress={handleDelete} // Håndterer sletning
               accessibilityLabel="Delete Button"
             >
               <AntDesign name="delete" size={20} color="red" />
@@ -517,7 +517,7 @@ const InfoPanel = ({
                   ? baseStyles.editEnabled
                   : baseStyles.editDisabled,
               ]}
-              onPress={toggleEdit}
+              onPress={toggleEdit} // Håndterer redigeringstilstand
               accessibilityLabel="Edit Button"
             >
               <AntDesign
@@ -537,7 +537,7 @@ const InfoPanel = ({
           )}
         </Pressable>
 
-        {/* Ny rund knap nederst i midten */}
+        {/* Ny rund knap for F8 */}
         <Pressable
           style={baseStyles.roundButtonF8}
           onPress={() => Alert.alert("Knap trykket", "Dette er en dummy-knap.")}
@@ -555,8 +555,8 @@ const InfoPanel = ({
             <View style={baseStyles.f2leftTop}>
               <Pressable
                 style={baseStyles.F2}
-                onPress={() => handlePress("F2")}
-                onLongPress={handleLongPressF2}
+                onPress={() => handlePress("F2")} // Åbner modal for F2
+                onLongPress={handleLongPressF2} // Håndterer longpress for F2
                 accessibilityLabel="F2 Button"
               >
                 {f2 ? (
@@ -566,7 +566,7 @@ const InfoPanel = ({
                 )}
               </Pressable>
 
-              {/* Ny rund knap nederst i midten */}
+              {/* Ny rund knap for F2 */}
               <Pressable
                 style={baseStyles.roundButtonF2}
                 onPress={() =>
@@ -580,11 +580,10 @@ const InfoPanel = ({
 
             {/* Favorit og køb sektion */}
             <View style={baseStyles.rightTop}>
-              {/* Favorit-knap (F1A) */}
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={handleFavoriteToggle}
+                  onPress={handleFavoriteToggle} // Håndterer favorit
                   accessibilityLabel="Favorite Button"
                 >
                   <AntDesign
@@ -595,11 +594,10 @@ const InfoPanel = ({
                 </Pressable>
               </View>
 
-              {/* Køb-knap (F1B) */}
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handlePurchase}
+                  onPress={handlePurchase} // Håndterer køb
                   accessibilityLabel="Purchase Button"
                 >
                   <MaterialIcons
@@ -616,8 +614,8 @@ const InfoPanel = ({
           <View style={baseStyles.f3bottomSide}>
             <Pressable
               style={baseStyles.F3}
-              onPress={() => handlePress("F3")}
-              onLongPress={handleLongPressF3}
+              onPress={() => handlePress("F3")} // Åbner modal for F3
+              onLongPress={handleLongPressF3} // Håndterer longpress for F3
               accessibilityLabel="F3 Button"
             >
               {f3 ? (
@@ -627,7 +625,7 @@ const InfoPanel = ({
               )}
             </Pressable>
 
-            {/* Ny rund knap nederst i midten */}
+            {/* Ny rund knap for F3 */}
             <Pressable
               style={baseStyles.roundButtonF3}
               onPress={() =>
@@ -644,8 +642,8 @@ const InfoPanel = ({
         <View style={baseStyles.f5Side}>
           <Pressable
             style={[baseStyles.F5, { right: rightMargin }]}
-            onPress={() => handlePress("F5")}
-            onLongPress={handleLongPressF5}
+            onPress={() => handlePress("F5")} // Åbner modal for F5
+            onLongPress={handleLongPressF5} // Håndterer longpress for F5
             accessibilityLabel="F5 Button"
           >
             {f5 ? (
@@ -655,7 +653,7 @@ const InfoPanel = ({
             )}
           </Pressable>
 
-          {/* Ny rund knap nederst i midten */}
+          {/* Ny rund knap for F5 */}
           <Pressable
             style={baseStyles.roundButtonF5}
             onPress={() =>
