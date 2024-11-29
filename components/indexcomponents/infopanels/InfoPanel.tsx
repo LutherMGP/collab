@@ -469,7 +469,7 @@ const InfoPanel = ({
           {f8 ? (
             <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />
           ) : (
-            <Text style={baseStyles.text}>Ingen Specification tilgængelig</Text>
+            <Text style={baseStyles.text}>Specification</Text>
           )}
 
           {/* Projektbilledet i det runde felt med onPress */}
@@ -548,9 +548,7 @@ const InfoPanel = ({
                 {f2 ? (
                   <Image source={{ uri: f2 }} style={baseStyles.f2CoverImage} />
                 ) : (
-                  <Text style={baseStyles.text}>
-                    Ingen Partnership Agreement tilgængelig
-                  </Text>
+                  <Text style={baseStyles.text}>Agreement</Text>
                 )}
               </Pressable>
             </View>
@@ -575,7 +573,7 @@ const InfoPanel = ({
                   accessibilityLabel="Purchase Button"
                 >
                   <MaterialIcons
-                    name="shopping-cart"
+                    name="join-left"
                     size={36}
                     color={toBePurchased ? "green" : "black"}
                   />
@@ -593,9 +591,7 @@ const InfoPanel = ({
               {f3 ? (
                 <Image source={{ uri: f3 }} style={baseStyles.f3CoverImage} />
               ) : (
-                <Text style={baseStyles.text}>
-                  Ingen Sustainability Report tilgængelig
-                </Text>
+                <Text style={baseStyles.text}>Sustainability</Text>
               )}
             </Pressable>
           </View>
@@ -610,9 +606,7 @@ const InfoPanel = ({
             {f5 ? (
               <Image source={{ uri: f5 }} style={baseStyles.f5CoverImage} />
             ) : (
-              <Text style={baseStyles.text}>
-                Ingen Terms & Condition tilgængelig
-              </Text>
+              <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
           </Pressable>
         </View>

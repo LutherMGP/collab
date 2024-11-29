@@ -88,7 +88,7 @@ const Purchased = () => {
   }
 
   return (
-    <View style={[styles.container, { borderColor: Colors[theme].icon }]}>
+    <View style={[styles.container]}>
       <Image
         source={require("@/assets/images/collaborations.webp")}
         style={styles.profileImg}
@@ -106,9 +106,7 @@ const Purchased = () => {
       </TouchableOpacity>
 
       <View style={styles.textContainer}>
-        <Text style={[styles.text, { color: Colors[theme].text }]}>
-          Agreements
-        </Text>
+        <Text style={[styles.text]}>Agreements</Text>
       </View>
     </View>
   );
@@ -117,8 +115,9 @@ const Purchased = () => {
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
     borderRadius: 10,
-    backgroundColor: Colors.light.background,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     alignItems: "center",
     position: "relative",
     paddingBottom: 10,
@@ -147,7 +146,12 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
     borderWidth: 3,
-    borderColor: Colors.light.background,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 3, // Tilføj skygge for et bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   iconPressed: {
     backgroundColor: "rgba(0, 128, 0, 0.8)",

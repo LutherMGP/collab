@@ -111,9 +111,7 @@ const NewProject: React.FC = () => {
   };
 
   return (
-    <View
-      style={[styles.createStoryContainer, { borderColor: Colors.light.icon }]}
-    >
+    <View style={[styles.createStoryContainer]}>
       <Image
         source={{
           uri: profileImage || Image.resolveAssetSource(defaultImage).uri,
@@ -186,9 +184,9 @@ const styles = StyleSheet.create({
   },
   createStoryContainer: {
     borderWidth: 1,
-    borderColor: "Colors.light.icon",
+    borderColor: "rgba(255, 255, 255, 0.7)",
     borderRadius: 10,
-    backgroundColor: Colors.light.background,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     alignItems: "center",
     position: "relative",
     paddingBottom: 10,
@@ -210,7 +208,7 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
     borderWidth: 3,
-    borderColor: Colors.light.background,
+    borderColor: "rgba(255, 255, 255, 0.7)",
     elevation: 3, // Tilføj skygge for et bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
