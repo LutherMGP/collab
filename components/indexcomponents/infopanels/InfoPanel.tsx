@@ -413,14 +413,14 @@ const InfoPanel = ({
           ...projectData,
           name: data.name || "",
           comment: data.comment || "",
-          f8: data.data?.f8?.coverImage || null, // Brug dynamisk sti fra Firestore
-          f8PDF: data.data?.f8?.pdf || null,
-          f5: data.data?.f5?.coverImage || null,
-          f5PDF: data.data?.f5?.pdf || null,
-          f3: data.data?.f3?.coverImage || null,
-          f3PDF: data.data?.f3?.pdf || null,
-          f2: data.data?.f2?.coverImage || null,
-          f2PDF: data.data?.f2?.pdf || null,
+          f8: data.f8 || null,
+          f8PDF: data.f8PDF || null,
+          f5: data.f5 || null,
+          f5PDF: data.f5PDF || null,
+          f3: data.f3 || null,
+          f3PDF: data.f3PDF || null,
+          f2: data.f2 || null,
+          f2PDF: data.f2PDF || null,
           status: data.status || "",
           price: data.price || 0,
           isFavorite: data.isFavorite || false,
@@ -471,7 +471,7 @@ const InfoPanel = ({
           {f8 ? (
             <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />
           ) : (
-            <Text style={baseStyles.text}>Specification</Text>
+            <Text style={baseStyles.text}>Ingen Specification tilgængelig</Text>
           )}
 
           {/* Projektbilledet */}
@@ -541,7 +541,7 @@ const InfoPanel = ({
         <Pressable
           style={baseStyles.roundButtonF8}
           onPress={() => Alert.alert("Knap trykket", "Dette er en dummy-knap.")}
-          accessibilityLabel="New Button"
+          accessibilityLabel="New Button F8"
         >
           <MaterialIcons name="join-full" size={24} color="black" />
         </Pressable>
@@ -572,7 +572,7 @@ const InfoPanel = ({
                 onPress={() =>
                   Alert.alert("Knap trykket", "Dette er en dummy-knap for F2.")
                 }
-                accessibilityLabel="New Button"
+                accessibilityLabel="New Button F2"
               >
                 <MaterialIcons name="join-right" size={24} color="black" />
               </Pressable>
@@ -580,6 +580,7 @@ const InfoPanel = ({
 
             {/* Favorit og køb sektion */}
             <View style={baseStyles.rightTop}>
+              {/* Favorit-knap (F1A) */}
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
@@ -594,6 +595,7 @@ const InfoPanel = ({
                 </Pressable>
               </View>
 
+              {/* Køb-knap (F1B) */}
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
@@ -631,7 +633,7 @@ const InfoPanel = ({
               onPress={() =>
                 Alert.alert("Knap trykket", "Dette er en dummy-knap for F3.")
               }
-              accessibilityLabel="New Button"
+              accessibilityLabel="New Button F3"
             >
               <MaterialIcons name="join-inner" size={24} color="black" />
             </Pressable>
@@ -659,14 +661,110 @@ const InfoPanel = ({
             onPress={() =>
               Alert.alert("Knap trykket", "Dette er en dummy-knap for F5.")
             }
-            accessibilityLabel="New Button"
+            accessibilityLabel="New Button F5"
           >
             <MaterialIcons name="join-left" size={24} color="black" />
           </Pressable>
         </View>
       </View>
 
-      {/* END F8, F5, F3, F2 felter */}
+      {isLoading && (
+        <View style={baseStyles.loadingOverlay}>
+          <ActivityIndicator size="large" color="blue" />
+        </View>
+      )}
+
+      {/* F8 Modal */}
+      <Modal
+        visible={isF8ModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeF8Modal}
+      >
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
+            <InfoPanelF8
+              projectId={projectData.id} // Tilføj projectId
+              userId={userId || ""} // Tilføj userId
+              onClose={closeF8Modal}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* F5 Modal */}
+      <Modal
+        visible={isF5ModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeF5Modal}
+      >
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
+            <InfoPanelF5
+              projectId={projectData.id} // Tilføj projectId
+              userId={userId || ""} // Tilføj userId
+              onClose={closeF5Modal}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* F3 Modal */}
+      <Modal
+        visible={isF3ModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeF3Modal}
+      >
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
+            <InfoPanelF3
+              projectId={projectData.id} // Tilføj projectId
+              userId={userId || ""} // Tilføj userId
+              onClose={closeF3Modal}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* F2 Modal */}
+      <Modal
+        visible={isF2ModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeF2Modal}
+      >
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
+            <InfoPanelF2
+              projectId={projectData.id} // Tilføj projectId
+              userId={userId || ""} // Tilføj userId
+              onClose={closeF2Modal}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Name & Comment Modal */}
+      <Modal
+        visible={isNameCommentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeNameCommentModal}
+      >
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
+            <InfoPanelNameComment
+              onClose={closeNameCommentModal}
+              name={name}
+              comment={comment}
+              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
+              userId={userId || ""} // Tilføj userId hvis nødvendigt
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* Prize Modal */}
       <Modal
@@ -675,8 +773,8 @@ const InfoPanel = ({
         transparent={true}
         onRequestClose={closePrizeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
               price={price}
@@ -694,8 +792,8 @@ const InfoPanel = ({
         transparent={true}
         onRequestClose={closeProjectImageModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={baseStyles.modalContainer}>
+          <View style={baseStyles.modalContent}>
             <InfoPanelProjectImage
               onClose={closeProjectImageModal}
               projectImageUri={projectImage} // Brug projectImage
@@ -712,21 +810,5 @@ const InfoPanel = ({
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    height: "80%",
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 10,
-  },
-});
 
 export default InfoPanel;
