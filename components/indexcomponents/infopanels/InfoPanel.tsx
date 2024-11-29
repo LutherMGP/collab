@@ -458,53 +458,57 @@ const InfoPanel = ({
         </Text>
       </View>
 
+      {/* START F8, F5, F3, F2 felter */}
+
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
-          onLongPress={handleLongPressF8} // Longpress forbliver uændret
+          onPress={() => handlePress("F8")} // Åbner modal for F8
+          onLongPress={handleLongPressF8} // Håndterer longpress for F8
           accessibilityLabel="F8 Button"
         >
           {f8 ? (
             <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />
           ) : (
-            <Text style={baseStyles.text}>Ingen Specification tilgængelig</Text>
+            <Text style={baseStyles.text}>Specification</Text>
           )}
 
-          {/* Projektbilledet i det runde felt med onPress */}
+          {/* Projektbilledet */}
           {projectImage && (
             <Pressable
               style={baseStyles.profileImageContainer}
-              onPress={() => handlePress("Project Image")}
+              onPress={() => handlePress("Project Image")} // Åbner modal for projektbilledet
               accessibilityLabel="Project Image Button"
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.profileImage} // Tilpas eventuelt denne style
+                style={baseStyles.profileImage}
               />
             </Pressable>
           )}
 
-          {/* Prize feltet med onPress */}
+          {/* Prisfeltet */}
           <Pressable
             style={baseStyles.priceTag}
-            onPress={() => handlePress("Prize")}
+            onPress={() => handlePress("Prize")} // Åbner modal for pris
             accessibilityLabel="Prize Button"
           >
             <Text style={baseStyles.priceText}>{price}</Text>
           </Pressable>
 
+          {/* Delete knap */}
           {config.showDelete && (
             <Pressable
               style={baseStyles.deleteIconContainer}
-              onPress={handleDelete}
+              onPress={handleDelete} // Håndterer sletning
               accessibilityLabel="Delete Button"
             >
               <AntDesign name="delete" size={20} color="red" />
             </Pressable>
           )}
 
+          {/* Edit knap */}
           {config.showEdit && (
             <Pressable
               style={[
@@ -513,7 +517,7 @@ const InfoPanel = ({
                   ? baseStyles.editEnabled
                   : baseStyles.editDisabled,
               ]}
-              onPress={toggleEdit}
+              onPress={toggleEdit} // Håndterer redigeringstilstand
               accessibilityLabel="Edit Button"
             >
               <AntDesign
@@ -532,33 +536,54 @@ const InfoPanel = ({
             </Pressable>
           )}
         </Pressable>
+
+        {/* Ny rund knap for F8 */}
+        <Pressable
+          style={baseStyles.roundButtonF8}
+          onPress={() => Alert.alert("Knap trykket", "Dette er en dummy-knap.")}
+          accessibilityLabel="New Button"
+        >
+          <MaterialIcons name="join-full" size={24} color="black" />
+        </Pressable>
       </View>
 
-      {/* Nedre container */}
+      {/* Nedre container med F2, F3, F5 og F1A/F1B */}
       <View style={baseStyles.lowerContainer}>
         <View style={baseStyles.leftSide}>
           <View style={baseStyles.topSide}>
+            {/* F2 felt */}
             <View style={baseStyles.f2leftTop}>
               <Pressable
                 style={baseStyles.F2}
-                onPress={() => handlePress("F2")}
-                onLongPress={handleLongPressF2}
+                onPress={() => handlePress("F2")} // Åbner modal for F2
+                onLongPress={handleLongPressF2} // Håndterer longpress for F2
                 accessibilityLabel="F2 Button"
               >
                 {f2 ? (
                   <Image source={{ uri: f2 }} style={baseStyles.f2CoverImage} />
                 ) : (
-                  <Text style={baseStyles.text}>
-                    Ingen Partnership Agreement tilgængelig
-                  </Text>
+                  <Text style={baseStyles.text}>Agreement</Text>
                 )}
               </Pressable>
+
+              {/* Ny rund knap for F2 */}
+              <Pressable
+                style={baseStyles.roundButtonF2}
+                onPress={() =>
+                  Alert.alert("Knap trykket", "Dette er en dummy-knap for F2.")
+                }
+                accessibilityLabel="New Button"
+              >
+                <MaterialIcons name="join-right" size={24} color="black" />
+              </Pressable>
             </View>
+
+            {/* Favorit og køb sektion */}
             <View style={baseStyles.rightTop}>
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={handleFavoriteToggle}
+                  onPress={handleFavoriteToggle} // Håndterer favorit
                   accessibilityLabel="Favorite Button"
                 >
                   <AntDesign
@@ -568,10 +593,11 @@ const InfoPanel = ({
                   />
                 </Pressable>
               </View>
+
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handlePurchase}
+                  onPress={handlePurchase} // Håndterer køb
                   accessibilityLabel="Purchase Button"
                 >
                   <MaterialIcons
@@ -583,138 +609,64 @@ const InfoPanel = ({
               </View>
             </View>
           </View>
+
+          {/* F3 felt */}
           <View style={baseStyles.f3bottomSide}>
             <Pressable
               style={baseStyles.F3}
-              onPress={() => handlePress("F3")}
-              onLongPress={handleLongPressF3}
+              onPress={() => handlePress("F3")} // Åbner modal for F3
+              onLongPress={handleLongPressF3} // Håndterer longpress for F3
               accessibilityLabel="F3 Button"
             >
               {f3 ? (
                 <Image source={{ uri: f3 }} style={baseStyles.f3CoverImage} />
               ) : (
-                <Text style={baseStyles.text}>
-                  Ingen Sustainability Report tilgængelig
-                </Text>
+                <Text style={baseStyles.text}>Sustainability</Text>
               )}
+            </Pressable>
+
+            {/* Ny rund knap for F3 */}
+            <Pressable
+              style={baseStyles.roundButtonF3}
+              onPress={() =>
+                Alert.alert("Knap trykket", "Dette er en dummy-knap for F3.")
+              }
+              accessibilityLabel="New Button"
+            >
+              <MaterialIcons name="join-inner" size={24} color="black" />
             </Pressable>
           </View>
         </View>
+
+        {/* F5 felt */}
         <View style={baseStyles.f5Side}>
           <Pressable
             style={[baseStyles.F5, { right: rightMargin }]}
-            onPress={() => handlePress("F5")}
-            onLongPress={handleLongPressF5}
+            onPress={() => handlePress("F5")} // Åbner modal for F5
+            onLongPress={handleLongPressF5} // Håndterer longpress for F5
             accessibilityLabel="F5 Button"
           >
             {f5 ? (
               <Image source={{ uri: f5 }} style={baseStyles.f5CoverImage} />
             ) : (
-              <Text style={baseStyles.text}>
-                Ingen Terms & Condition tilgængelig
-              </Text>
+              <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
+          </Pressable>
+
+          {/* Ny rund knap for F5 */}
+          <Pressable
+            style={baseStyles.roundButtonF5}
+            onPress={() =>
+              Alert.alert("Knap trykket", "Dette er en dummy-knap for F5.")
+            }
+            accessibilityLabel="New Button"
+          >
+            <MaterialIcons name="join-left" size={24} color="black" />
           </Pressable>
         </View>
       </View>
 
-      {isLoading && (
-        <View style={baseStyles.loadingOverlay}>
-          <ActivityIndicator size="large" color="blue" />
-        </View>
-      )}
-
-      {/* F8 Modal */}
-      <Modal
-        visible={isF8ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF8Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF8
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF8Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* F5 Modal */}
-      <Modal
-        visible={isF5ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF5Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF5
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF5Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* F3 Modal */}
-      <Modal
-        visible={isF3ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF3Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF3
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF3Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* F2 Modal */}
-      <Modal
-        visible={isF2ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF2Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF2
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF2Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Name & Comment Modal */}
-      <Modal
-        visible={isNameCommentModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeNameCommentModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelNameComment
-              onClose={closeNameCommentModal}
-              name={name}
-              comment={comment}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
-            />
-          </View>
-        </View>
-      </Modal>
+      {/* END F8, F5, F3, F2 felter */}
 
       {/* Prize Modal */}
       <Modal
