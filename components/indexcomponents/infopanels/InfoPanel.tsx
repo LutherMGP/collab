@@ -458,6 +458,8 @@ const InfoPanel = ({
         </Text>
       </View>
 
+      {/* START F8, F5, F3, F2 felter */}
+
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
         <Pressable
@@ -469,7 +471,7 @@ const InfoPanel = ({
           {f8 ? (
             <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />
           ) : (
-            <Text style={baseStyles.text}>Ingen Specification tilgængelig</Text>
+            <Text style={baseStyles.text}>Specification</Text>
           )}
 
           {/* Projektbilledet i det runde felt med onPress */}
@@ -532,12 +534,23 @@ const InfoPanel = ({
             </Pressable>
           )}
         </Pressable>
+
+        {/* Ny rund knap nederst i midten */}
+        <Pressable
+          style={baseStyles.roundButtonF8} // Defineret i styles
+          onPress={() => Alert.alert("Knap trykket", "Dette er en dummy-knap.")}
+          accessibilityLabel="New Button"
+        >
+          <MaterialIcons name="join-full" size={20} color="black" />
+        </Pressable>
       </View>
 
-      {/* Nedre container */}
+      {/* Nederste container med F2, F3, og F5 felter */}
       <View style={baseStyles.lowerContainer}>
+        {/* Venstre sektion med F2 og F3 felter */}
         <View style={baseStyles.leftSide}>
           <View style={baseStyles.topSide}>
+            {/* F2 felt */}
             <View style={baseStyles.f2leftTop}>
               <Pressable
                 style={baseStyles.F2}
@@ -548,13 +561,25 @@ const InfoPanel = ({
                 {f2 ? (
                   <Image source={{ uri: f2 }} style={baseStyles.f2CoverImage} />
                 ) : (
-                  <Text style={baseStyles.text}>
-                    Ingen Partnership Agreement tilgængelig
-                  </Text>
+                  <Text style={baseStyles.text}>Agreement</Text>
                 )}
+
+                {/* Ny rund knap tilføjet i F2 feltet */}
+                <Pressable
+                  style={baseStyles.roundButtonF2}
+                  onPress={() =>
+                    Alert.alert("Knap trykket", "Dette er en dummy-knap.")
+                  }
+                  accessibilityLabel="New Button"
+                >
+                  <MaterialIcons name="join-right" size={20} color="black" />
+                </Pressable>
               </Pressable>
             </View>
+
+            {/* Højre top med favoritter og køb */}
             <View style={baseStyles.rightTop}>
+              {/* Favorit-knap */}
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
@@ -568,6 +593,8 @@ const InfoPanel = ({
                   />
                 </Pressable>
               </View>
+
+              {/* Køb-knap */}
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
@@ -575,7 +602,7 @@ const InfoPanel = ({
                   accessibilityLabel="Purchase Button"
                 >
                   <MaterialIcons
-                    name="shopping-cart"
+                    name="join-left"
                     size={36}
                     color={toBePurchased ? "green" : "black"}
                   />
@@ -583,6 +610,8 @@ const InfoPanel = ({
               </View>
             </View>
           </View>
+
+          {/* F3 felt */}
           <View style={baseStyles.f3bottomSide}>
             <Pressable
               style={baseStyles.F3}
@@ -593,13 +622,24 @@ const InfoPanel = ({
               {f3 ? (
                 <Image source={{ uri: f3 }} style={baseStyles.f3CoverImage} />
               ) : (
-                <Text style={baseStyles.text}>
-                  Ingen Sustainability Report tilgængelig
-                </Text>
+                <Text style={baseStyles.text}>Sustainability</Text>
               )}
+
+              {/* Ny rund knap tilføjet i F3 feltet */}
+              <Pressable
+                style={baseStyles.roundButtonF3}
+                onPress={() =>
+                  Alert.alert("Knap trykket", "Dette er en dummy-knap.")
+                }
+                accessibilityLabel="New Button"
+              >
+                <MaterialIcons name="join-inner" size={20} color="black" />
+              </Pressable>
             </Pressable>
           </View>
         </View>
+
+        {/* Højre sektion med F5 felt */}
         <View style={baseStyles.f5Side}>
           <Pressable
             style={[baseStyles.F5, { right: rightMargin }]}
@@ -610,130 +650,24 @@ const InfoPanel = ({
             {f5 ? (
               <Image source={{ uri: f5 }} style={baseStyles.f5CoverImage} />
             ) : (
-              <Text style={baseStyles.text}>
-                Ingen Terms & Condition tilgængelig
-              </Text>
+              <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
+
+            {/* Ny rund knap tilføjet i F5 feltet */}
+            <Pressable
+              style={baseStyles.roundButtonF5}
+              onPress={() =>
+                Alert.alert("Knap trykket", "Dette er en dummy-knap.")
+              }
+              accessibilityLabel="New Button"
+            >
+              <MaterialIcons name="join-left" size={20} color="black" />
+            </Pressable>
           </Pressable>
         </View>
       </View>
 
-      {isLoading && (
-        <View style={baseStyles.loadingOverlay}>
-          <ActivityIndicator size="large" color="blue" />
-        </View>
-      )}
-
-      {/* F8 Modal */}
-      <Modal
-        visible={isF8ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF8Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF8
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF8Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* F5 Modal */}
-      <Modal
-        visible={isF5ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF5Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF5
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF5Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* F3 Modal */}
-      <Modal
-        visible={isF3ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF3Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF3
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF3Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* F2 Modal */}
-      <Modal
-        visible={isF2ModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeF2Modal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelF2
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
-              onClose={closeF2Modal}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Name & Comment Modal */}
-      <Modal
-        visible={isNameCommentModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeNameCommentModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelNameComment
-              onClose={closeNameCommentModal}
-              name={name}
-              comment={comment}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Prize Modal */}
-      <Modal
-        visible={isPrizeModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closePrizeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelPrize
-              onClose={closePrizeModal}
-              price={price}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
-            />
-          </View>
-        </View>
-      </Modal>
+      {/* END F8, F5, F3, F2 felter */}
 
       {/* Project Image Modal */}
       <Modal

@@ -358,4 +358,56 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
+  roundButtonF2: {
+    position: "absolute",
+    bottom: 0, // Behold placeringen i forhold til bunden
+    left: 5, // Placér knappen til venstre, 10 px fra venstre kant
+    width: "auto",
+    height: "auto",
+    borderRadius: 25,
+    // backgroundColor: "#ffcccb", // Lys rød baggrund (kan tilføjes igen, hvis ønsket)
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+  },
+  roundButtonF3: {
+    position: "absolute",
+    bottom: 0, // Behold placeringen i forhold til bunden
+    left: 5, // Placér knappen til venstre, 10 px fra venstre kant
+    width: "auto",
+    height: "auto",
+    borderRadius: 25,
+    // backgroundColor: "#ffcccb", // Lys rød baggrund (kan tilføjes igen, hvis ønsket)
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+  },
+  roundButtonF5: {
+    position: "absolute",
+    bottom: 0, // Behold placeringen i forhold til bunden
+    left: 5, // Placér knappen til venstre, 10 px fra venstre kant
+    width: "auto",
+    height: "auto",
+    borderRadius: 25,
+    // backgroundColor: "#ffcccb", // Lys rød baggrund (kan tilføjes igen, hvis ønsket)
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+  },
+  roundButtonF8: {
+    position: "absolute",
+    bottom: 8, // Juster placeringen afhængigt af layoutet
+    alignSelf: "center",
+    width: 50,
+    height: 30,
+    // borderRadius: 25,
+    // backgroundColor: "blue", // Baggrundsfarve
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3, // Tilføj skygge for et bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
 });
