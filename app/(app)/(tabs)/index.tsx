@@ -14,8 +14,8 @@ import { database } from "@/firebaseConfig";
 import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
-import InfoPanelProjects from "@/components/indexcomponents/infopanels/InfoPanelProjects";
-import InfoPanelPublished from "@/components/indexcomponents/infopanels/InfoPanelPublished";
+import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
+import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
 import InfoPanelProducts from "@/components/indexcomponents/infopanels/InfoPanelProducts";
 
 import { useVisibility } from "@/hooks/useVisibilityContext";

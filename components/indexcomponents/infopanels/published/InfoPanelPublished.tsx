@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/InfoPanelPublished.tsx
+// @/components/indexcomponents/infopanels/published/InfoPanelPublished.tsx
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
@@ -11,7 +11,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/InfoPanel";
+import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";

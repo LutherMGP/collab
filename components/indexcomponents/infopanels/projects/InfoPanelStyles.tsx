@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/InfoPanelStyles.tsx
+// @/components/indexcomponents/infopanels/projects/InfoPanelStyles.tsx
 
 import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
