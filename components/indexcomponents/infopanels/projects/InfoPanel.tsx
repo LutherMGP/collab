@@ -569,33 +569,6 @@ const InfoPanel = ({
               <AntDesign name="delete" size={20} color="red" />
             </Pressable>
           )}
-
-          {config.showEdit && (
-            <Pressable
-              style={[
-                baseStyles.editIconContainer,
-                isEditEnabled
-                  ? baseStyles.editEnabled
-                  : baseStyles.editDisabled,
-              ]}
-              onPress={toggleEdit}
-              accessibilityLabel="Edit Button"
-            >
-              <AntDesign
-                name="edit"
-                size={20}
-                color={isEditEnabled ? "white" : "black"}
-              />
-              <Text
-                style={[
-                  baseStyles.editText,
-                  { color: isEditEnabled ? "white" : "black" },
-                ]}
-              >
-                {isEditEnabled ? "Edit Tændt" : "Edit Slukket"}
-              </Text>
-            </Pressable>
-          )}
         </Pressable>
       </View>
 
