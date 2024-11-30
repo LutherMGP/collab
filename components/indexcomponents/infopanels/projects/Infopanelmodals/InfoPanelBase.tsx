@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/infopanelmodals/InfoPanelBase.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelBase.tsx
 
 import React, { useState, useEffect } from "react";
 import {
