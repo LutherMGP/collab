@@ -1,7 +1,7 @@
 // @/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF8.tsx
 
 import React from "react";
-import InfoPanelBase from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelBase";
+import InfoPanelBase from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelBase";
 
 interface InfoPanelF8Props {
   projectId: string;
