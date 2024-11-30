@@ -13,7 +13,7 @@ import {
   DocumentData,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/InfoPanel";
+import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
