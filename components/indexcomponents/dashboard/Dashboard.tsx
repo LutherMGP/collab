@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     // marginTop: "3%",
     paddingLeft: "3%",
     // paddingTop: "3%",
-    paddingBottom: "0.5%",
+    //paddingBottom: "0.5%",
   },
   contentContainerStyle: {
     paddingRight: 30,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     marginTop: "3%",
     elevation: 4, // Tilføj skygge for et bedre design
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
