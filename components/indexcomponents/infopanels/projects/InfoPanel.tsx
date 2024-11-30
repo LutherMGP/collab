@@ -621,13 +621,13 @@ const InfoPanel = ({
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={handleFavoriteToggle}
-                  accessibilityLabel="Favorite Button"
+                  onPress={toggleEdit} // Brug samme logik som tidligere
+                  accessibilityLabel="Edit Button"
                 >
                   <AntDesign
-                    name={isFavorite ? "heart" : "hearto"}
+                    name="edit" // Ikon ændret til "edit"
                     size={24}
-                    color={isFavorite ? "red" : "black"}
+                    color={isEditEnabled ? "green" : "black"} // Dynamisk farve afhængigt af Edit-tilstanden
                   />
                 </Pressable>
               </View>
