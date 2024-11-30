@@ -435,6 +435,71 @@ const InfoPanel = ({
     }
   };
 
+  // Funktion til at skifte status fra og til published
+  const handleStatusToggle = async () => {
+    try {
+      if (!userId || !projectData.id) {
+        throw new Error("Bruger-ID eller projekt-ID mangler.");
+      }
+
+      const isCurrentlyPublished = projectData.status === "Published";
+      const newStatus = isCurrentlyPublished ? "Project" : "Published";
+
+      // Bekræftelse før statusændring
+      Alert.alert(
+        isCurrentlyPublished ? "Fjern Publicering" : "Bekræft Publicering",
+        isCurrentlyPublished
+          ? "Vil du ændre status til 'Project'? Dette vil gøre projektet privat igen."
+          : "Vil du ændre status til 'Published'? Projektet bliver synligt for andre.",
+        [
+          {
+            text: "Annuller",
+            style: "cancel",
+          },
+          {
+            text: isCurrentlyPublished ? "Gør Privat" : "Publicer",
+            style: "default",
+            onPress: async () => {
+              try {
+                const projectDocRef = doc(
+                  database,
+                  "users",
+                  userId,
+                  "projects",
+                  projectData.id
+                );
+
+                await setDoc(
+                  projectDocRef,
+                  { status: newStatus },
+                  { merge: true }
+                );
+
+                Alert.alert(
+                  "Status Opdateret",
+                  newStatus === "Published"
+                    ? "Projektet er nu publiceret."
+                    : "Projektet er nu tilbage som kladde."
+                );
+
+                setProjectData((prev) => ({ ...prev, status: newStatus })); // Opdater lokalt
+              } catch (error) {
+                console.error("Fejl ved opdatering af status:", error);
+                Alert.alert(
+                  "Fejl",
+                  "Kunne ikke opdatere status. Prøv igen senere."
+                );
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Fejl ved skift af status:", error);
+      Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
@@ -569,13 +634,15 @@ const InfoPanel = ({
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handlePurchase}
-                  accessibilityLabel="Purchase Button"
+                  onPress={() => handleStatusToggle()} // Kalder funktionen for at skifte status
+                  accessibilityLabel="Status Toggle Button"
                 >
-                  <MaterialIcons
-                    name="join-left"
-                    size={36}
-                    color={toBePurchased ? "green" : "black"}
+                  <AntDesign
+                    name={
+                      projectData.status === "Published" ? "unlock" : "lock"
+                    } // Dynamisk ikon
+                    size={24}
+                    color={projectData.status === "Published" ? "green" : "red"} // Dynamisk farve
                   />
                 </Pressable>
               </View>
