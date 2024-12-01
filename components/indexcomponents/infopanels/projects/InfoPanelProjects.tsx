@@ -84,6 +84,10 @@ const InfoPanelProjects = () => {
 
         // Opdater state med de hentede projekter
         setProjects(fetchedProjects);
+
+        // Tilføj console.log her for at spore de hentede projekter
+        console.log("Hentede projekter:", fetchedProjects);
+
         setError(null);
         setIsLoading(false);
       },

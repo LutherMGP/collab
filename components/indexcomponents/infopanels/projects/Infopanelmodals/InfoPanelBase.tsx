@@ -41,6 +41,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   categoryName,
   onClose,
 }) => {
+  console.log("Rendering InfoPanelBase with props:", {
+    userId,
+    projectId,
+    category,
+    categoryName,
+  });
+
   const [pdfURL, setPdfURL] = useState<string | null>(null);
   const [coverImageURL, setCoverImageURL] = useState<string | null>(null);
   const [comment, setComment] = useState<string>("");
@@ -48,37 +55,50 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 
   // Fetch existing data from Firestore
   useEffect(() => {
-    console.log("Starting fetchData for category:", category);
+    console.log("Running fetchData for category:", category);
 
     const fetchData = async () => {
+      console.log(
+        `Starting fetchData for userId: ${userId}, projectId: ${projectId}, category: ${category}`
+      );
       try {
-        console.log(
-          `Fetching files for userId: ${userId}, projectId: ${projectId}, category: ${category}`
-        );
-
         const coverImageRef = ref(
           storage,
-          `users/${userId}/${projectId}/data/${category}/${category}CoverImage.jpg`
+          `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImage.jpg`
         );
         const pdfRef = ref(
           storage,
-          `users/${userId}/${projectId}/data/${category}/${category}PDF.pdf`
+          `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`
         );
 
+        const coverImagePromise = getDownloadURL(coverImageRef).catch(
+          (error) => {
+            console.warn(
+              `Cover image not found for ${category}:`,
+              error.message
+            );
+            return null;
+          }
+        );
+
+        const pdfPromise = getDownloadURL(pdfRef).catch((error) => {
+          console.warn(`PDF not found for ${category}:`, error.message);
+          return null;
+        });
+
         const [coverImageURL, pdfURL] = await Promise.all([
-          getDownloadURL(coverImageRef),
-          getDownloadURL(pdfRef),
+          coverImagePromise,
+          pdfPromise,
         ]);
 
         setCoverImageURL(coverImageURL);
         setPdfURL(pdfURL);
 
         console.log(
-          `Fetched files for ${category}: CoverImage - ${coverImageURL}, PDF - ${pdfURL}`
+          `Fetched data for ${category}: CoverImage - ${coverImageURL}, PDF - ${pdfURL}`
         );
       } catch (error) {
         console.error(`Failed to fetch files for ${category}:`, error);
-        Alert.alert("Error", `Could not fetch files for ${category}.`);
       }
     };
 
