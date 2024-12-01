@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "#FFF", textAlign: "center" },
   attachment: { margin: 5 },
-  attachmentImage: { width: 100, height: 100 },
+  attachmentImage: { width: 70, height: 70 },
   closeButton: { marginTop: 10, padding: 10, backgroundColor: "#FF3B30" },
   closeText: { color: "#FFF", textAlign: "center" },
 });
