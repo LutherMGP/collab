@@ -14,7 +14,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
@@ -28,6 +28,7 @@ import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projec
 import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelPrize";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelProjectImage";
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelCommentModal";
+import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
 
@@ -119,6 +120,8 @@ const InfoPanel = ({
   const [activeCategory, setActiveCategory] = useState<
     "f8" | "f5" | "f3" | "f2" | null
   >(null);
+  const [isAttachmentModalVisible, setIsAttachmentModalVisible] =
+    useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
 
   // Funktion til at togglere Edit-tilstand
@@ -414,6 +417,14 @@ const InfoPanel = ({
     setIsCommentModalVisible(false);
   };
 
+  const openAttachmentModal = () => {
+    setIsAttachmentModalVisible(true);
+  };
+
+  const closeAttachmentModal = () => {
+    setIsAttachmentModalVisible(false);
+  };
+
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
@@ -594,6 +605,14 @@ const InfoPanel = ({
             onPress={() => handleOpenCommentModal("f8")}
           >
             <AntDesign name="message1" size={20} color="black" />
+          </Pressable>
+
+          {/* Attachment-knap */}
+          <Pressable
+            style={baseStyles.attachmentButton}
+            onPress={openAttachmentModal}
+          >
+            <Entypo name="attachment" size={20} color="black" />
           </Pressable>
         </Pressable>
       </View>
@@ -878,6 +897,23 @@ const InfoPanel = ({
         </Modal>
       )}
 
+      {/* Attachment Modal */}
+      <Modal
+        visible={isAttachmentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeAttachmentModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <InfoPanelAttachment
+              userId={userId || ""}
+              projectId={projectData.id}
+              onClose={closeAttachmentModal}
+            />
+          </View>
+        </View>
+      </Modal>
       <View
         style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]}
       />

@@ -1,4 +1,4 @@
-// @/hooks/useAuth.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelAttachment.tsx
 
 import React, { useState } from "react";
 import {
@@ -35,23 +35,29 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
             : "video/*",
       });
 
-      if (result.type === "success") {
-        const { uri, name } = result;
-        const fileName = name || `file_${Date.now()}`;
-        const folderRef = ref(
-          storage,
-          `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
-        );
-
-        setIsLoading(true);
-
-        const response = await fetch(uri);
-        const fileBlob = await response.blob();
-        await uploadBytes(folderRef, fileBlob);
-
-        Alert.alert("Upload Successful", `${fileName} uploaded to ${type}`);
-        fetchAttachments(type); // Refresh the attachments list
+      // Check if the picker was canceled
+      if (result.canceled) {
+        return; // Exit if the user canceled the picker
       }
+
+      // Extract uri and name from result.assets
+      const file = result.assets[0]; // Assuming the first selected file
+      const uri = file.uri;
+      const fileName = file.name || `file_${Date.now()}`;
+
+      const folderRef = ref(
+        storage,
+        `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
+      );
+
+      setIsLoading(true);
+
+      const response = await fetch(uri);
+      const fileBlob = await response.blob();
+      await uploadBytes(folderRef, fileBlob);
+
+      Alert.alert("Upload Successful", `${fileName} uploaded to ${type}`);
+      fetchAttachments(type); // Refresh the attachments list
     } catch (error) {
       console.error("Error uploading file:", error);
       Alert.alert("Upload Failed", "An error occurred during upload.");
