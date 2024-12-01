@@ -11,27 +11,54 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
+  Linking,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
-import { Video } from "expo-video";
-import * as FileSystem from "expo-file-system";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { doc, setDoc } from "firebase/firestore";
 
+// Definer typer for Props og data
 type Props = {
   userId: string;
   projectId: string;
   onClose: () => void;
 };
 
-const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
-  const [attachments, setAttachments] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+type Attachment = {
+  type: "images" | "pdf" | "videos";
+  url: string;
+};
 
+// Ny komponent til at håndtere video attachments
+const VideoAttachment: React.FC<{ url: string }> = ({ url }) => {
+  const player = useVideoPlayer(url);
+
+  return (
+    <Pressable onPress={() => player.play()} style={styles.attachment}>
+      <VideoView
+        player={player}
+        style={styles.attachmentImage}
+        nativeControls
+        contentFit="contain"
+      />
+    </Pressable>
+  );
+};
+
+const InfoPanelAttachment: React.FC<Props> = ({
+  userId,
+  projectId,
+  onClose,
+}) => {
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Funktion til at gemme metadata i Firestore
   const saveToFirestore = async (
-    type: string,
+    type: Attachment["type"],
     fileName: string,
     url: string
   ) => {
@@ -51,7 +78,8 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
     }
   };
 
-  const uploadFile = async (type: "images" | "pdf" | "videos") => {
+  // Funktion til at uploade filer
+  const uploadFile = async (type: Attachment["type"]) => {
     try {
       let result;
       if (type === "pdf") {
@@ -70,13 +98,12 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
         });
       }
 
-      if (result.canceled) {
+      if (result?.canceled || !result.assets) {
         return;
       }
 
       const uri = result.assets[0].uri;
       const fileName = uri.split("/").pop() || `file_${Date.now()}`;
-
       const folderRef = ref(
         storage,
         `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
@@ -91,7 +118,7 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
       await saveToFirestore(type, fileName, downloadURL);
 
       Alert.alert("Upload Successful", `${fileName} uploaded to ${type}`);
-      fetchAttachments(type); // Opdater listen over vedhæftede filer
+      fetchAttachments(type);
     } catch (error) {
       console.error("Error uploading file:", error);
       Alert.alert("Upload Failed", "An error occurred during upload.");
@@ -100,7 +127,8 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
     }
   };
 
-  const fetchAttachments = async (type: "images" | "pdf" | "videos") => {
+  // Funktion til at hente vedhæftede filer
+  const fetchAttachments = async (type: Attachment["type"]) => {
     try {
       setIsLoading(true);
 
@@ -108,7 +136,6 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
         storage,
         `users/${userId}/projects/${projectId}/data/attachments/${type}`
       );
-
       const { items } = await listAll(folderRef);
       const urls = await Promise.all(items.map((item) => getDownloadURL(item)));
 
@@ -127,43 +154,28 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
     }
   };
 
-  const openAttachment = async (item: any) => {
-    try {
-      if (item.url.startsWith("http")) {
-        Linking.openURL(item.url);
-      } else {
-        const downloadPath = `${FileSystem.documentDirectory}${item.url
-          .split("/")
-          .pop()}`;
-        const { uri } = await FileSystem.downloadAsync(item.url, downloadPath);
-        await Linking.openURL(uri);
-      }
-    } catch (error) {
-      console.error("Error opening attachment:", error);
-      Alert.alert("Open Failed", "An error occurred while opening the file.");
+  // Render en enkelt vedhæftelse
+  const renderAttachment = ({ item }: { item: Attachment }) => {
+    if (item.type === "videos") {
+      return <VideoAttachment url={item.url} />;
     }
-  };
 
-  const renderAttachment = ({ item }: { item: any }) => (
-    <Pressable onPress={() => openAttachment(item)} style={styles.attachment}>
-      {item.type === "images" ? (
-        <Image source={{ uri: item.url }} style={styles.attachmentImage} />
-      ) : item.type === "videos" ? (
-        <Video
-          source={{ uri: item.url }}
-          style={styles.attachmentImage}
-          useNativeControls
-          resizeMode="contain"
-          isLooping
-        />
-      ) : (
-        <Image
-          source={require("@/assets/images/pdf_icon.png")}
-          style={styles.attachmentImage}
-        />
-      )}
-    </Pressable>
-  );
+    return (
+      <Pressable
+        onPress={() => Linking.openURL(item.url)}
+        style={styles.attachment}
+      >
+        {item.type === "images" ? (
+          <Image source={{ uri: item.url }} style={styles.attachmentImage} />
+        ) : (
+          <Image
+            source={require("@/assets/images/pdf_icon.png")}
+            style={styles.attachmentImage}
+          />
+        )}
+      </Pressable>
+    );
+  };
 
   useEffect(() => {
     fetchAttachments("images");
@@ -174,7 +186,6 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Manage Attachments</Text>
-
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.uploadButton}
@@ -195,29 +206,40 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
           <Text style={styles.buttonText}>Upload Video</Text>
         </TouchableOpacity>
       </View>
-
-      {isLoading && (
-        <ActivityIndicator
-          size="large"
-          color="#007AFF"
-          style={styles.loadingIndicator}
-        />
-      )}
-
+      {isLoading && <ActivityIndicator size="large" />}
       <FlatList
         data={attachments}
         keyExtractor={(item) => item.url}
         renderItem={renderAttachment}
         numColumns={3}
-        style={styles.attachmentList}
       />
-
-      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.buttonText}>Close</Text>
+      <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+        <Text style={styles.closeText}>Close</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
- 
+  container: { flex: 1, padding: 20 },
+  header: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  uploadButton: {
+    flex: 1,
+    backgroundColor: "#007AFF",
+    padding: 10,
+    margin: 5,
+    borderRadius: 8,
+  },
+  buttonText: { color: "#FFF", textAlign: "center" },
+  attachment: { margin: 5 },
+  attachmentImage: { width: 100, height: 100 },
+  closeButton: { marginTop: 10, padding: 10, backgroundColor: "#FF3B30" },
+  closeText: { color: "#FFF", textAlign: "center" },
+});
+
+export default InfoPanelAttachment;
