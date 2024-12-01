@@ -173,12 +173,18 @@ const InfoPanelAttachment: React.FC<Props> = ({
   };
 
   // Funktion til at slette en fil
-  const deleteFile = async (type: Attachment["type"], fileName: string) => {
+  const deleteFile = async (type: Attachment["type"], fileUrl: string) => {
     try {
-      const fileRef = ref(
-        storage,
-        `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
-      );
+      // Ekstraher den relative sti fra URL'en
+      const decodedUrl = decodeURIComponent(fileUrl);
+      const basePath = `users/${userId}/projects/${projectId}/data/attachments/${type}/`;
+      const filePath = decodedUrl.split(basePath)[1]?.split("?")[0]; // Få filnavnet uden query-parametre
+
+      if (!filePath) {
+        throw new Error("File path could not be determined.");
+      }
+
+      const fileRef = ref(storage, `${basePath}${filePath}`);
 
       // Slet filen fra Firebase Storage
       await deleteObject(fileRef);
@@ -195,8 +201,8 @@ const InfoPanelAttachment: React.FC<Props> = ({
           },
         };
 
-        // Fjern den specifikke fil
-        delete updatedAttachments[type][fileName];
+        // Fjern den specifikke fil fra metadata
+        delete updatedAttachments[type][filePath];
 
         await setDoc(
           docRef,
@@ -208,10 +214,13 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
         // Opdater state for at reflektere ændringerne
         setAttachments((prev) =>
-          prev.filter((attachment) => attachment.url !== fileName)
+          prev.filter((attachment) => attachment.url !== fileUrl)
         );
 
-        Alert.alert("Delete Successful", `${fileName} has been deleted.`);
+        // Opdater vedhæftede filer (henter den nyeste liste)
+        fetchAttachments(type);
+
+        Alert.alert("Delete Successful", `The file has been deleted.`);
       }
     } catch (error) {
       console.error("Error deleting file:", error);
