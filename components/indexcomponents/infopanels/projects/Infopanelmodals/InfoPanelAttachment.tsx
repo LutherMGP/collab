@@ -15,10 +15,16 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  listAll,
+  deleteObject,
+} from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // Definer typer for Props og data
 type Props = {
@@ -64,12 +70,24 @@ const InfoPanelAttachment: React.FC<Props> = ({
   ) => {
     try {
       const docRef = doc(database, `users/${userId}/projects/${projectId}`);
+      const currentDoc = await getDoc(docRef); // Brug getDoc i stedet for get()
+      const currentAttachments = currentDoc.exists()
+        ? currentDoc.data().attachments || {}
+        : {};
+
+      // Opdater attachments med nye data
+      const updatedAttachments = {
+        ...currentAttachments,
+        [type]: {
+          ...currentAttachments[type],
+          [fileName]: url,
+        },
+      };
+
       await setDoc(
         docRef,
         {
-          attachments: {
-            [type]: { [fileName]: url },
-          },
+          attachments: updatedAttachments,
         },
         { merge: true }
       );
@@ -154,26 +172,89 @@ const InfoPanelAttachment: React.FC<Props> = ({
     }
   };
 
+  // Funktion til at slette en fil
+  const deleteFile = async (type: Attachment["type"], fileName: string) => {
+    try {
+      const fileRef = ref(
+        storage,
+        `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
+      );
+
+      // Slet filen fra Firebase Storage
+      await deleteObject(fileRef);
+
+      // Fjern filens metadata fra Firestore
+      const docRef = doc(database, `users/${userId}/projects/${projectId}`);
+      const currentDoc = await getDoc(docRef);
+      if (currentDoc.exists()) {
+        const currentAttachments = currentDoc.data().attachments || {};
+        const updatedAttachments = {
+          ...currentAttachments,
+          [type]: {
+            ...currentAttachments[type],
+          },
+        };
+
+        // Fjern den specifikke fil
+        delete updatedAttachments[type][fileName];
+
+        await setDoc(
+          docRef,
+          {
+            attachments: updatedAttachments,
+          },
+          { merge: true }
+        );
+
+        // Opdater state for at reflektere ændringerne
+        setAttachments((prev) =>
+          prev.filter((attachment) => attachment.url !== fileName)
+        );
+
+        Alert.alert("Delete Successful", `${fileName} has been deleted.`);
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      Alert.alert(
+        "Delete Failed",
+        "An error occurred while deleting the file."
+      );
+    }
+  };
+
   // Render en enkelt vedhæftelse
   const renderAttachment = ({ item }: { item: Attachment }) => {
-    if (item.type === "videos") {
-      return <VideoAttachment url={item.url} />;
-    }
+    const fileName = item.url.split("/").pop() || ""; // Ekstraher filnavnet fra URL'en
 
     return (
-      <Pressable
-        onPress={() => Linking.openURL(item.url)}
-        style={styles.attachment}
-      >
-        {item.type === "images" ? (
-          <Image source={{ uri: item.url }} style={styles.attachmentImage} />
+      <View style={styles.attachmentContainer}>
+        {item.type === "videos" ? (
+          <VideoAttachment url={item.url} />
         ) : (
-          <Image
-            source={require("@/assets/images/pdf_icon.png")}
-            style={styles.attachmentImage}
-          />
+          <Pressable
+            onPress={() => Linking.openURL(item.url)}
+            style={styles.attachment}
+          >
+            {item.type === "images" ? (
+              <Image
+                source={{ uri: item.url }}
+                style={styles.attachmentImage}
+              />
+            ) : (
+              <Image
+                source={require("@/assets/images/pdf_icon.png")}
+                style={styles.attachmentImage}
+              />
+            )}
+          </Pressable>
         )}
-      </Pressable>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => deleteFile(item.type, fileName)}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -240,6 +321,21 @@ const styles = StyleSheet.create({
   attachmentImage: { width: 70, height: 70 },
   closeButton: { marginTop: 10, padding: 10, backgroundColor: "#FF3B30" },
   closeText: { color: "#FFF", textAlign: "center" },
+  attachmentContainer: {
+    margin: 5,
+    alignItems: "center",
+  },
+  deleteButton: {
+    marginTop: 5,
+    padding: 5,
+    backgroundColor: "#FF3B30",
+    borderRadius: 4,
+  },
+  deleteText: {
+    color: "#FFF",
+    fontSize: 12,
+    textAlign: "center",
+  },
 });
 
 export default InfoPanelAttachment;
