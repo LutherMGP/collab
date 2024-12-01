@@ -4,13 +4,11 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  Button,
   Alert,
   FlatList,
   Pressable,
   Image,
   ActivityIndicator,
-  Linking,
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
@@ -18,7 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
-import { Video, ResizeMode } from "expo-av";
+import { Video } from "expo-video";
 import * as FileSystem from "expo-file-system";
 import { doc, setDoc } from "firebase/firestore";
 
@@ -155,7 +153,7 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
           source={{ uri: item.url }}
           style={styles.attachmentImage}
           useNativeControls
-          resizeMode={ResizeMode.CONTAIN}
+          resizeMode="contain"
           isLooping
         />
       ) : (
@@ -222,60 +220,4 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9F9F9",
-    padding: 20,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  uploadButton: {
-    flex: 1,
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 5,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  attachmentList: {
-    marginTop: 10,
-  },
-  attachment: {
-    margin: 5,
-    alignItems: "center",
-  },
-  attachmentImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    backgroundColor: "#EAEAEA",
-  },
-  loadingIndicator: {
-    marginVertical: 20,
-  },
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: "#FF3B30",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-});
-
-export default InfoPanelAttachment;
+ 
