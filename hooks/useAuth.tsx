@@ -1,132 +1,152 @@
 // @/hooks/useAuth.tsx
 
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  Alert,
-  FlatList,
-  Pressable,
-  Image,
-} from "react-native";
-import * as DocumentPicker from "expo-document-picker";
-import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  createContext,
+  ReactNode,
+} from "react";
+import { useRouter } from "expo-router";
+import { auth, database } from "@/firebaseConfig";
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import * as SecureStore from "expo-secure-store";
+import * as AppleAuthentication from "expo-apple-authentication";
 
-type Props = {
-  userId: string;
-  projectId: string;
-  onClose: () => void;
+type AuthContextType = {
+  user: string | null;
+  userRole: string | null;
+  setUser: React.Dispatch<React.SetStateAction<string | null>>;
+  setUserRole: React.Dispatch<React.SetStateAction<string | null>>;
+  signInWithApple: () => Promise<void>;
+  signOut: () => Promise<void>;
+  updateUserProfile: (userId: string, profileData: any) => Promise<void>;
 };
 
-const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
-  const [attachments, setAttachments] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  userRole: null,
+  setUser: () => {},
+  setUserRole: () => {},
+  signInWithApple: async () => {},
+  signOut: async () => {},
+  updateUserProfile: async () => {},
+});
 
-  const uploadFile = async (type: "images" | "pdf" | "videos") => {
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+// Hjælpefunktion til at håndtere brugerroller
+export const useRole = () => {
+  const { userRole } = useAuth();
+
+  const isDesigner = userRole === "Designer";
+  const isAdmin = userRole === "Admin";
+
+  return { isDesigner, isAdmin };
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const [user, setUser] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkStoredUser = async () => {
+      const storedUserId = await SecureStore.getItemAsync("userId");
+
+      if (storedUserId) {
+        setUser(storedUserId);
+        const userDoc = await getDoc(doc(database, "users", storedUserId));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
+          router.replace("/(app)/(tabs)");
+        }
+      } else {
+        router.replace("/(app)/(auth)/login");
+      }
+    };
+
+    checkStoredUser();
+  }, []);
+
+  const signInWithApple = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type:
-          type === "images"
-            ? "image/*"
-            : type === "pdf"
-            ? "application/pdf"
-            : "video/*",
+      const appleAuth = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
       });
 
-      if (result.type === "success") {
-        const { uri, name } = result;
-        const fileName = name || `file_${Date.now()}`;
-        const folderRef = ref(
-          storage,
-          `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
-        );
+      if (appleAuth) {
+        const userId = appleAuth.user;
+        const userEmail =
+          appleAuth.email ||
+          (await getDoc(doc(database, "users", userId))).data()?.email ||
+          "generated_email@domain.com";
 
-        setIsLoading(true);
+        await SecureStore.setItemAsync("userId", userId);
 
-        const response = await fetch(uri);
-        const fileBlob = await response.blob();
-        await uploadBytes(folderRef, fileBlob);
+        const userDocRef = doc(database, "users", userId);
+        const userDoc = await getDoc(userDocRef);
 
-        Alert.alert("Upload Successful", `${fileName} uploaded to ${type}`);
-        fetchAttachments(type); // Refresh the attachments list
+        if (!userDoc.exists()) {
+          await setDoc(userDocRef, {
+            email: userEmail,
+            name: appleAuth.fullName?.givenName || "Bruger",
+            role: "Bruger",
+            createdAt: new Date().toISOString(),
+          });
+        }
+
+        setUser(userId);
+        setUserRole("Bruger");
+        router.replace("/(app)/(tabs)");
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
-      Alert.alert("Upload Failed", "An error occurred during upload.");
-    } finally {
-      setIsLoading(false);
+      console.error("Fejl ved Apple-login:", error);
     }
   };
 
-  const fetchAttachments = async (type: "images" | "pdf" | "videos") => {
+  const signOut = async () => {
     try {
-      setIsLoading(true);
-
-      const folderRef = ref(
-        storage,
-        `users/${userId}/projects/${projectId}/data/attachments/${type}`
-      );
-
-      const { items } = await listAll(folderRef);
-      const urls = await Promise.all(items.map((item) => getDownloadURL(item)));
-
-      setAttachments((prev) => [
-        ...prev.filter((att) => att.type !== type),
-        ...urls.map((url) => ({ type, url })),
-      ]);
+      await firebaseSignOut(auth);
+      setUser(null);
+      setUserRole(null);
+      await SecureStore.deleteItemAsync("userId");
+      router.replace("/(app)/(auth)/login");
     } catch (error) {
-      console.error("Error fetching attachments:", error);
-      Alert.alert(
-        "Fetch Failed",
-        "An error occurred while fetching attachments."
-      );
-    } finally {
-      setIsLoading(false);
+      console.error("Fejl ved logout:", error);
     }
   };
 
-  const renderAttachment = ({ item }: { item: any }) => (
-    <Pressable onPress={() => Alert.alert("Attachment", item.url)}>
-      {item.type === "images" ? (
-        <Image
-          source={{ uri: item.url }}
-          style={{ width: 100, height: 100, margin: 5 }}
-        />
-      ) : (
-        <Text style={{ margin: 5 }}>
-          {item.type === "pdf" ? "PDF" : "Video"}
-        </Text>
-      )}
-    </Pressable>
-  );
+  const updateUserProfile = async (userId: string, profileData: any) => {
+    try {
+      await setDoc(doc(database, "users", userId), profileData, {
+        merge: true,
+      });
+      console.log("Brugeroplysninger opdateret!");
+    } catch (error) {
+      console.error("Fejl ved opdatering af brugeroplysninger:", error);
+    }
+  };
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
-        Manage Attachments
-      </Text>
-
-      <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-        <Button title="Upload Image" onPress={() => uploadFile("images")} />
-        <Button title="Upload PDF" onPress={() => uploadFile("pdf")} />
-        <Button title="Upload Video" onPress={() => uploadFile("videos")} />
-      </View>
-
-      {isLoading && <Text>Loading...</Text>}
-
-      <FlatList
-        data={attachments}
-        keyExtractor={(item) => item.url}
-        renderItem={renderAttachment}
-        numColumns={3}
-        style={{ marginTop: 20 }}
-      />
-
-      <Button title="Close" onPress={onClose} />
-    </View>
+    <AuthContext.Provider
+      value={{
+        user,
+        userRole,
+        setUser,
+        setUserRole,
+        signInWithApple,
+        signOut,
+        updateUserProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-};
-
-export default InfoPanelAttachment;
+}
