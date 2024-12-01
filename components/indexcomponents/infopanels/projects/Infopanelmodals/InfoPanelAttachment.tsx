@@ -15,9 +15,10 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
+import { storage, database } from "@/firebaseConfig";
 import { Video, ResizeMode } from "expo-av";
 import * as FileSystem from "expo-file-system";
+import { doc, setDoc } from "firebase/firestore";
 
 type Props = {
   userId: string;
@@ -29,20 +30,26 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        alert(
-          "Beklager, vi har brug for adgang til dit mediebibliotek for at denne funktion kan fungere."
-        );
-      }
-    })();
-    fetchAttachments("images");
-    fetchAttachments("pdf");
-    fetchAttachments("videos");
-  }, []);
+  const saveToFirestore = async (
+    type: string,
+    fileName: string,
+    url: string
+  ) => {
+    try {
+      const docRef = doc(database, `users/${userId}/projects/${projectId}`);
+      await setDoc(
+        docRef,
+        {
+          attachments: {
+            [type]: { [fileName]: url },
+          },
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Error saving to Firestore:", error);
+    }
+  };
 
   const uploadFile = async (type: "images" | "pdf" | "videos") => {
     try {
@@ -80,6 +87,8 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
       const response = await fetch(uri);
       const fileBlob = await response.blob();
       await uploadBytes(folderRef, fileBlob);
+      const downloadURL = await getDownloadURL(folderRef);
+      await saveToFirestore(type, fileName, downloadURL);
 
       Alert.alert("Upload Successful", `${fileName} uploaded to ${type}`);
       fetchAttachments(type); // Opdater listen over vedhæftede filer
@@ -120,17 +129,18 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
 
   const openAttachment = async (item: any) => {
     try {
-      setIsLoading(true);
-      const downloadPath = `${FileSystem.documentDirectory}${item.url
-        .split("/")
-        .pop()}`;
-      const { uri } = await FileSystem.downloadAsync(item.url, downloadPath);
-      await Linking.openURL(uri);
+      if (item.url.startsWith("http")) {
+        Linking.openURL(item.url);
+      } else {
+        const downloadPath = `${FileSystem.documentDirectory}${item.url
+          .split("/")
+          .pop()}`;
+        const { uri } = await FileSystem.downloadAsync(item.url, downloadPath);
+        await Linking.openURL(uri);
+      }
     } catch (error) {
       console.error("Error opening attachment:", error);
       Alert.alert("Open Failed", "An error occurred while opening the file.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -154,6 +164,12 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
       )}
     </Pressable>
   );
+
+  useEffect(() => {
+    fetchAttachments("images");
+    fetchAttachments("pdf");
+    fetchAttachments("videos");
+  }, []);
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
