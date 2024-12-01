@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF5.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelF5.tsx
 
 import React from "react";
 import InfoPanelBase from "./InfoPanelBase";

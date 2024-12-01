@@ -34,7 +34,9 @@ export const styles = StyleSheet.create({
     width: "94%",
     height: "98.7%",
     borderRadius: 10,
-    justifyContent: "center",
+    justifyContent: "flex-start", // Placér indholdet øverst
+    alignItems: "center", // Centrer indholdet vandret
+    // paddingTop: 5, // Giv afstand fra toppen
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
@@ -51,7 +53,7 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
-  profileImageContainer: {
+  projectImageContainer: {
     position: "absolute",
     top: 5,
     left: 5,
@@ -60,40 +62,33 @@ export const styles = StyleSheet.create({
     width: 50, // Diameter
     height: 50, // Diameter
     borderRadius: 25, // Halv diameter for at bevare det runde udseende
-    overflow: "hidden", // Sikrer, at billedet forbliver inden for grænserne
+    //overflow: "hidden", // Sikrer, at billedet forbliver inden for grænserne
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  profileImage: {
+  projectImage: {
     width: "100%", // Fylder hele containeren
     height: "100%", // Fylder hele containeren
     borderRadius: 25, // Halv diameter for at gøre det rundt
-    resizeMode: "cover",
-  },
-  overlayContainer: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.7)",
-  },
-  overlayImage: {
-    width: "100%",
-    height: "100%",
     resizeMode: "cover",
   },
   priceTag: {
     position: "absolute",
     bottom: 5,
     right: 5,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   priceText: {
     fontSize: 14,
@@ -104,12 +99,16 @@ export const styles = StyleSheet.create({
     position: "absolute",
     top: 5,
     right: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderRadius: 15,
-    padding: 5,
-    zIndex: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   editIconContainer: {
     position: "absolute", // Absolut position for placering i nederste venstre hjørne
@@ -164,8 +163,9 @@ export const styles = StyleSheet.create({
     width: "88%",
     height: "100%",
     borderRadius: 10,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    paddingTop: 0,
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     position: "absolute",
     right: 0,
@@ -249,10 +249,11 @@ export const styles = StyleSheet.create({
   },
   F3: {
     width: "93%",
-    height: "96%",
+    height: "96.5%",
     borderRadius: 10,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    // paddingTop: 10,
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     position: "absolute",
     bottom: 0,
@@ -281,8 +282,9 @@ export const styles = StyleSheet.create({
   F5: {
     width: "93%",
     height: "100%",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    // paddingTop: 5,
     position: "absolute",
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     padding: 0,
@@ -301,9 +303,28 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
+  textTag: {
+    position: "absolute", // Placer den relativt til containeren
+    top: 5, // Placering tæt på toppen
+    width: "auto", // Fyld hele bredden
+    alignItems: "center", // Centrerer horisontalt
+    zIndex: 1, // Sørger for, at teksten altid er øverst
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 4,
+    paddingTop: 2,
+    paddingBottom: 2,
+    justifyContent: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   text: {
-    fontSize: 14,
-    textAlign: "center",
+    fontSize: 10,
+    textAlign: "center", // Centrer teksten vandret
+    color: "#000", // Tilføj farve for synlighed
   },
   loadingOverlay: {
     position: "absolute",
@@ -429,6 +450,66 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 3, // Tilføj skygge for et bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  commentButtonf8: {
+    position: "absolute", // Gør det muligt at placere knappen præcist
+    bottom: 5, // Juster afhængigt af ønsket placering
+    left: 5, // Juster afhængigt af ønsket placering
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  commentButtonf5: {
+    position: "absolute", // Gør det muligt at placere knappen præcist
+    bottom: 5, // Juster afhængigt af ønsket placering
+    left: 5, // Juster afhængigt af ønsket placering
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  commentButtonf3: {
+    position: "absolute", // Gør det muligt at placere knappen præcist
+    bottom: 5, // Juster afhængigt af ønsket placering
+    left: 5, // Juster afhængigt af ønsket placering
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  commentButtonf2: {
+    position: "absolute", // Gør det muligt at placere knappen præcist
+    bottom: 6, // Juster afhængigt af ønsket placering
+    left: 17, // Juster afhængigt af ønsket placering
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

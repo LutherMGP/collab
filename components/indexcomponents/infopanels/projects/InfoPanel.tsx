@@ -20,13 +20,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
-import InfoPanelF8 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF8";
-import InfoPanelF5 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF5";
-import InfoPanelF3 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF3";
-import InfoPanelF2 from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelF2";
-import InfoPanelNameComment from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelNameComment";
-import InfoPanelPrize from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelPrize";
-import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/infopanelmodals/InfoPanelProjectImage";
+import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelF8";
+import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelF5";
+import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelF3";
+import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelF2";
+import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelNameComment";
+import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelPrize";
+import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelProjectImage";
+import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelCommentModal";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
 
@@ -114,6 +115,10 @@ const InfoPanel = ({
   const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] =
     useState(false);
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<
+    "f8" | "f5" | "f3" | "f2" | null
+  >(null);
   const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
 
   // Funktion til at togglere Edit-tilstand
@@ -399,6 +404,16 @@ const InfoPanel = ({
     refreshProjectData(); // Opdater data, inkl. billed-URL
   };
 
+  const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
+    setActiveCategory(category);
+    setIsCommentModalVisible(true);
+  };
+
+  const handleCloseCommentModal = () => {
+    setActiveCategory(null);
+    setIsCommentModalVisible(false);
+  };
+
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
@@ -435,6 +450,71 @@ const InfoPanel = ({
     }
   };
 
+  // Funktion til at skifte status fra og til published
+  const handleStatusToggle = async () => {
+    try {
+      if (!userId || !projectData.id) {
+        throw new Error("Bruger-ID eller projekt-ID mangler.");
+      }
+
+      const isCurrentlyPublished = projectData.status === "Published";
+      const newStatus = isCurrentlyPublished ? "Project" : "Published";
+
+      // Bekræftelse før statusændring
+      Alert.alert(
+        isCurrentlyPublished ? "Fjern Publicering" : "Bekræft Publicering",
+        isCurrentlyPublished
+          ? "Vil du ændre status til 'Project'? Dette vil gøre projektet privat igen."
+          : "Vil du ændre status til 'Published'? Projektet bliver synligt for andre.",
+        [
+          {
+            text: "Annuller",
+            style: "cancel",
+          },
+          {
+            text: isCurrentlyPublished ? "Gør Privat" : "Publicer",
+            style: "default",
+            onPress: async () => {
+              try {
+                const projectDocRef = doc(
+                  database,
+                  "users",
+                  userId,
+                  "projects",
+                  projectData.id
+                );
+
+                await setDoc(
+                  projectDocRef,
+                  { status: newStatus },
+                  { merge: true }
+                );
+
+                Alert.alert(
+                  "Status Opdateret",
+                  newStatus === "Published"
+                    ? "Projektet er nu publiceret."
+                    : "Projektet er nu tilbage som kladde."
+                );
+
+                setProjectData((prev) => ({ ...prev, status: newStatus })); // Opdater lokalt
+              } catch (error) {
+                console.error("Fejl ved opdatering af status:", error);
+                Alert.alert(
+                  "Fejl",
+                  "Kunne ikke opdatere status. Prøv igen senere."
+                );
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Fejl ved skift af status:", error);
+      Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
@@ -466,22 +546,24 @@ const InfoPanel = ({
           onLongPress={handleLongPressF8} // Longpress forbliver uændret
           accessibilityLabel="F8 Button"
         >
-          {f8 ? (
-            <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />
-          ) : (
+          {/* Vis billede, hvis det er tilgængeligt */}
+          {f8 && <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />}
+
+          {/* Tekst i f8 toppen */}
+          <View style={baseStyles.textTag}>
             <Text style={baseStyles.text}>Specification</Text>
-          )}
+          </View>
 
           {/* Projektbilledet i det runde felt med onPress */}
           {projectImage && (
             <Pressable
-              style={baseStyles.profileImageContainer}
+              style={baseStyles.projectImageContainer}
               onPress={() => handlePress("Project Image")}
               accessibilityLabel="Project Image Button"
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.profileImage} // Tilpas eventuelt denne style
+                style={baseStyles.projectImage} // Tilpas eventuelt denne style
               />
             </Pressable>
           )}
@@ -495,6 +577,7 @@ const InfoPanel = ({
             <Text style={baseStyles.priceText}>{price}</Text>
           </Pressable>
 
+          {/* Delete-knap */}
           {config.showDelete && (
             <Pressable
               style={baseStyles.deleteIconContainer}
@@ -505,32 +588,13 @@ const InfoPanel = ({
             </Pressable>
           )}
 
-          {config.showEdit && (
-            <Pressable
-              style={[
-                baseStyles.editIconContainer,
-                isEditEnabled
-                  ? baseStyles.editEnabled
-                  : baseStyles.editDisabled,
-              ]}
-              onPress={toggleEdit}
-              accessibilityLabel="Edit Button"
-            >
-              <AntDesign
-                name="edit"
-                size={20}
-                color={isEditEnabled ? "white" : "black"}
-              />
-              <Text
-                style={[
-                  baseStyles.editText,
-                  { color: isEditEnabled ? "white" : "black" },
-                ]}
-              >
-                {isEditEnabled ? "Edit Tændt" : "Edit Slukket"}
-              </Text>
-            </Pressable>
-          )}
+          {/* Comment-knap f8 */}
+          <Pressable
+            style={baseStyles.commentButtonf8}
+            onPress={() => handleOpenCommentModal("f8")}
+          >
+            <AntDesign name="message1" size={20} color="black" />
+          </Pressable>
         </Pressable>
       </View>
 
@@ -545,37 +609,51 @@ const InfoPanel = ({
                 onLongPress={handleLongPressF2}
                 accessibilityLabel="F2 Button"
               >
-                {f2 ? (
+                {/* Vis billede, hvis det er tilgængeligt */}
+                {f2 && (
                   <Image source={{ uri: f2 }} style={baseStyles.f2CoverImage} />
-                ) : (
-                  <Text style={baseStyles.text}>Agreement</Text>
                 )}
+
+                {/* Tekst i f2 toppen */}
+                <View style={baseStyles.textTag}>
+                  <Text style={baseStyles.text}>Agreement</Text>
+                </View>
+              </Pressable>
+
+              {/* Comment-knap f2 */}
+              <Pressable
+                style={baseStyles.commentButtonf2}
+                onPress={() => handleOpenCommentModal("f2")}
+              >
+                <AntDesign name="message1" size={20} color="black" />
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={handleFavoriteToggle}
-                  accessibilityLabel="Favorite Button"
+                  onPress={toggleEdit} // Brug samme logik som tidligere
+                  accessibilityLabel="Edit Button"
                 >
                   <AntDesign
-                    name={isFavorite ? "heart" : "hearto"}
+                    name="edit" // Ikon ændret til "edit"
                     size={24}
-                    color={isFavorite ? "red" : "black"}
+                    color={isEditEnabled ? "green" : "black"} // Dynamisk farve afhængigt af Edit-tilstanden
                   />
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handlePurchase}
-                  accessibilityLabel="Purchase Button"
+                  onPress={() => handleStatusToggle()} // Kalder funktionen for at skifte status
+                  accessibilityLabel="Status Toggle Button"
                 >
-                  <MaterialIcons
-                    name="join-left"
-                    size={36}
-                    color={toBePurchased ? "green" : "black"}
+                  <AntDesign
+                    name={
+                      projectData.status === "Published" ? "unlock" : "lock"
+                    } // Dynamisk ikon
+                    size={24}
+                    color={projectData.status === "Published" ? "green" : "red"} // Dynamisk farve
                   />
                 </Pressable>
               </View>
@@ -588,11 +666,23 @@ const InfoPanel = ({
               onLongPress={handleLongPressF3}
               accessibilityLabel="F3 Button"
             >
-              {f3 ? (
+              {/* Vis billede, hvis det er tilgængeligt */}
+              {f3 && (
                 <Image source={{ uri: f3 }} style={baseStyles.f3CoverImage} />
-              ) : (
-                <Text style={baseStyles.text}>Sustainability</Text>
               )}
+
+              {/* Tekst i f3 toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Sustainability</Text>
+              </View>
+
+              {/* Comment-knap f3 */}
+              <Pressable
+                style={baseStyles.commentButtonf3}
+                onPress={() => handleOpenCommentModal("f3")}
+              >
+                <AntDesign name="message1" size={20} color="black" />
+              </Pressable>
             </Pressable>
           </View>
         </View>
@@ -603,11 +693,23 @@ const InfoPanel = ({
             onLongPress={handleLongPressF5}
             accessibilityLabel="F5 Button"
           >
-            {f5 ? (
+            {/* Vis billede, hvis det er tilgængeligt */}
+            {f5 && (
               <Image source={{ uri: f5 }} style={baseStyles.f5CoverImage} />
-            ) : (
-              <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
+
+            {/* Tekst i f5 toppen */}
+            <View style={baseStyles.textTag}>
+              <Text style={baseStyles.text}>Terms & Condition</Text>
+            </View>
+
+            {/* Comment-knap f5 */}
+            <Pressable
+              style={baseStyles.commentButtonf5}
+              onPress={() => handleOpenCommentModal("f5")}
+            >
+              <AntDesign name="message1" size={20} color="black" />
+            </Pressable>
           </Pressable>
         </View>
       </View>
@@ -747,6 +849,34 @@ const InfoPanel = ({
           </View>
         </View>
       </Modal>
+
+      {/* Modal-komponenten for comments */}
+      {activeCategory && (
+        <Modal
+          visible={isCommentModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={handleCloseCommentModal}
+        >
+          <InfoPanelCommentModal
+            projectId={projectData.id}
+            userId={userId || ""}
+            category={activeCategory} // Dette er nu sikkert
+            categoryName={
+              activeCategory === "f8"
+                ? "Specification"
+                : activeCategory === "f5"
+                ? "Terms & Conditions"
+                : activeCategory === "f3"
+                ? "Sustainability Report"
+                : "Partnership Agreement"
+            }
+            isVisible={isCommentModalVisible}
+            onClose={handleCloseCommentModal}
+            isEditable={isEditEnabled}
+          />
+        </Modal>
+      )}
 
       <View
         style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]}

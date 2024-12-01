@@ -2,7 +2,7 @@
 
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { ThemedText } from "@/components/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 
 export default function TemplateScreen() {
   return (

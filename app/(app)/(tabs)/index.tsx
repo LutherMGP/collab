@@ -16,7 +16,7 @@ import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
-import InfoPanelProducts from "@/components/indexcomponents/infopanels/InfoPanelProducts";
+import InfoPanelProducts from "@/components/indexcomponents/infopanels/products/InfoPanelProducts";
 
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
