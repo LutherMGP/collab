@@ -27,6 +27,7 @@ import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopa
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelNameComment";
 import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelPrize";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelProjectImage";
+import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelCommentModal";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
 
@@ -114,6 +115,10 @@ const InfoPanel = ({
   const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] =
     useState(false);
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<
+    "f8" | "f5" | "f3" | "f2" | null
+  >(null);
   const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
 
   // Funktion til at togglere Edit-tilstand
@@ -399,6 +404,16 @@ const InfoPanel = ({
     refreshProjectData(); // Opdater data, inkl. billed-URL
   };
 
+  const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
+    setActiveCategory(category);
+    setIsCommentModalVisible(true);
+  };
+
+  const handleCloseCommentModal = () => {
+    setActiveCategory(null);
+    setIsCommentModalVisible(false);
+  };
+
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
@@ -531,22 +546,20 @@ const InfoPanel = ({
           onLongPress={handleLongPressF8} // Longpress forbliver uændret
           accessibilityLabel="F8 Button"
         >
-          {f8 ? (
-            <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />
-          ) : (
+          {/* Tekst i toppen */}
+          <View style={baseStyles.textTag}>
             <Text style={baseStyles.text}>Specification</Text>
-          )}
-
+          </View>
           {/* Projektbilledet i det runde felt med onPress */}
           {projectImage && (
             <Pressable
-              style={baseStyles.profileImageContainer}
+              style={baseStyles.projectImageContainer}
               onPress={() => handlePress("Project Image")}
               accessibilityLabel="Project Image Button"
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.profileImage} // Tilpas eventuelt denne style
+                style={baseStyles.projectImage} // Tilpas eventuelt denne style
               />
             </Pressable>
           )}
@@ -560,6 +573,7 @@ const InfoPanel = ({
             <Text style={baseStyles.priceText}>{price}</Text>
           </Pressable>
 
+          {/* Delete-knap */}
           {config.showDelete && (
             <Pressable
               style={baseStyles.deleteIconContainer}
@@ -569,6 +583,14 @@ const InfoPanel = ({
               <AntDesign name="delete" size={20} color="red" />
             </Pressable>
           )}
+
+          {/* Comment-knap f8 */}
+          <Pressable
+            style={baseStyles.commentButtonf8}
+            onPress={() => handleOpenCommentModal("f8")}
+          >
+            <AntDesign name="message1" size={20} color="black" />
+          </Pressable>
         </Pressable>
       </View>
 
@@ -588,6 +610,14 @@ const InfoPanel = ({
                 ) : (
                   <Text style={baseStyles.text}>Agreement</Text>
                 )}
+              </Pressable>
+
+              {/* Comment-knap f2 */}
+              <Pressable
+                style={baseStyles.commentButtonf2}
+                onPress={() => handleOpenCommentModal("f2")}
+              >
+                <AntDesign name="message1" size={20} color="black" />
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
@@ -633,6 +663,14 @@ const InfoPanel = ({
               ) : (
                 <Text style={baseStyles.text}>Sustainability</Text>
               )}
+
+              {/* Comment-knap f3 */}
+              <Pressable
+                style={baseStyles.commentButtonf3}
+                onPress={() => handleOpenCommentModal("f3")}
+              >
+                <AntDesign name="message1" size={20} color="black" />
+              </Pressable>
             </Pressable>
           </View>
         </View>
@@ -648,6 +686,14 @@ const InfoPanel = ({
             ) : (
               <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
+
+            {/* Comment-knap f5 */}
+            <Pressable
+              style={baseStyles.commentButtonf5}
+              onPress={() => handleOpenCommentModal("f5")}
+            >
+              <AntDesign name="message1" size={20} color="black" />
+            </Pressable>
           </Pressable>
         </View>
       </View>
@@ -787,6 +833,34 @@ const InfoPanel = ({
           </View>
         </View>
       </Modal>
+
+      {/* Modal-komponenten for comments */}
+      {activeCategory && (
+        <Modal
+          visible={isCommentModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={handleCloseCommentModal}
+        >
+          <InfoPanelCommentModal
+            projectId={projectData.id}
+            userId={userId || ""}
+            category={activeCategory} // Dette er nu sikkert
+            categoryName={
+              activeCategory === "f8"
+                ? "Specification"
+                : activeCategory === "f5"
+                ? "Terms & Conditions"
+                : activeCategory === "f3"
+                ? "Sustainability Report"
+                : "Partnership Agreement"
+            }
+            isVisible={isCommentModalVisible}
+            onClose={handleCloseCommentModal}
+            isEditable={isEditEnabled}
+          />
+        </Modal>
+      )}
 
       <View
         style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]}
