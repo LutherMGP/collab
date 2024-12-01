@@ -546,10 +546,14 @@ const InfoPanel = ({
           onLongPress={handleLongPressF8} // Longpress forbliver uændret
           accessibilityLabel="F8 Button"
         >
-          {/* Tekst i toppen */}
+          {/* Vis billede, hvis det er tilgængeligt */}
+          {f8 && <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />}
+
+          {/* Tekst i f8 toppen */}
           <View style={baseStyles.textTag}>
             <Text style={baseStyles.text}>Specification</Text>
           </View>
+
           {/* Projektbilledet i det runde felt med onPress */}
           {projectImage && (
             <Pressable
@@ -605,11 +609,15 @@ const InfoPanel = ({
                 onLongPress={handleLongPressF2}
                 accessibilityLabel="F2 Button"
               >
-                {f2 ? (
+                {/* Vis billede, hvis det er tilgængeligt */}
+                {f2 && (
                   <Image source={{ uri: f2 }} style={baseStyles.f2CoverImage} />
-                ) : (
-                  <Text style={baseStyles.text}>Agreement</Text>
                 )}
+
+                {/* Tekst i f2 toppen */}
+                <View style={baseStyles.textTag}>
+                  <Text style={baseStyles.text}>Agreement</Text>
+                </View>
               </Pressable>
 
               {/* Comment-knap f2 */}
@@ -658,11 +666,15 @@ const InfoPanel = ({
               onLongPress={handleLongPressF3}
               accessibilityLabel="F3 Button"
             >
-              {f3 ? (
+              {/* Vis billede, hvis det er tilgængeligt */}
+              {f3 && (
                 <Image source={{ uri: f3 }} style={baseStyles.f3CoverImage} />
-              ) : (
-                <Text style={baseStyles.text}>Sustainability</Text>
               )}
+
+              {/* Tekst i f3 toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Sustainability</Text>
+              </View>
 
               {/* Comment-knap f3 */}
               <Pressable
@@ -681,11 +693,15 @@ const InfoPanel = ({
             onLongPress={handleLongPressF5}
             accessibilityLabel="F5 Button"
           >
-            {f5 ? (
+            {/* Vis billede, hvis det er tilgængeligt */}
+            {f5 && (
               <Image source={{ uri: f5 }} style={baseStyles.f5CoverImage} />
-            ) : (
-              <Text style={baseStyles.text}>Terms & Condition</Text>
             )}
+
+            {/* Tekst i f5 toppen */}
+            <View style={baseStyles.textTag}>
+              <Text style={baseStyles.text}>Terms & Condition</Text>
+            </View>
 
             {/* Comment-knap f5 */}
             <Pressable

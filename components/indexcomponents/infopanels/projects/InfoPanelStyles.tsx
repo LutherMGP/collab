@@ -305,7 +305,7 @@ export const styles = StyleSheet.create({
   },
   textTag: {
     position: "absolute", // Placer den relativt til containeren
-    top: 3, // Placering tæt på toppen
+    top: 5, // Placering tæt på toppen
     width: "auto", // Fyld hele bredden
     alignItems: "center", // Centrerer horisontalt
     zIndex: 1, // Sørger for, at teksten altid er øverst
