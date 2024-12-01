@@ -11,6 +11,8 @@ import {
   Image,
   ActivityIndicator,
   Linking,
+  StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -145,22 +147,22 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
   };
 
   const renderAttachment = ({ item }: { item: any }) => (
-    <Pressable onPress={() => openAttachment(item)}>
+    <Pressable onPress={() => openAttachment(item)} style={styles.attachment}>
       {item.type === "images" ? (
-        <Image
-          source={{ uri: item.url }}
-          style={{ width: 100, height: 100, margin: 5 }}
-        />
+        <Image source={{ uri: item.url }} style={styles.attachmentImage} />
       ) : item.type === "videos" ? (
         <Video
           source={{ uri: item.url }}
-          style={{ width: 100, height: 100, margin: 5 }}
+          style={styles.attachmentImage}
           useNativeControls
           resizeMode={ResizeMode.CONTAIN}
           isLooping
         />
       ) : (
-        <Text style={{ margin: 5 }}>PDF</Text>
+        <Image
+          source={require("@/assets/images/pdf_icon.png")}
+          style={styles.attachmentImage}
+        />
       )}
     </Pressable>
   );
@@ -172,30 +174,108 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
   }, []);
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>
-        Manage Attachments
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>Manage Attachments</Text>
 
-      <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-        <Button title="Upload Image" onPress={() => uploadFile("images")} />
-        <Button title="Upload PDF" onPress={() => uploadFile("pdf")} />
-        <Button title="Upload Video" onPress={() => uploadFile("videos")} />
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          style={styles.uploadButton}
+          onPress={() => uploadFile("images")}
+        >
+          <Text style={styles.buttonText}>Upload Image</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.uploadButton}
+          onPress={() => uploadFile("pdf")}
+        >
+          <Text style={styles.buttonText}>Upload PDF</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.uploadButton}
+          onPress={() => uploadFile("videos")}
+        >
+          <Text style={styles.buttonText}>Upload Video</Text>
+        </TouchableOpacity>
       </View>
 
-      {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
+      {isLoading && (
+        <ActivityIndicator
+          size="large"
+          color="#007AFF"
+          style={styles.loadingIndicator}
+        />
+      )}
 
       <FlatList
         data={attachments}
         keyExtractor={(item) => item.url}
         renderItem={renderAttachment}
         numColumns={3}
-        style={{ marginTop: 20 }}
+        style={styles.attachmentList}
       />
 
-      <Button title="Close" onPress={onClose} />
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Text style={styles.buttonText}>Close</Text>
+      </TouchableOpacity>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F9F9F9",
+    padding: 20,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  uploadButton: {
+    flex: 1,
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    marginHorizontal: 5,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  attachmentList: {
+    marginTop: 10,
+  },
+  attachment: {
+    margin: 5,
+    alignItems: "center",
+  },
+  attachmentImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    backgroundColor: "#EAEAEA",
+  },
+  loadingIndicator: {
+    marginVertical: 20,
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: "#FF3B30",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+});
 
 export default InfoPanelAttachment;
