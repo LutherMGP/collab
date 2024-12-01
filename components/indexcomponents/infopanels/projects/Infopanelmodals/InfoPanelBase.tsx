@@ -15,7 +15,13 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  listAll,
+  deleteObject,
+} from "firebase/storage";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
@@ -42,50 +48,91 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 
   // Fetch existing data from Firestore
   useEffect(() => {
+    console.log("Starting fetchData for category:", category);
+
     const fetchData = async () => {
       try {
-        const docRef = doc(database, "users", userId, "projects", projectId);
-        const snapshot = await getDoc(docRef);
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          const categoryData = data.data?.[category];
-          setPdfURL(categoryData?.pdf || null);
-          setCoverImageURL(categoryData?.coverImage || null);
-          setComment(categoryData?.comment || "");
-        }
+        console.log(
+          `Fetching files for userId: ${userId}, projectId: ${projectId}, category: ${category}`
+        );
+
+        const coverImageRef = ref(
+          storage,
+          `users/${userId}/${projectId}/data/${category}/${category}CoverImage.jpg`
+        );
+        const pdfRef = ref(
+          storage,
+          `users/${userId}/${projectId}/data/${category}/${category}PDF.pdf`
+        );
+
+        const [coverImageURL, pdfURL] = await Promise.all([
+          getDownloadURL(coverImageRef),
+          getDownloadURL(pdfRef),
+        ]);
+
+        setCoverImageURL(coverImageURL);
+        setPdfURL(pdfURL);
+
+        console.log(
+          `Fetched files for ${category}: CoverImage - ${coverImageURL}, PDF - ${pdfURL}`
+        );
       } catch (error) {
-        console.error(`Failed to fetch ${categoryName} data:`, error);
-        Alert.alert("Error", `Could not fetch data for ${categoryName}.`);
+        console.error(`Failed to fetch files for ${category}:`, error);
+        Alert.alert("Error", `Could not fetch files for ${category}.`);
       }
     };
+
     fetchData();
-  }, [projectId, userId, category, categoryName]);
+  }, [userId, projectId, category]);
 
   // Upload a new file to Firebase Storage
-  const uploadFile = async (uri: string, fileName: string): Promise<string> => {
+  const uploadFile = async (
+    uri: string,
+    fileName: string,
+    category: string
+  ) => {
+    if (!uri || !fileName || !category) {
+      console.error("Missing required parameters for uploadFile:", {
+        uri,
+        fileName,
+        category,
+      });
+      throw new Error("Invalid parameters for uploadFile");
+    }
+
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      console.log(`Uploading file: ${fileName} to category: ${category}`);
 
       const fileRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/data/${category}/${fileName}`
+        `users/${userId}/${projectId}/data/${category}/${fileName}`
       );
 
-      const metadata = {
-        customMetadata: {
-          uploadedBy: userId,
-          uploadDate: new Date().toISOString(),
-          category,
-          description: `${categoryName} file`,
-        },
-      };
+      // 1. Hent eksisterende filer
+      const folderRef = ref(
+        storage,
+        `users/${userId}/${projectId}/data/${category}/`
+      );
+      const files = await listAll(folderRef);
 
-      await uploadBytes(fileRef, blob, metadata);
-      const downloadURL = await getDownloadURL(fileRef);
-      return downloadURL;
+      console.log(`Found ${files.items.length} files in category: ${category}`);
+
+      // 2. Slet eksisterende filer
+      for (const item of files.items) {
+        await deleteObject(item);
+        console.log(`Deleted file: ${item.fullPath}`);
+      }
+
+      // 3. Upload den nye fil
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      await uploadBytes(fileRef, blob);
+      console.log(`Uploaded new file: ${fileRef.fullPath}`);
+
+      return await getDownloadURL(fileRef);
     } catch (error) {
-      console.error("File upload failed:", error);
+      console.error("Error in uploadFile:", error);
       throw error;
     }
   };
