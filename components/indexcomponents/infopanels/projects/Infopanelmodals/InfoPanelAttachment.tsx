@@ -10,11 +10,14 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
+import { Video, ResizeMode } from "expo-av";
+import * as FileSystem from "expo-file-system";
 
 type Props = {
   userId: string;
@@ -27,6 +30,15 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    (async () => {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        alert(
+          "Beklager, vi har brug for adgang til dit mediebibliotek for at denne funktion kan fungere."
+        );
+      }
+    })();
     fetchAttachments("images");
     fetchAttachments("pdf");
     fetchAttachments("videos");
@@ -106,17 +118,39 @@ const InfoPanelAttachment = ({ userId, projectId, onClose }: Props) => {
     }
   };
 
+  const openAttachment = async (item: any) => {
+    try {
+      setIsLoading(true);
+      const downloadPath = `${FileSystem.documentDirectory}${item.url
+        .split("/")
+        .pop()}`;
+      const { uri } = await FileSystem.downloadAsync(item.url, downloadPath);
+      await Linking.openURL(uri);
+    } catch (error) {
+      console.error("Error opening attachment:", error);
+      Alert.alert("Open Failed", "An error occurred while opening the file.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderAttachment = ({ item }: { item: any }) => (
-    <Pressable onPress={() => Alert.alert("Attachment", item.url)}>
+    <Pressable onPress={() => openAttachment(item)}>
       {item.type === "images" ? (
         <Image
           source={{ uri: item.url }}
           style={{ width: 100, height: 100, margin: 5 }}
         />
+      ) : item.type === "videos" ? (
+        <Video
+          source={{ uri: item.url }}
+          style={{ width: 100, height: 100, margin: 5 }}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          isLooping
+        />
       ) : (
-        <Text style={{ margin: 5 }}>
-          {item.type === "pdf" ? "PDF" : "Video"}
-        </Text>
+        <Text style={{ margin: 5 }}>PDF</Text>
       )}
     </Pressable>
   );

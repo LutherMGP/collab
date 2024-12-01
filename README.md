@@ -66,6 +66,9 @@ Hvad er næste skridt?
    • npx expo install expo-document-picker
    • npx expo install expo-image-manipulator
    • npm install moment
+   • npx expo install expo-file-system expo-sharing expo-av
+   • npx expo install expo-video expo-file-system
+   • npx expo install expo-video
 
    ## Opstart af iOS Simulator
 
