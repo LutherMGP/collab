@@ -55,50 +55,32 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 
   // Fetch existing data from Firestore
   useEffect(() => {
-    console.log("Running fetchData for category:", category);
-
     const fetchData = async () => {
-      console.log(
-        `Starting fetchData for userId: ${userId}, projectId: ${projectId}, category: ${category}`
-      );
       try {
-        const coverImageRef = ref(
-          storage,
-          `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImage.jpg`
-        );
-        const pdfRef = ref(
-          storage,
-          `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`
-        );
+        const docRef = doc(database, "users", userId, "projects", projectId);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          const categoryData = data.data?.[category]; // Dynamisk hentning
 
-        const coverImagePromise = getDownloadURL(coverImageRef).catch(
-          (error) => {
-            console.warn(
-              `Cover image not found for ${category}:`,
-              error.message
-            );
-            return null;
+          // Tilføj denne kontrol
+          if (!categoryData) {
+            console.warn(`Data for ${category} mangler i Firestore.`);
+            setPdfURL(null);
+            setCoverImageURL(null);
+            setComment("");
+            return; // Stop yderligere behandling, hvis data mangler
           }
-        );
 
-        const pdfPromise = getDownloadURL(pdfRef).catch((error) => {
-          console.warn(`PDF not found for ${category}:`, error.message);
-          return null;
-        });
-
-        const [coverImageURL, pdfURL] = await Promise.all([
-          coverImagePromise,
-          pdfPromise,
-        ]);
-
-        setCoverImageURL(coverImageURL);
-        setPdfURL(pdfURL);
-
-        console.log(
-          `Fetched data for ${category}: CoverImage - ${coverImageURL}, PDF - ${pdfURL}`
-        );
+          // Hvis data findes, opdater state
+          setPdfURL(categoryData.pdf || null);
+          setCoverImageURL(categoryData.coverImage || null);
+          setComment(categoryData.comment || "");
+        } else {
+          console.warn(`Projekt ${projectId} findes ikke i Firestore.`);
+        }
       } catch (error) {
-        console.error(`Failed to fetch files for ${category}:`, error);
+        console.error(`Failed to fetch ${category} data:`, error);
       }
     };
 
