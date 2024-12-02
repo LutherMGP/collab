@@ -430,29 +430,63 @@ const InfoPanel = ({
     if (!userId || !projectData.id) return;
 
     setIsLoading(true);
+
     try {
+      // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
         const data = snapshot.data();
-        setProjectData({
-          ...projectData,
+        setProjectData((prev) => ({
+          ...prev,
           name: data.name || "",
           comment: data.comment || "",
-          f8: data.data?.f8?.coverImage || null, // Brug dynamisk sti fra Firestore
-          f8PDF: data.data?.f8?.pdf || null,
-          f5: data.data?.f5?.coverImage || null,
-          f5PDF: data.data?.f5?.pdf || null,
-          f3: data.data?.f3?.coverImage || null,
-          f3PDF: data.data?.f3?.pdf || null,
-          f2: data.data?.f2?.coverImage || null,
-          f2PDF: data.data?.f2?.pdf || null,
-          status: data.status || "",
-          price: data.price || 0,
-          isFavorite: data.isFavorite || false,
-          toBePurchased: data.toBePurchased || false,
-        });
+          f8: data.data?.f8?.coverImage || prev.f8 || null,
+          f8PDF: data.data?.f8?.pdf || prev.f8PDF || null,
+          f5: data.data?.f5?.coverImage || prev.f5 || null,
+          f5PDF: data.data?.f5?.pdf || prev.f5PDF || null,
+          f3: data.data?.f3?.coverImage || prev.f3 || null,
+          f3PDF: data.data?.f3?.pdf || prev.f3PDF || null,
+          f2: data.data?.f2?.coverImage || prev.f2 || null,
+          f2PDF: data.data?.f2?.pdf || prev.f2PDF || null,
+          status: data.status || prev.status || "",
+          price: data.price || prev.price || 0,
+          isFavorite: data.isFavorite || prev.isFavorite || false,
+          toBePurchased: data.toBePurchased || prev.toBePurchased || false,
+        }));
       }
+
+      // Dynamisk hentning fra Storage, hvis data mangler i Firestore
+      const fetchDataForCategoryFromStorage = async (
+        category: "f8" | "f5" | "f3" | "f2"
+      ) => {
+        try {
+          const coverImageRef = ref(
+            storage,
+            `users/${userId}/projects/${projectData.id}/data/${category}/${category}CoverImage.jpg`
+          );
+          const coverImageUrl = await getDownloadURL(coverImageRef);
+
+          const pdfRef = ref(
+            storage,
+            `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`
+          );
+          const pdfUrl = await getDownloadURL(pdfRef);
+
+          setProjectData((prev) => ({
+            ...prev,
+            [`${category}`]: coverImageUrl,
+            [`${category}PDF`]: pdfUrl,
+          }));
+        } catch (error) {
+          console.warn(`Kunne ikke hente ${category} data fra Storage:`, error);
+        }
+      };
+
+      // Kald hentning fra Storage for alle kategorier
+      ["f8", "f5", "f3", "f2"].forEach((category) => {
+        fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
+      });
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
