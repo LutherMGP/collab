@@ -1,8 +1,8 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelProjectImage.tsx
 
 import React from "react";
-import { View, Text, Pressable, StyleSheet, Image, Dimensions, Alert } from "react-native";
-import ImageUploader from "@/components/indexcomponents/infopanels/ImageUploader";
+import { View, Text, Pressable, StyleSheet, Image, Alert, PixelRatio } from "react-native";
+import ImageUploader from "@/components/indexcomponents/infopanels/ImageUploader"; // Opdater stien hvis nødvendigt
 
 type InfoPanelProjectImageProps = {
   onClose: () => void;
@@ -17,8 +17,17 @@ const InfoPanelProjectImage = ({
   projectId,
   userId,
 }: InfoPanelProjectImageProps) => {
-  const { width } = Dimensions.get("window");
-  const imageSize = width * 0.6; // 60% af skærmens bredde
+  // Dynamisk beregning af billedstørrelse for ca. 1 cm i diameter
+  const cmToDp = (cm: number): number => {
+    const inches = cm / 2.54;
+    const ppi = 400; // Juster PPI efter behov
+    const pixels = inches * ppi;
+    const dp = pixels / PixelRatio.get();
+    return dp;
+  };
+
+  const imageSize = cmToDp(1); // 1 cm i diameter
+  console.log(`Billedstørrelse: ${imageSize} dp`);
 
   const handleUploadSuccess = (downloadURL: string) => {
     console.log("Upload success:", downloadURL);
@@ -26,9 +35,11 @@ const InfoPanelProjectImage = ({
     // Opdater eventuelt parent state eller trigge en genindlæsning af data her
   };
 
-  const handleUploadFailure = (error: any) => {
+  const handleUploadFailure = (error: unknown) => {
     console.error("Upload failure:", error);
-    Alert.alert("Fejl", "Kunne ikke uploade projektbilledet. Prøv igen.");
+    const errorMessage =
+      error instanceof Error ? error.message : "Kunne ikke uploade projektbilledet. Prøv igen.";
+    Alert.alert("Fejl", errorMessage);
   };
 
   return (
@@ -41,7 +52,7 @@ const InfoPanelProjectImage = ({
             source={{ uri: projectImageUri }}
             style={[
               styles.projectImage,
-              { width: imageSize, height: imageSize },
+              { width: imageSize, height: imageSize, borderRadius: imageSize / 2 },
             ]}
           />
         ) : (
@@ -60,10 +71,7 @@ const InfoPanelProjectImage = ({
           compress={0.6} // Specifik komprimering for projekter
         />
 
-        <Pressable
-          style={styles.closeButton}
-          onPress={onClose}
-        >
+        <Pressable style={styles.closeButton} onPress={onClose}>
           <Text style={styles.closeButtonText}>Luk</Text>
         </Pressable>
       </View>
@@ -83,7 +91,8 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "white",
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: "center", // Centrerer indholdet vandret
+    justifyContent: "center", // Centrerer indholdet lodret
   },
   modalTitle: {
     fontSize: 20,
@@ -91,7 +100,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   projectImage: {
-    borderRadius: 10,
     resizeMode: "cover",
     marginBottom: 20,
   },
