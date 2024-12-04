@@ -1,8 +1,8 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelProjectImage.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/projectimage/InfoPanelProjectImage.tsx
 
 import React from "react";
 import { View, Text, Pressable, StyleSheet, Image, Alert, PixelRatio } from "react-native";
-import ImageUploader from "@/components/indexcomponents/infopanels/ImageUploader"; // Opdater stien hvis nødvendigt
+import ImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/ImageUploader"; // Opdater stien hvis nødvendigt
 
 type InfoPanelProjectImageProps = {
   onClose: () => void;
