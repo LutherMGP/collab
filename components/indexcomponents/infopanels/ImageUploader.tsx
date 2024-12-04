@@ -9,6 +9,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  ImageStyle,
+  ViewStyle,
+  TextStyle,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -17,8 +20,8 @@ import { doc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
 
 type ImageUploaderProps = {
-  userId: string;
-  projectId: string;
+  uploadPath: string; // Storage path where the image will be uploaded
+  firestoreDocPath: string; // Firestore document path to update with downloadURL
   initialImageUri?: string | null;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -26,11 +29,18 @@ type ImageUploaderProps = {
   resizeWidth?: number;
   resizeHeight?: number;
   compress?: number;
+  imageSizeDp?: number; // Optional prop for image size
+  containerStyle?: ViewStyle;
+  imageStyle?: ImageStyle;
+  buttonStyle?: ViewStyle;
+  buttonTextStyle?: TextStyle;
+  uploadButtonStyle?: ViewStyle;
+  uploadButtonTextStyle?: TextStyle;
 };
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
-  userId,
-  projectId,
+  uploadPath, // Storage path specified by parent
+  firestoreDocPath, // Firestore document path specified by parent
   initialImageUri = null,
   onUploadSuccess,
   onUploadFailure,
@@ -38,6 +48,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   resizeWidth = 1024,
   resizeHeight,
   compress = 0.7,
+  imageSizeDp = 200, // Default size if not specified
+  containerStyle,
+  imageStyle,
+  buttonStyle,
+  buttonTextStyle,
+  uploadButtonStyle,
+  uploadButtonTextStyle,
 }) => {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(initialImageUri);
   const [isUploading, setIsUploading] = useState(false);
@@ -49,13 +66,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: compress, // Brug komprimeringsniveauet fra props
+        quality: compress, // Use compression level from props
       });
 
       if (!result.canceled) {
         const selectedImage = result.assets[0].uri;
 
-        // Reducer og resize billedet baseret på props
+        // Reduce and resize the image based on props
         const manipulationActions = [];
         if (resizeWidth || resizeHeight) {
           manipulationActions.push({ resize: { width: resizeWidth, height: resizeHeight } });
@@ -73,7 +90,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       console.error("Fejl ved valg af billede:", error);
       Alert.alert("Fejl", "Kunne ikke vælge billede. Prøv igen.");
 
-      // Håndter eventuel fejlhåndtering
+      // Handle any upload failure
       if (onUploadFailure) {
         onUploadFailure(error);
       }
@@ -91,7 +108,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     console.log("Start upload af nyt billede");
 
     try {
-      // Hent billed-blob
+      // Fetch image blob
       console.log("Henter billede URI:", selectedImageUri);
       const response = await fetch(selectedImageUri);
 
@@ -102,16 +119,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       const blob = await response.blob();
       console.log("Billede hentet og konverteret til blob");
 
-      const imageRef = ref(
-        storage,
-        `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
-      );
+      const imageRef = ref(storage, `${uploadPath}/projectImage_${Date.now()}.jpg`);
       console.log("Uploader billede til:", imageRef.fullPath);
 
-      // Start upload med resumable task
+      // Start upload with resumable task
       const uploadTask = uploadBytesResumable(imageRef, blob);
 
-      // Lyt til upload-status
+      // Listen to upload status
       uploadTask.on(
         "state_changed",
         (snapshot) => {
@@ -120,7 +134,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           console.log(`Upload progress: ${progress}%`);
         },
         (error: unknown) => {
-          // Håndter fejl
+          // Handle error
           console.error("Fejl under upload:", error);
           Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
           setIsUploading(false);
@@ -133,15 +147,15 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("Download URL hentet:", downloadURL);
 
-          // Opdater Firestore med den nye URL
+          // Update Firestore with the new URL
           await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            { projectImage: downloadURL },
+            doc(database, firestoreDocPath),
+            { projectImage: downloadURL }, // Adjust field as needed
             { merge: true }
           );
           console.log("Firestore opdateret med nye billed-URL");
 
-          // Afslutning af upload-processen
+          // Finalize the upload process
           console.log("Nyt billede uploadet og Firestore opdateret");
           Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
           setSelectedImageUri(null);
@@ -150,7 +164,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         }
       );
 
-      // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
+      // Add a timeout to ensure the upload doesn't hang indefinitely
       setTimeout(() => {
         if (isUploading) {
           console.log("Upload-processen tager for lang tid. Afbryder...");
@@ -158,7 +172,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
           setIsUploading(false);
         }
-      }, 60000); // 60 sekunder timeout
+      }, 60000); // 60 seconds timeout
     } catch (error: unknown) {
       console.error("Fejl ved upload af billede:", error);
       Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
@@ -169,7 +183,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   };
 
-  // Hjælpefunktion til at få fejlnavne
+  // Helper function to get error messages
   const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
       return error.message;
@@ -178,20 +192,31 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {selectedImageUri ? (
-        <Image source={{ uri: selectedImageUri }} style={styles.image} />
+        <Image
+          source={{ uri: selectedImageUri }}
+          style={[
+            styles.image,
+            {
+              width: imageSizeDp,
+              height: imageSizeDp,
+              borderRadius: imageSizeDp / 2,
+            },
+            imageStyle,
+          ]}
+        />
       ) : (
-        <Text style={styles.noImageText}>Ingen billede valgt</Text>
+        <Text style={[styles.noImageText, { color: "grey" }]}>Ingen billede valgt</Text>
       )}
 
-      <Pressable style={styles.button} onPress={handlePickImage}>
-        <Text style={styles.buttonText}>{buttonLabel}</Text>
+      <Pressable style={[styles.button, buttonStyle]} onPress={handlePickImage}>
+        <Text style={[styles.buttonText, buttonTextStyle]}>{buttonLabel}</Text>
       </Pressable>
 
       {selectedImageUri && !isUploading && (
-        <Pressable style={styles.uploadButton} onPress={handleUploadImage}>
-          <Text style={styles.uploadButtonText}>Upload billede</Text>
+        <Pressable style={[styles.uploadButton, uploadButtonStyle]} onPress={handleUploadImage}>
+          <Text style={[styles.uploadButtonText, uploadButtonTextStyle]}>Upload billede</Text>
         </Pressable>
       )}
 
@@ -211,14 +236,11 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   image: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
+    resizeMode: "cover",
     marginBottom: 10,
   },
   noImageText: {
     fontSize: 16,
-    color: "grey",
     marginBottom: 10,
     textAlign: "center",
   },
