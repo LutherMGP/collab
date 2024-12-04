@@ -1,18 +1,9 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelProjectImage.tsx
 
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Image,
-  Dimensions,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, Pressable, StyleSheet, Image, Dimensions, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
@@ -40,7 +31,7 @@ const InfoPanelProjectImage = ({
     try {
       // Åbn billedvælgeren
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["images", "videos"], // Angiv direkte medietyper
         allowsEditing: true,
         aspect: [1, 1], // Kvadratisk beskæring
         quality: 1,
@@ -55,48 +46,53 @@ const InfoPanelProjectImage = ({
     }
   };
 
-  // 
+  // Denne funktion sletter det gamle billede fra Firebase
+  const handleDeleteOldImage = async (imageRef: string) => {
+    try {
+      const imageReference = ref(storage, imageRef); // Opret en reference til det billede, der skal slettes
+      await deleteObject(imageReference); // Slet det gamle billede
+      console.log("Billede er blevet slettet.");
+    } catch (error) {
+      console.error("Fejl ved sletning af billede:", error);
+      Alert.alert("Fejl", "Kunne ikke slette det gamle billede.");
+    }
+  };
+
+  // Denne funktion uploader det nye billede til Firebase Storage og opdaterer Firestore med den nye URL
   const handleUploadImage = async () => {
     if (!newImageUri) {
       Alert.alert("Ingen billede valgt", "Vælg venligst et billede først.");
       return;
     }
-  
+
     setIsUploading(true);
-  
+
     try {
-      // Først skal du slette det gamle billede
-      const oldImageRef = ref(
-        storage,
-        `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
-      );
-  
-      // Slet det gamle billede, hvis det eksisterer
-      await deleteObject(oldImageRef);
-  
-      console.log("Gamle billede slettet.");
-  
-      // Upload det nye billede
+      // Først sletter du det gamle billede
+      const oldImageRef = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`; // Reference til det gamle billede
+      await handleDeleteOldImage(oldImageRef); // Slet det gamle billede
+
+      // Upload den nye valgte fil til Firebase Storage
       const response = await fetch(newImageUri);
       const blob = await response.blob();
-  
+
       const imageRef = ref(
         storage,
         `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
       );
-  
+
       await uploadBytes(imageRef, blob);
-  
+
       // Få download-URL for det nye billede
       const downloadURL = await getDownloadURL(imageRef);
-  
+
       // Opdater Firestore med den nye URL
       await setDoc(
         doc(database, "users", userId, "projects", projectId),
-        { projectImage: downloadURL }, // Gemmer billedets URL
-        { merge: true } // Sikrer, at andre felter ikke overskrives
+        { projectImage: downloadURL },
+        { merge: true }
       );
-  
+
       Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
       setNewImageUri(null); // Ryd den midlertidige URI
     } catch (error) {
