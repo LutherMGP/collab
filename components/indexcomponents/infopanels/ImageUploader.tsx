@@ -9,6 +9,10 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  PixelRatio,
+  ImageStyle,
+  ViewStyle,
+  TextStyle,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -18,7 +22,7 @@ import { storage, database } from "@/firebaseConfig";
 
 type ImageUploaderProps = {
   userId: string;
-  projectId: string;
+  uploadPath: string; // Specificer stien hvor billedet skal uploades
   initialImageUri?: string | null;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -26,22 +30,45 @@ type ImageUploaderProps = {
   resizeWidth?: number;
   resizeHeight?: number;
   compress?: number;
+  imageSizeDp?: number; // Til specifik billedstørrelse i dp
+  containerStyle?: ViewStyle;
+  imageStyle?: ImageStyle;
+  buttonStyle?: ViewStyle;
+  buttonTextStyle?: TextStyle;
+  uploadButtonStyle?: ViewStyle;
+  uploadButtonTextStyle?: TextStyle;
 };
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
   userId,
-  projectId,
+  uploadPath, // Stien specificeret af parent
   initialImageUri = null,
   onUploadSuccess,
   onUploadFailure,
   buttonLabel = "Vælg billede",
-  resizeWidth = 1024,
-  resizeHeight,
-  compress = 0.7,
+  resizeWidth = 300,
+  resizeHeight = 300,
+  compress = 0.8,
+  imageSizeDp = 100, // Standard størrelse
+  containerStyle,
+  imageStyle,
+  buttonStyle,
+  buttonTextStyle,
+  uploadButtonStyle,
+  uploadButtonTextStyle,
 }) => {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(initialImageUri);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+
+  // Hjælpefunktion til at konvertere cm til dp (valgfri)
+  const cmToDp = (cm: number): number => {
+    const inches = cm / 2.54;
+    const ppi = 460; // Juster efter enhedens faktiske PPI
+    const pixels = inches * ppi;
+    const dp = pixels / PixelRatio.get();
+    return dp;
+  };
 
   const handlePickImage = async () => {
     try {
@@ -49,10 +76,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: compress, // Brug komprimeringsniveauet fra props
+        quality: compress,
       });
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0].uri;
 
         // Reducer og resize billedet baseret på props
@@ -73,7 +100,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       console.error("Fejl ved valg af billede:", error);
       Alert.alert("Fejl", "Kunne ikke vælge billede. Prøv igen.");
 
-      // Håndter eventuel fejlhåndtering
       if (onUploadFailure) {
         onUploadFailure(error);
       }
@@ -102,10 +128,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       const blob = await response.blob();
       console.log("Billede hentet og konverteret til blob");
 
-      const imageRef = ref(
-        storage,
-        `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
-      );
+      const imageRef = ref(storage, `${uploadPath}/${Date.now()}.jpg`);
       console.log("Uploader billede til:", imageRef.fullPath);
 
       // Start upload med resumable task
@@ -135,15 +158,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
           // Opdater Firestore med den nye URL
           await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            { projectImage: downloadURL },
+            doc(database, "users", userId),
+            { [uploadPath.split("/").pop()!]: downloadURL }, // Dynamisk opdatering baseret på uploadPath
             { merge: true }
           );
           console.log("Firestore opdateret med nye billed-URL");
 
           // Afslutning af upload-processen
-          console.log("Nyt billede uploadet og Firestore opdateret");
-          Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
+          Alert.alert("Succes", "Billedet er blevet opdateret.");
           setSelectedImageUri(null);
           setIsUploading(false);
           onUploadSuccess(downloadURL);
@@ -178,25 +200,36 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.uploaderContainer, containerStyle]}>
       {selectedImageUri ? (
-        <Image source={{ uri: selectedImageUri }} style={styles.image} />
+        <Image
+          source={{ uri: selectedImageUri }}
+          style={[
+            styles.uploaderImage,
+            {
+              width: imageSizeDp,
+              height: imageSizeDp,
+              borderRadius: imageSizeDp / 2,
+            },
+            imageStyle,
+          ]}
+        />
       ) : (
-        <Text style={styles.noImageText}>Ingen billede valgt</Text>
+        <Text style={[styles.uploaderNoImageText, { color: "grey" }]}>Ingen billede valgt</Text>
       )}
 
-      <Pressable style={styles.button} onPress={handlePickImage}>
-        <Text style={styles.buttonText}>{buttonLabel}</Text>
+      <Pressable style={[styles.uploaderButton, buttonStyle]} onPress={handlePickImage}>
+        <Text style={[styles.uploaderButtonText, buttonTextStyle]}>{buttonLabel}</Text>
       </Pressable>
 
       {selectedImageUri && !isUploading && (
-        <Pressable style={styles.uploadButton} onPress={handleUploadImage}>
-          <Text style={styles.uploadButtonText}>Upload billede</Text>
+        <Pressable style={[styles.uploaderUploadButton, uploadButtonStyle]} onPress={handleUploadImage}>
+          <Text style={[styles.uploaderUploadButtonText, uploadButtonTextStyle]}>Upload billede</Text>
         </Pressable>
       )}
 
       {isUploading && (
-        <View style={styles.uploadingContainer}>
+        <View style={styles.uploaderUploadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
           <Text>{Math.round(uploadProgress)}%</Text>
         </View>
@@ -206,23 +239,20 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
+  uploaderContainer: {
     alignItems: "center",
     marginVertical: 10,
   },
-  image: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
+  uploaderImage: {
+    resizeMode: "cover",
     marginBottom: 10,
   },
-  noImageText: {
+  uploaderNoImageText: {
     fontSize: 16,
-    color: "grey",
     marginBottom: 10,
     textAlign: "center",
   },
-  button: {
+  uploaderButton: {
     backgroundColor: "#2196F3",
     padding: 10,
     borderRadius: 5,
@@ -230,12 +260,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  buttonText: {
+  uploaderButtonText: {
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
   },
-  uploadButton: {
+  uploaderUploadButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
     borderRadius: 5,
@@ -243,12 +273,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  uploadButtonText: {
+  uploaderUploadButtonText: {
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
   },
-  uploadingContainer: {
+  uploaderUploadingContainer: {
     alignItems: "center",
     marginTop: 10,
   },

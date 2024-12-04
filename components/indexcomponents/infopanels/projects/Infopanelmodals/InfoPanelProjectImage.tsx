@@ -1,14 +1,17 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelProjectImage.tsx
 
 import React from "react";
-import { View, Text, Pressable, StyleSheet, Image, Alert, PixelRatio } from "react-native";
-import ImageUploader from "@/components/indexcomponents/infopanels/ImageUploader"; // Opdater stien hvis nødvendigt
+import { View, Text, Pressable, StyleSheet, Image, Alert, PixelRatio, ActivityIndicator } from "react-native";
+import ImageUploader from "@/components/indexcomponents/infopanels/ImageUploader"; // Opdater stien, hvis nødvendigt
+import { doc, setDoc } from "firebase/firestore";
+import { storage, database } from "@/firebaseConfig";
 
 type InfoPanelProjectImageProps = {
   onClose: () => void;
   projectImageUri: string | null;
   projectId: string;
-  userId: string;
+  userId: string | null;
+  onImageUpdate?: (newImageUri: string) => void; // Ny prop til opdatering af billed-URI
 };
 
 const InfoPanelProjectImage = ({
@@ -16,11 +19,21 @@ const InfoPanelProjectImage = ({
   projectImageUri,
   projectId,
   userId,
+  onImageUpdate,
 }: InfoPanelProjectImageProps) => {
+  if (!userId) {
+    // Returner en loading state eller en anden komponent, hvis nødvendigt
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
   // Dynamisk beregning af billedstørrelse for ca. 1 cm i diameter
   const cmToDp = (cm: number): number => {
     const inches = cm / 2.54;
-    const ppi = 400; // Juster PPI efter behov
+    const ppi = 460; // Juster PPI efter behov
     const pixels = inches * ppi;
     const dp = pixels / PixelRatio.get();
     return dp;
@@ -32,13 +45,15 @@ const InfoPanelProjectImage = ({
   const handleUploadSuccess = (downloadURL: string) => {
     console.log("Upload success:", downloadURL);
     Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
-    // Opdater eventuelt parent state eller trigge en genindlæsning af data her
+    if (onImageUpdate) {
+      onImageUpdate(downloadURL);
+    }
   };
 
   const handleUploadFailure = (error: unknown) => {
     console.error("Upload failure:", error);
     const errorMessage =
-      error instanceof Error ? error.message : "Kunne ikke uploade projektbilledet. Prøv igen.";
+      error instanceof Error ? error.message : "Kunne ikke uploade projektbillede. Prøv igen.";
     Alert.alert("Fejl", errorMessage);
   };
 
@@ -62,13 +77,21 @@ const InfoPanelProjectImage = ({
         {/* ImageUploader komponenten med specifikke manipulationer */}
         <ImageUploader
           userId={userId}
-          projectId={projectId}
+          uploadPath={`users/${userId}/projects/${projectId}/images`} // Specificer upload-path
           initialImageUri={projectImageUri}
           onUploadSuccess={handleUploadSuccess}
           onUploadFailure={handleUploadFailure}
           buttonLabel="Vælg nyt billede"
           resizeWidth={800} // Specifik resize-bredde for projekter
+          resizeHeight={800} // Tilføjet resizeHeight for at matche ImageUploader's krav
           compress={0.6} // Specifik komprimering for projekter
+          imageSizeDp={100} // Specifik billedstørrelse i dp
+          containerStyle={styles.imageUploaderContainer}
+          imageStyle={styles.imageUploaderImage}
+          buttonStyle={styles.imageUploaderButton}
+          buttonTextStyle={styles.imageUploaderButtonText}
+          uploadButtonStyle={styles.imageUploaderUploadButton}
+          uploadButtonTextStyle={styles.imageUploaderUploadButtonText}
         />
 
         <Pressable style={styles.closeButton} onPress={onClose}>
@@ -120,6 +143,34 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // Eksterne stilarter til ImageUploader
+  imageUploaderContainer: {
+    // Tilføj yderligere styling specifikt for ImageUploader, hvis nødvendigt
+    marginBottom: 20,
+  },
+  imageUploaderImage: {
+    // Tilføj yderligere stilarter til billedet, hvis nødvendigt
+    // f.eks. borderWidth, borderColor osv.
+  },
+  imageUploaderButton: {
+    backgroundColor: "#6200EE", // Eksempel på ændring
+  },
+  imageUploaderButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  imageUploaderUploadButton: {
+    backgroundColor: "#03DAC6",
+  },
+  imageUploaderUploadButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
 

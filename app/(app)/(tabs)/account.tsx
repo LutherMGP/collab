@@ -8,21 +8,16 @@ import {
   View,
   TextInput,
   Alert,
-  Image,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { Image } from "react-native"; // Korrekt import
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import ImageUploader from "@/components/indexcomponents/infopanels/ImageUploader"; // Importer ImageUploader
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  listAll,
-  deleteObject,
-} from "firebase/storage";
-import { database, storage } from "@/firebaseConfig";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Korrekte imports
+import { database, storage } from "@/firebaseConfig"; // Sørg for, at `storage` er initialiseret korrekt
 
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
@@ -71,10 +66,7 @@ export default function AccountScreen() {
 
               const response = await fetch(defaultImage);
               const blob = await response.blob();
-              const storageRef = ref(
-                storage,
-                `users/${user}/profileimage/default.jpg`
-              );
+              const storageRef = ref(storage, `users/${user}/profileimage/default.jpg`);
 
               await uploadBytes(storageRef, blob);
               const downloadUrl = await getDownloadURL(storageRef);
@@ -127,10 +119,7 @@ export default function AccountScreen() {
       };
       try {
         await updateUserProfile(user, profileData); // Opdatering i Firestore
-        Alert.alert(
-          "Oplysninger opdateret",
-          "Dine oplysninger er blevet gemt."
-        );
+        Alert.alert("Oplysninger opdateret", "Dine oplysninger er blevet gemt.");
       } catch (error) {
         console.error("Fejl ved opdatering af oplysninger:", error);
         Alert.alert("Fejl", "Kunne ikke opdatere oplysninger. Prøv igen.");
@@ -138,86 +127,50 @@ export default function AccountScreen() {
     }
   };
 
-  // Funktion til at vælge billede
-  const handleImagePicker = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], // Angiver kun billedmedietyper
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const imageUri = result.assets[0].uri;
-      setProfileImage(imageUri);
-      await uploadImageToStorage(imageUri);
-    }
+  // Funktion til at håndtere upload-funktionalitet via ImageUploader
+  const handleUploadSuccess = (downloadURL: string) => {
+    setProfileImage(downloadURL);
+    Alert.alert("Succes", "Profilbillede er blevet opdateret.");
   };
 
-  // Funktion til at uploade billedet til Firebase Storage
-  const uploadImageToStorage = async (uri: string) => {
-    if (!user) return;
-
-    try {
-      const profileImageFolderRef = ref(storage, `users/${user}/profileimage/`);
-
-      // Slet alle filer i mappen
-      try {
-        const files = await listAll(profileImageFolderRef);
-        for (const item of files.items) {
-          await deleteObject(item);
-          console.log("Slettet:", item.fullPath);
-        }
-      } catch (error) {
-        console.warn("Kunne ikke liste eller slette filer i mappen:", error);
-      }
-
-      // Upload det nye billede
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const newImageRef = ref(
-        storage,
-        `users/${user}/profileimage/${Date.now()}.jpg`
-      );
-
-      await uploadBytes(newImageRef, blob);
-      const downloadUrl = await getDownloadURL(newImageRef);
-
-      // Tilføj unik query-parameter til billedets URI
-      const uniqueUrl = `${downloadUrl}?t=${Date.now()}`;
-
-      // Opdater Firestore med den nye URL
-      await setDoc(
-        doc(database, "users", user),
-        { profileImage: uniqueUrl },
-        { merge: true }
-      );
-
-      // Opdater state
-      setProfileImage(uniqueUrl);
-      console.log("Nyt profilbillede uploadet:", uniqueUrl);
-
-      Alert.alert("Profilbillede opdateret.");
-    } catch (error) {
-      console.error("Fejl ved upload af profilbillede:", error);
-      Alert.alert("Fejl", "Kunne ikke uploade profilbillede.");
-    }
+  const handleUploadFailure = (error: unknown) => {
+    console.error("Fejl ved upload af profilbillede:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Kunne ikke uploade profilbillede. Prøv igen.";
+    Alert.alert("Fejl", errorMessage);
   };
+
+  if (!user) {
+    // Returner en loading state eller en anden komponent, hvis nødvendigt
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={[styles.container, { backgroundColor }]}>
       <View style={styles.header}>
-        <Image
-          source={
-            profileImage
-              ? { uri: profileImage }
-              : require("@/assets/images/blomst.webp")
-          }
-          style={styles.logo}
+        {/* Brug ImageUploader-komponenten */}
+        <ImageUploader
+          userId={user} // `user` er nu garanteret at være en string
+          uploadPath="users/profileimage" // Specificer upload-path
+          initialImageUri={profileImage}
+          onUploadSuccess={handleUploadSuccess}
+          onUploadFailure={handleUploadFailure}
+          buttonLabel="Vælg profilbillede"
+          resizeWidth={300} // Specifik resize-bredde for profilbilleder
+          resizeHeight={300} // Specifik resize-højde for profilbilleder
+          compress={0.8} // Specifik komprimering for profilbilleder
+          imageSizeDp={100} // Specifik billedstørrelse i dp
+          containerStyle={styles.imageUploaderContainer}
+          imageStyle={styles.imageUploaderImage}
+          buttonStyle={styles.imageUploaderButton}
+          buttonTextStyle={styles.imageUploaderButtonText}
+          uploadButtonStyle={styles.imageUploaderUploadButton}
+          uploadButtonTextStyle={styles.imageUploaderUploadButtonText}
         />
-        <TouchableOpacity onPress={handleImagePicker}>
-          <Text style={styles.uploadText}>Upload Profilbillede</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.formContainer}>
@@ -266,24 +219,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 20,
   },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    resizeMode: "cover",
-  },
-  uploadText: {
-    marginTop: 10,
-    color: "#007AFF",
+  formContainer: {
+    flex: 1,
   },
   title: {
     fontSize: 20,
     fontWeight: "600",
     textAlign: "center",
     marginBottom: 20,
-  },
-  formContainer: {
-    flex: 1,
   },
   input: {
     borderWidth: 1,
@@ -309,5 +252,33 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // Eksterne stilarter til ImageUploader
+  imageUploaderContainer: {
+    // Tilføj yderligere styling specifikt for ImageUploader, hvis nødvendigt
+    // f.eks. margin, padding osv.
+  },
+  imageUploaderImage: {
+    // Tilføj yderligere stilarter til billedet, hvis nødvendigt
+    // f.eks. borderWidth, borderColor osv.
+  },
+  imageUploaderButton: {
+    backgroundColor: "#6200EE", // Eksempel på ændring
+  },
+  imageUploaderButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  imageUploaderUploadButton: {
+    backgroundColor: "#03DAC6",
+  },
+  imageUploaderUploadButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
