@@ -55,36 +55,48 @@ const InfoPanelProjectImage = ({
     }
   };
 
+  // 
   const handleUploadImage = async () => {
     if (!newImageUri) {
       Alert.alert("Ingen billede valgt", "Vælg venligst et billede først.");
       return;
     }
-
+  
     setIsUploading(true);
-
+  
     try {
-      // Upload den valgte fil til Firebase Storage
+      // Først skal du slette det gamle billede
+      const oldImageRef = ref(
+        storage,
+        `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
+      );
+  
+      // Slet det gamle billede, hvis det eksisterer
+      await deleteObject(oldImageRef);
+  
+      console.log("Gamle billede slettet.");
+  
+      // Upload det nye billede
       const response = await fetch(newImageUri);
       const blob = await response.blob();
-
+  
       const imageRef = ref(
         storage,
         `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
       );
-
+  
       await uploadBytes(imageRef, blob);
-
+  
       // Få download-URL for det nye billede
       const downloadURL = await getDownloadURL(imageRef);
-
-      // **Opdater Firestore med den nye URL**
+  
+      // Opdater Firestore med den nye URL
       await setDoc(
         doc(database, "users", userId, "projects", projectId),
         { projectImage: downloadURL }, // Gemmer billedets URL
         { merge: true } // Sikrer, at andre felter ikke overskrives
       );
-
+  
       Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
       setNewImageUri(null); // Ryd den midlertidige URI
     } catch (error) {
