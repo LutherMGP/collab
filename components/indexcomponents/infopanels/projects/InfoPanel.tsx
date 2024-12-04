@@ -26,7 +26,7 @@ import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopa
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelF2";
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelNameComment";
 import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelPrize";
-import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelProjectImage";
+import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
