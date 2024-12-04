@@ -23,24 +23,32 @@ const Projects = () => {
   const [draftCount, setDraftCount] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) return; // Brug user direkte som uid, da det er en streng
 
-    // Opdater samlingsnavnet og status til de nye værdier
     const projectCollection = collection(
       database,
       "users",
-      user,
-      "projects" // Opdateret samlingsnavn
+      user, // Brug user som uid
+      "projects"
     ) as CollectionReference<DocumentData>;
 
-    // Opdater statusfilteret til den nye statusværdi
-    const q = query(projectCollection, where("status", "==", "Project")); // Opdateret statusværdi
+    const q = query(projectCollection, where("status", "==", "Project"));
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      setDraftCount(querySnapshot.size); // Opdaterer draftCount i realtid
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const projects = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setDraftCount(projects.length); // Opdater draftCount
+      },
+      (error) => {
+        console.error("Firestore error:", error); // Log fejl
+      }
+    );
 
-    return () => unsubscribe();
+    return () => unsubscribe(); // Ryd op efter lytteren
   }, [user]);
 
   const handlePress = () => {
