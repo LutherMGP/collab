@@ -1,129 +1,247 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
 
-import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text } from "react-native";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Image,
+  Dimensions,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { storage } from "@/firebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/hooks/useAuth";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator"; // Importer image-manipulator
 
-type ProjectData = {
-  id: string;
-  name?: string;
-  comment?: string;
-  status?: string;
-  price?: number;
-  f8?: string;
-  f8PDF?: string;
-  f8BrandImage?: string;
-  f5?: string;
-  f5PDF?: string;
-  f3?: string;
-  f3PDF?: string;
-  f2?: string;
-  f2PDF?: string;
-  userId?: string | null;
+type InfoPanelProjectImageProps = {
+  onClose: () => void;
+  projectImageUri: string | null;
+  projectId: string;
+  userId: string;
 };
 
-const InfoPanelProjects = () => {
-  const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const theme = useColorScheme() || "light";
-  const { user } = useAuth();
+const InfoPanelProjectImage = ({
+  onClose,
+  projectImageUri,
+  projectId,
+  userId,
+}: InfoPanelProjectImageProps) => {
+  const { width } = Dimensions.get("window");
+  const imageSize = width * 0.6; // 60% af skærmens bredde
 
-  const config = {
-    showFavorite: false, // true: favorit-ikonet kan benyttes (F1A)
-    showPurchase: true, // true: purchase-ikonet kan benyttes (F1B)
-    showDelete: true, // true: slet-knappen kan benyttes (F8
-    showEdit: true, // true: redigerings-knappen kan benyttes (F8)
-    showSnit: true, // true: pdf filen vises hvis der long-presses (F5)
-    showGuide: true, // true: Viser guide-billede (F3)
+  const [isUploading, setIsUploading] = useState(false);
+  const [newImageUri, setNewImageUri] = useState<string | null>(null);
+
+  const handlePickImage = async () => {
+    try {
+      // Åbn billedvælgeren
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Brug MediaTypeOptions.Images
+        allowsEditing: true,
+        aspect: [1, 1], // Kvadratisk beskæring
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setNewImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Fejl ved valg af billede:", error);
+      Alert.alert("Fejl", "Kunne ikke vælge billede. Prøv igen.");
+    }
   };
 
-  useEffect(() => {
-    if (!user) return;
+  // Denne funktion sletter det gamle billede fra Firebase
+  const handleDeleteOldImage = async (imageRef: string) => {
+    try {
+      const imageReference = ref(storage, imageRef); // Opret en reference til det billede, der skal slettes
+      await deleteObject(imageReference); // Slet det gamle billede
+      console.log("Billede er blevet slettet.");
+    } catch (error) {
+      console.error("Fejl ved sletning af billede:", error);
+      Alert.alert("Fejl", "Kunne ikke slette det gamle billede.");
+    }
+  };
 
-    // Peg på den aktuelle brugers 'projects'-samling
-    const userProjectsCollection = collection(
-      database,
-      "users",
-      user,
-      "projects"
-    );
-    const q = query(userProjectsCollection, where("status", "==", "Project"));
+  // Denne funktion uploader det nye billede til Firebase Storage og opdaterer Firestore med den nye URL
+  const handleUploadImage = async () => {
+    if (!newImageUri) {
+      Alert.alert("Ingen billede valgt", "Vælg venligst et billede først.");
+      return;
+    }
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        // Map data fra Firestore-dokumenter til en liste af projekter
-        const fetchedProjects = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          const documents = data.documents || {}; // Hent dokument-feltet, hvis det findes
+    setIsUploading(true);
 
-          return {
-            id: doc.id,
-            name: data.name || "Uden navn",
-            comment: data.comment || "Ingen kommentar",
-            status: data.status || "Project",
-            price: data.price || null,
-            f8: documents.f8 || null, // Hent fra documents
-            f8PDF: documents.f8PDF || null, // Hent fra documents
-            f8BrandImage: data.f8BrandImage || null, // Direkte fra data
-            f5: documents.f5 || null, // Hent fra documents
-            f5PDF: documents.f5PDF || null, // Hent fra documents
-            f3: documents.f3 || null, // Hent fra documents
-            f3PDF: documents.f3PDF || null, // Hent fra documents
-            f2: documents.f2 || null, // Hent fra documents
-            f2PDF: documents.f2PDF || null, // Hent fra documents
-            userId: user || null,
-          };
-        }) as ProjectData[];
+    try {
+      // Først sletter du det gamle billede
+      const oldImageRef = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`; // Reference til det gamle billede
+      await handleDeleteOldImage(oldImageRef); // Slet det gamle billede
 
-        // Opdater state med de hentede projekter
-        setProjects(fetchedProjects);
+      // Manipulér billedet (ændre størrelse og komprimer)
+      const manipulatedImage = await manipulateAsync(
+        newImageUri,
+        [{ resize: { width: 150 } }], // Reducer størrelsen til 150px bredde
+        { compress: 0.7, format: SaveFormat.JPEG } // Komprimer og brug JPEG format
+      );
 
-        // Tilføj console.log her for at spore de hentede projekter
-        console.log("Hentede projekter:", fetchedProjects);
+      const response = await fetch(manipulatedImage.uri);
+      const blob = await response.blob();
 
-        setError(null);
-        setIsLoading(false);
-      },
-      (err) => {
-        console.error("Fejl ved hentning af projekter:", err);
-        setError("Kunne ikke hente projekter. Prøv igen senere.");
-        setIsLoading(false);
-      }
-    );
+      const imageRef = ref(
+        storage,
+        `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
+      );
 
-    return () => unsubscribe();
-  }, [user]);
+      await uploadBytes(imageRef, blob);
 
-  if (isLoading) {
-    return (
-      <View>
-        <ActivityIndicator size="large" color={Colors[theme].text} />
-      </View>
-    );
-  }
+      // Få download-URL for det nye billede
+      const downloadURL = await getDownloadURL(imageRef);
 
-  if (error) {
-    return (
-      <View>
-        <Text style={{ color: Colors[theme].text }}>{error}</Text>
-      </View>
-    );
-  }
+      // Opdater Firestore med den nye URL
+      await setDoc(
+        doc(database, "users", userId, "projects", projectId),
+        { projectImage: downloadURL },
+        { merge: true }
+      );
+
+      Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
+      setNewImageUri(null); // Ryd den midlertidige URI
+    } catch (error) {
+      console.error("Fejl ved upload af billede:", error);
+      Alert.alert("Fejl", "Kunne ikke uploade billedet. Prøv igen.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
-    <View>
-      {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={config} />
-      ))}
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Project Image</Text>
+
+        {projectImageUri ? (
+          <Image
+            source={{ uri: projectImageUri }}
+            style={[
+              styles.projectImage,
+              { width: imageSize, height: imageSize },
+            ]}
+          />
+        ) : (
+          <Text style={styles.noImageText}>
+            Ingen projektbillede tilgængeligt
+          </Text>
+        )}
+
+        {newImageUri && (
+          <Image
+            source={{ uri: newImageUri }}
+            style={[
+              styles.projectImage,
+              { width: imageSize, height: imageSize },
+            ]}
+          />
+        )}
+
+        <Pressable style={styles.pickImageButton} onPress={handlePickImage}>
+          <Text style={styles.pickImageButtonText}>Vælg nyt billede</Text>
+        </Pressable>
+
+        {newImageUri && !isUploading && (
+          <Pressable style={styles.uploadButton} onPress={handleUploadImage}>
+            <Text style={styles.uploadButtonText}>Upload billede</Text>
+          </Pressable>
+        )}
+
+        {isUploading && (
+          <ActivityIndicator
+            size="large"
+            color="#2196F3"
+            style={{ margin: 20 }}
+          />
+        )}
+
+        <Pressable style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.closeButtonText}>Luk</Text>
+        </Pressable>
+      </View>
     </View>
   );
 };
 
-export default InfoPanelProjects;
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent baggrund
+  },
+  modalContent: {
+    width: "80%",
+    padding: 20,
+    backgroundColor: "white",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  projectImage: {
+    borderRadius: 10,
+    resizeMode: "cover",
+    marginBottom: 20,
+  },
+  noImageText: {
+    fontSize: 16,
+    color: "grey",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  pickImageButton: {
+    backgroundColor: "#2196F3",
+    padding: 10,
+    borderRadius: 5,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  pickImageButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  uploadButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 5,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  uploadButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  closeButton: {
+    backgroundColor: "#f44336",
+    padding: 10,
+    borderRadius: 5,
+    width: "100%",
+    alignItems: "center",
+  },
+  closeButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+});
+
+export default InfoPanelProjectImage;
