@@ -1,12 +1,22 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelProjectImage.tsx
 
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Image, Dimensions, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Image,
+  Dimensions,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import * as ImageManipulator from "expo-image-manipulator"; // Importer den nye ImageManipulator API
 
 type InfoPanelProjectImageProps = {
   onClose: () => void;
@@ -31,7 +41,7 @@ const InfoPanelProjectImage = ({
     try {
       // Åbn billedvælgeren
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images", "videos"], // Angiv direkte medietyper
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1], // Kvadratisk beskæring
         quality: 1,
@@ -72,8 +82,12 @@ const InfoPanelProjectImage = ({
       const oldImageRef = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`; // Reference til det gamle billede
       await handleDeleteOldImage(oldImageRef); // Slet det gamle billede
 
-      // Upload den nye valgte fil til Firebase Storage
-      const response = await fetch(newImageUri);
+      // Manipulér billedet (ændre størrelse og komprimer)
+      const manipulator = await ImageManipulator.manipulate(newImageUri, [
+        { resize: { width: 800 } }, // Resize til 800px bredde
+      ], { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }); // Komprimering og JPEG-format
+
+      const response = await fetch(manipulator.uri);
       const blob = await response.blob();
 
       const imageRef = ref(
