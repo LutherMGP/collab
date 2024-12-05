@@ -13,18 +13,12 @@ import {
   ScrollView,
   Linking,
 } from "react-native";
-import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  listAll,
-  deleteObject,
-} from "firebase/storage";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
+import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/CoverImageUploader";
+import PdfUploader from "@/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/PdfUploader";
 
 interface InfoPanelBaseProps {
   projectId: string;
@@ -87,107 +81,6 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
     fetchData();
   }, [userId, projectId, category]);
 
-  // Upload a new file to Firebase Storage
-  const uploadFile = async (
-    uri: string,
-    fileName: string,
-    category: string
-  ) => {
-    if (!uri || !fileName || !category) {
-      console.error("Missing required parameters for uploadFile:", {
-        uri,
-        fileName,
-        category,
-      });
-      throw new Error("Invalid parameters for uploadFile");
-    }
-
-    try {
-      console.log(`Uploading file: ${fileName} to category: ${category}`);
-
-      const fileRef = ref(
-        storage,
-        `users/${userId}/${projectId}/data/${category}/${fileName}`
-      );
-
-      // 1. Hent eksisterende filer
-      const folderRef = ref(
-        storage,
-        `users/${userId}/${projectId}/data/${category}/`
-      );
-      const files = await listAll(folderRef);
-
-      console.log(`Found ${files.items.length} files in category: ${category}`);
-
-      // 2. Slet eksisterende filer
-      for (const item of files.items) {
-        await deleteObject(item);
-        console.log(`Deleted file: ${item.fullPath}`);
-      }
-
-      // 3. Upload den nye fil
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
-      await uploadBytes(fileRef, blob);
-      console.log(`Uploaded new file: ${fileRef.fullPath}`);
-
-      return await getDownloadURL(fileRef);
-    } catch (error) {
-      console.error("Error in uploadFile:", error);
-      throw error;
-    }
-  };
-
-  // Handle PDF selection
-  const handleSelectPDF = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: "application/pdf",
-    });
-
-    if (!result.canceled && result.assets) {
-      const pdfUri = result.assets[0].uri;
-      const pdfName = `${category}PDF_${Date.now()}.pdf`;
-
-      setIsLoading(true);
-      try {
-        const downloadURL = await uploadFile(pdfUri, pdfName);
-        setPdfURL(downloadURL);
-        Alert.alert("Success", `${categoryName} PDF uploaded.`);
-      } catch {
-        Alert.alert("Error", `Could not upload ${categoryName} PDF.`);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // Handle image selection
-  const handleSelectImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets) {
-      const imageUri = result.assets[0].uri;
-      const imageName = `${category}CoverImage_${Date.now()}.jpg`;
-
-      setIsLoading(true);
-      try {
-        const downloadURL = await uploadFile(imageUri, imageName);
-        setCoverImageURL(downloadURL);
-        Alert.alert("Success", `${categoryName} cover image uploaded.`);
-      } catch {
-        Alert.alert("Error", `Could not upload ${categoryName} cover image.`);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
   // Save changes to Firestore
   const handleSave = async () => {
     try {
@@ -218,42 +111,76 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>{categoryName} Data</Text>
 
-      {/* Display PDF */}
-      {pdfURL ? (
-        <TouchableOpacity
-          onPress={() => {
-            Linking.openURL(pdfURL).catch(() =>
-              Alert.alert("Error", "Could not open the PDF.")
-            );
+      {/* PDF Sektion */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>PDF</Text>
+        {pdfURL ? (
+          <TouchableOpacity
+            onPress={() => {
+              Linking.openURL(pdfURL).catch(() =>
+                Alert.alert("Error", "Could not open the PDF.")
+              );
+            }}
+          >
+            <Text style={styles.linkText}>Open PDF</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text>No PDF selected.</Text>
+        )}
+        <PdfUploader
+          userId={userId}
+          projectId={projectId}
+          category={category}
+          initialPdfUrl={pdfURL}
+          onUploadSuccess={(downloadURL) => {
+            setPdfURL(downloadURL);
+            Alert.alert("Success", `${categoryName} PDF uploaded.`);
           }}
-        >
-          <Text style={styles.linkText}>Open PDF</Text>
-        </TouchableOpacity>
-      ) : (
-        <Text>No PDF selected.</Text>
-      )}
-      <TouchableOpacity style={styles.button} onPress={handleSelectPDF}>
-        <Text style={styles.buttonText}>Select PDF</Text>
-      </TouchableOpacity>
+          onUploadFailure={(error) => {
+            console.error("PDF Upload failed:", error);
+            Alert.alert("Error", `Could not upload ${categoryName} PDF.`);
+          }}
+          buttonLabel="Vælg PDF"
+        />
+      </View>
 
-      {/* Display Cover Image */}
-      {coverImageURL ? (
-        <Image source={{ uri: coverImageURL }} style={styles.image} />
-      ) : (
-        <Text>No cover image selected.</Text>
-      )}
-      <TouchableOpacity style={styles.button} onPress={handleSelectImage}>
-        <Text style={styles.buttonText}>Select Cover Image</Text>
-      </TouchableOpacity>
+      {/* Cover Image Sektion */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Cover Image</Text>
+        {coverImageURL ? (
+          <Image source={{ uri: coverImageURL }} style={styles.image} />
+        ) : (
+          <Text>No cover image selected.</Text>
+        )}
+        <CoverImageUploader
+          userId={userId}
+          projectId={projectId}
+          initialImageUri={coverImageURL}
+          onUploadSuccess={(downloadURL) => {
+            setCoverImageURL(downloadURL);
+            Alert.alert("Success", `${categoryName} cover image uploaded.`);
+          }}
+          onUploadFailure={(error) => {
+            console.error("Cover Image Upload failed:", error);
+            Alert.alert("Error", `Could not upload ${categoryName} cover image.`);
+          }}
+          buttonLabel="Vælg billede"
+          resizeWidth={800} // Specifik resize-bredde for projekter
+          compress={0.6} // Specifik komprimering for projekter
+        />
+      </View>
 
-      {/* Comment */}
-      <TextInput
-        style={styles.input}
-        value={comment}
-        onChangeText={setComment}
-        placeholder="Comment..."
-        multiline
-      />
+      {/* Kommentar Sektion */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Kommentar</Text>
+        <TextInput
+          style={styles.input}
+          value={comment}
+          onChangeText={setComment}
+          placeholder="Comment..."
+          multiline
+        />
+      </View>
 
       {/* Save Changes */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -277,7 +204,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: Colors.light.background,
     flexGrow: 1,
-    justifyContent: "center",
   },
   header: {
     fontSize: 20,
@@ -285,22 +211,34 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
   linkText: {
     color: "blue",
     textDecorationLine: "underline",
     marginBottom: 10,
     textAlign: "center",
   },
-  button: {
+  image: {
+    width: "100%",
+    height: 200,
+    marginVertical: 10,
+    borderRadius: 10,
+  },
+  input: {
+    borderWidth: 1,
     padding: 10,
-    backgroundColor: Colors.light.tint,
     marginVertical: 10,
     borderRadius: 5,
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "600",
+    borderColor: "#ccc",
+    height: 100,
+    textAlignVertical: "top",
   },
   saveButton: {
     padding: 15,
@@ -322,21 +260,6 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "white",
     textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    padding: 10,
-    marginVertical: 10,
-    borderRadius: 5,
-    borderColor: "#ccc",
-    height: 100,
-    textAlignVertical: "top",
-  },
-  image: {
-    width: "100%",
-    height: 200,
-    marginVertical: 10,
-    borderRadius: 10,
   },
 });
 
