@@ -19,11 +19,12 @@ import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/CoverImageUploader";
 import PdfUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/PdfUploader";
+import { Category } from "@/constants/ImageConfig";
 
 interface InfoPanelBaseProps {
   projectId: string;
   userId: string;
-  category: "f8" | "f5" | "f3" | "f2";
+  category: Category; // Brug den definerede Category type
   categoryName: string;
   onClose: () => void;
 }
@@ -160,15 +161,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           onUploadSuccess={(downloadURL) => {
             setCoverImageURL(downloadURL);
             Alert.alert("Success", `${categoryName} cover image uploaded.`);
-            onClose(); // Luk modalen efter upload
+            // onClose(); // Valgfrit: Luk modalen efter upload
           }}
           onUploadFailure={(error) => {
             console.error("Cover Image Upload failed:", error);
             Alert.alert("Error", `Could not upload ${categoryName} cover image.`);
           }}
           buttonLabel="Vælg billede"
-          resizeWidth={800} // Specifik resize-bredde for projekter
-          compress={0.6} // Specifik komprimering for projekter
         />
       </View>
 
