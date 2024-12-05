@@ -13,20 +13,18 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
+import { categoryImageConfig, Category } from "@/constants/ImageConfig"; 
 
 type CoverImageUploaderProps = {
   userId: string;
   projectId: string;
-  category: string; // Tilføj category som en prop
+  category: Category; // Brug den definerede Category type
   initialImageUri?: string | null;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure?: (error: unknown) => void;
   buttonLabel?: string;
-  resizeWidth?: number;
-  resizeHeight?: number;
-  compress?: number;
 };
 
 const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
@@ -37,9 +35,6 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   onUploadSuccess,
   onUploadFailure,
   buttonLabel = "Vælg billede",
-  resizeWidth = 800,
-  resizeHeight,
-  compress = 0.6,
 }) => {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(initialImageUri);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,27 +58,23 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3], // Juster aspect ratio efter behov
-        quality: compress, // Brug komprimeringsniveauet fra props
+        aspect: [1, 1], // Kvadratisk aspect ratio for alle kategorier
+        quality: categoryImageConfig[category].compress, // Brug komprimeringsniveauet fra konfiguration
       });
 
       // Håndter ImagePicker-resultatet
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0].uri;
 
-        // Reducer og resize billedet baseret på props
-        const manipulationActions = [];
-        if (resizeWidth || resizeHeight) {
-          manipulationActions.push({ resize: { width: resizeWidth, height: resizeHeight } });
-        }
-
-        const manipulatedImage = await ImageManipulator.manipulateAsync(
+        // Reducer og resize billedet baseret på kategori
+        const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category];
+        const manipResult = await ImageManipulator.manipulateAsync(
           selectedImage,
-          manipulationActions,
-          { compress: compress, format: ImageManipulator.SaveFormat.JPEG }
+          [{ resize: { width: resizeWidth, height: resizeHeight } }],
+          { compress, format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        setSelectedImageUri(manipulatedImage.uri);
+        setSelectedImageUri(manipResult.uri);
       }
     } catch (error: unknown) {
       console.error("Fejl ved valg af billede:", error);
@@ -98,8 +89,8 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
 
   const handleUploadImage = async () => {
     if (!selectedImageUri) {
-        Alert.alert("Ingen billede valgt", "Vælg venligst et billede først.");
-        return;
+      Alert.alert("Ingen billede valgt", "Vælg venligst et billede først.");
+      return;
     }
 
     setIsUploading(true);
@@ -107,86 +98,86 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
     console.log("Start upload af nyt billede");
 
     try {
-        // Hent billed-blob
-        console.log("Henter billede URI:", selectedImageUri);
-        const response = await fetch(selectedImageUri);
+      // Hent billed-blob
+      console.log("Henter billede URI:", selectedImageUri);
+      const response = await fetch(selectedImageUri);
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.statusText}`);
-        }
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
 
-        const blob = await response.blob();
-        console.log("Billede hentet og konverteret til blob");
+      const blob = await response.blob();
+      console.log("Billede hentet og konverteret til blob");
 
-        // Log værdierne for stien og kategori
-        const uploadPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImage.jpg`;
-        console.log("Upload path:", uploadPath);
-        console.log("Category:", category);
+      // Log værdierne for stien og kategori
+      const uploadPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImage.jpg`;
+      console.log("Upload path:", uploadPath);
+      console.log("Category:", category);
 
-        // Opret ref til Firebase Storage
-        const imageRef = ref(storage, uploadPath);
-        console.log("Firebase Storage ref path:", imageRef.fullPath);
+      // Opret ref til Firebase Storage
+      const imageRef = ref(storage, uploadPath);
+      console.log("Firebase Storage ref path:", imageRef.fullPath);
 
-        // Start upload med resumable task
-        const uploadTask = uploadBytesResumable(imageRef, blob);
+      // Start upload med resumable task
+      const uploadTask = uploadBytesResumable(imageRef, blob);
 
-        // Lyt til upload-status
-        uploadTask.on(
-            "state_changed",
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress(progress);
-                console.log(`Upload progress: ${progress}%`);
-            },
-            (error: unknown) => {
-                // Håndter fejl
-                console.error("Fejl under upload:", error);
-                Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
-                setIsUploading(false);
-                if (onUploadFailure) {
-                    onUploadFailure(error);
-                }
-            },
-            async () => {
-                // Upload completed successfully, get download URL
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                console.log("Download URL hentet:", downloadURL);
-
-                // Opdater Firestore med den nye URL
-                await setDoc(
-                    doc(database, "users", userId, "projects", projectId),
-                    { [`${category}CoverImage`]: downloadURL }, // Opdater korrekt sti i Firestore
-                    { merge: true }
-                );
-                console.log("Firestore opdateret med nye billed-URL");
-
-                // Afslutning af upload-processen
-                console.log("Nyt billede uploadet og Firestore opdateret");
-                Alert.alert("Succes", "Cover billedet er blevet opdateret.");
-                setSelectedImageUri(null);
-                setIsUploading(false);
-                onUploadSuccess(downloadURL);
-            }
-        );
-
-        // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
-        setTimeout(() => {
-            if (isUploading) {
-                console.log("Upload-processen tager for lang tid. Afbryder...");
-                uploadTask.cancel();
-                Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
-                setIsUploading(false);
-            }
-        }, 60000); // 60 sekunder timeout
-    } catch (error: unknown) {
-        console.error("Fejl ved upload af billede:", error);
-        Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
-        setIsUploading(false);
-        if (onUploadFailure) {
+      // Lyt til upload-status
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+          console.log(`Upload progress: ${progress}%`);
+        },
+        (error: unknown) => {
+          // Håndter fejl
+          console.error("Fejl under upload:", error);
+          Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
+          setIsUploading(false);
+          if (onUploadFailure) {
             onUploadFailure(error);
+          }
+        },
+        async () => {
+          // Upload completed successfully, get download URL
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log("Download URL hentet:", downloadURL);
+
+          // Opdater Firestore med den nye URL
+          await setDoc(
+            doc(database, "users", userId, "projects", projectId),
+            { [`${category}CoverImage`]: downloadURL }, // Opdater korrekt sti i Firestore
+            { merge: true }
+          );
+          console.log("Firestore opdateret med nye billed-URL");
+
+          // Afslutning af upload-processen
+          console.log("Nyt billede uploadet og Firestore opdateret");
+          Alert.alert("Succes", "Cover billedet er blevet opdateret.");
+          setSelectedImageUri(null);
+          setIsUploading(false);
+          onUploadSuccess(downloadURL);
         }
+      );
+
+      // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
+      setTimeout(() => {
+        if (isUploading) {
+          console.log("Upload-processen tager for lang tid. Afbryder...");
+          uploadTask.cancel();
+          Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
+          setIsUploading(false);
+        }
+      }, 60000); // 60 sekunder timeout
+    } catch (error: unknown) {
+      console.error("Fejl ved upload af billede:", error);
+      Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
+      setIsUploading(false);
+      if (onUploadFailure) {
+        onUploadFailure(error);
+      }
     }
-};
+  };
 
   // Hjælpefunktion til at få fejlnavne
   const getErrorMessage = (error: unknown): string => {

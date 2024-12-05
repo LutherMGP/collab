@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelAttachment.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/attachment/InfoPanelAttachment.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -13,8 +13,10 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
+import { Colors } from "@/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from 'expo-image-manipulator';
 import {
   ref,
   uploadBytes,
@@ -31,6 +33,7 @@ type Props = {
   userId: string;
   projectId: string;
   onClose: () => void;
+  isEditEnabled: boolean; // Ny prop til Edit-tilstand
 };
 
 type Attachment = {
@@ -58,6 +61,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
   userId,
   projectId,
   onClose,
+  isEditEnabled, // Modtag isEditEnabled som en prop
 }) => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -122,6 +126,21 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
       const uri = result.assets[0].uri;
       const fileName = uri.split("/").pop() || `file_${Date.now()}`;
+
+      let processedUri = uri;
+
+      if (type === "images") {
+        // Resize og komprimer billedet
+        const manipResult = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 800 } }], // Juster bredden efter behov
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        processedUri = manipResult.uri;
+      }
+
+      // Hvis du implementerer video-komprimering, gør det her
+
       const folderRef = ref(
         storage,
         `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
@@ -129,7 +148,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
       setIsLoading(true);
 
-      const response = await fetch(uri);
+      const response = await fetch(processedUri);
       const fileBlob = await response.blob();
       await uploadBytes(folderRef, fileBlob);
       const downloadURL = await getDownloadURL(folderRef);
@@ -257,12 +276,14 @@ const InfoPanelAttachment: React.FC<Props> = ({
             )}
           </Pressable>
         )}
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteFile(item.type, fileName)}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
+        {isEditEnabled && ( // Betinget rendering af Delete-knappen
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => deleteFile(item.type, fileName)}
+          >
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -275,27 +296,29 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Manage Attachments</Text>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => uploadFile("images")}
-        >
-          <Text style={styles.buttonText}>Upload Image</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => uploadFile("pdf")}
-        >
-          <Text style={styles.buttonText}>Upload PDF</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => uploadFile("videos")}
-        >
-          <Text style={styles.buttonText}>Upload Video</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.header}>Attachments</Text>
+      {isEditEnabled && ( // Betinget rendering af Upload-knapperne
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => uploadFile("images")}
+          >
+            <Text style={styles.buttonText}>Upload Image</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => uploadFile("pdf")}
+          >
+            <Text style={styles.buttonText}>Upload PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => uploadFile("videos")}
+          >
+            <Text style={styles.buttonText}>Upload Video</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {isLoading && <ActivityIndicator size="large" />}
       <FlatList
         data={attachments}
@@ -311,8 +334,25 @@ const InfoPanelAttachment: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  header: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  container: { 
+    flex: 1, 
+    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,   
+  },
+  header: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 10, 
+    textAlign: "center",
+    color: "#0a7ea4",
+  },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -323,13 +363,45 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     padding: 10,
     margin: 5,
-    borderRadius: 8,
+    borderRadius: 10,
   },
-  buttonText: { color: "#FFF", textAlign: "center" },
-  attachment: { margin: 5 },
-  attachmentImage: { width: 70, height: 70 },
-  closeButton: { marginTop: 10, padding: 10, backgroundColor: "#FF3B30" },
-  closeText: { color: "#FFF", textAlign: "center" },
+  buttonText: { 
+    color: "#FFF", 
+    textAlign: "center" 
+  },
+  attachment: { 
+    margin: 5,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,  
+  },
+  attachmentImage: { 
+    width: 70, 
+    height: 70,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+  },
+  closeButton: { 
+    marginTop: 10, 
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)", 
+    backgroundColor: "#FF3B30",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,  
+  },
+  closeText: { 
+    color: "#FFF", 
+    textAlign: "center" 
+  },
   attachmentContainer: {
     margin: 5,
     alignItems: "center",
