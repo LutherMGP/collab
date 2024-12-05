@@ -17,8 +17,8 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
-import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/CoverImageUploader";
-import PdfUploader from "@/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/PdfUploader";
+import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/CoverImageUploader";
+import PdfUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/PdfUploader";
 
 interface InfoPanelBaseProps {
   projectId: string;
