@@ -62,7 +62,6 @@ export const styles = StyleSheet.create({
     width: 50, // Diameter
     height: 50, // Diameter
     borderRadius: 25, // Halv diameter for at bevare det runde udseende
-    //overflow: "hidden", // Sikrer, at billedet forbliver inden for grænserne
     elevation: 4, // Tilføj skygge for bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
