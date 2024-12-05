@@ -16,6 +16,7 @@ import {
 import { Colors } from "@/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImageManipulator from 'expo-image-manipulator';
 import {
   ref,
   uploadBytes,
@@ -125,6 +126,21 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
       const uri = result.assets[0].uri;
       const fileName = uri.split("/").pop() || `file_${Date.now()}`;
+
+      let processedUri = uri;
+
+      if (type === "images") {
+        // Resize og komprimer billedet
+        const manipResult = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 800 } }], // Juster bredden efter behov
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        processedUri = manipResult.uri;
+      }
+
+      // Hvis du implementerer video-komprimering, gør det her
+
       const folderRef = ref(
         storage,
         `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
@@ -132,7 +148,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
       setIsLoading(true);
 
-      const response = await fetch(uri);
+      const response = await fetch(processedUri);
       const fileBlob = await response.blob();
       await uploadBytes(folderRef, fileBlob);
       const downloadURL = await getDownloadURL(folderRef);
