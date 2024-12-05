@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelAttachment.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/attachment/InfoPanelAttachment.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -275,7 +275,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Manage Attachments</Text>
+      <Text style={styles.header}>Attachments</Text>
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.uploadButton}
@@ -312,7 +312,12 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  header: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  header: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 10, 
+    textAlign: "center" // Tilføjer centrering af teksten
+  },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
