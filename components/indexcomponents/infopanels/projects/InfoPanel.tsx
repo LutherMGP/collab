@@ -13,6 +13,7 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -83,8 +84,7 @@ const InfoPanel = ({
   const userId = currentUser;
 
   // Definer projectData som en state-variabel
-  const [projectData, setProjectData] =
-    useState<ProjectData>(initialProjectData);
+  const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
   const f8 = projectData.f8 || null;
   const f8PDF = projectData.f8PDF || null;
@@ -685,7 +685,7 @@ const InfoPanel = ({
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug samme logik som tidligere
+                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
                   accessibilityLabel="Edit Button"
                 >
                   <AntDesign
@@ -706,7 +706,9 @@ const InfoPanel = ({
                       projectData.status === "Published" ? "unlock" : "lock"
                     } // Dynamisk ikon
                     size={24}
-                    color={projectData.status === "Published" ? "green" : "red"} // Dynamisk farve
+                    color={
+                      projectData.status === "Published" ? "green" : "red"
+                    } // Dynamisk farve
                   />
                 </Pressable>
               </View>
@@ -911,23 +913,27 @@ const InfoPanel = ({
           animationType="slide"
           onRequestClose={handleCloseCommentModal}
         >
-          <InfoPanelCommentModal
-            projectId={projectData.id}
-            userId={userId || ""}
-            category={activeCategory} // Dette er nu sikkert
-            categoryName={
-              activeCategory === "f8"
-                ? "Specification"
-                : activeCategory === "f5"
-                ? "Terms & Conditions"
-                : activeCategory === "f3"
-                ? "Sustainability Report"
-                : "Partnership Agreement"
-            }
-            isVisible={isCommentModalVisible}
-            onClose={handleCloseCommentModal}
-            isEditable={isEditEnabled}
-          />
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <InfoPanelCommentModal
+                projectId={projectData.id}
+                userId={userId || ""}
+                category={activeCategory} // Dette er nu sikkert
+                categoryName={
+                  activeCategory === "f8"
+                    ? "Specification"
+                    : activeCategory === "f5"
+                    ? "Terms & Conditions"
+                    : activeCategory === "f3"
+                    ? "Sustainability Report"
+                    : "Partnership Agreement"
+                }
+                isVisible={isCommentModalVisible}
+                onClose={handleCloseCommentModal}
+                isEditable={isEditEnabled}
+              />
+            </View>
+          </View>
         </Modal>
       )}
 
@@ -944,6 +950,7 @@ const InfoPanel = ({
               userId={userId || ""}
               projectId={projectData.id}
               onClose={closeAttachmentModal}
+              isEditEnabled={isEditEnabled} // Pass isEditEnabled
             />
           </View>
         </View>
@@ -969,6 +976,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
+  // Fjernede toggleEditButton og toggleEditText, da de ikke længere er nødvendige
 });
 
 export default InfoPanel;

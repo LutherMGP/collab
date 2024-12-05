@@ -31,6 +31,7 @@ type Props = {
   userId: string;
   projectId: string;
   onClose: () => void;
+  isEditEnabled: boolean; // Ny prop til Edit-tilstand
 };
 
 type Attachment = {
@@ -58,6 +59,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
   userId,
   projectId,
   onClose,
+  isEditEnabled, // Modtag isEditEnabled som en prop
 }) => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -257,12 +259,14 @@ const InfoPanelAttachment: React.FC<Props> = ({
             )}
           </Pressable>
         )}
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteFile(item.type, fileName)}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
+        {isEditEnabled && ( // Betinget rendering af Delete-knappen
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => deleteFile(item.type, fileName)}
+          >
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -276,26 +280,28 @@ const InfoPanelAttachment: React.FC<Props> = ({
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Attachments</Text>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => uploadFile("images")}
-        >
-          <Text style={styles.buttonText}>Upload Image</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => uploadFile("pdf")}
-        >
-          <Text style={styles.buttonText}>Upload PDF</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => uploadFile("videos")}
-        >
-          <Text style={styles.buttonText}>Upload Video</Text>
-        </TouchableOpacity>
-      </View>
+      {isEditEnabled && ( // Betinget rendering af Upload-knapperne
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => uploadFile("images")}
+          >
+            <Text style={styles.buttonText}>Upload Image</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => uploadFile("pdf")}
+          >
+            <Text style={styles.buttonText}>Upload PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => uploadFile("videos")}
+          >
+            <Text style={styles.buttonText}>Upload Video</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {isLoading && <ActivityIndicator size="large" />}
       <FlatList
         data={attachments}
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
     fontSize: 18, 
     fontWeight: "bold", 
     marginBottom: 10, 
-    textAlign: "center" // Tilføjer centrering af teksten
+    textAlign: "center" // Centrerer teksten
   },
   buttonRow: {
     flexDirection: "row",
