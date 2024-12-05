@@ -81,7 +81,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
       const pdfRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/data/${category}/document.pdf`
+        `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`
       );
       console.log("Uploader PDF til:", pdfRef.fullPath);
 
@@ -113,7 +113,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           // Opdater Firestore med den nye URL
           await setDoc(
             doc(database, "users", userId, "projects", projectId),
-            { [`data.${category}.pdf`]: downloadURL }, // Dynamisk sti baseret på kategori
+            { [`${category}PDF`]: downloadURL }, // Dynamisk sti baseret på kategori
             { merge: true }
           );
           console.log("Firestore opdateret med nye PDF-URL");

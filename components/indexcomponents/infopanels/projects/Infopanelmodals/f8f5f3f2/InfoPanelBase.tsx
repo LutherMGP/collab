@@ -1,12 +1,12 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
+// @/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
 
 import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   StyleSheet,
+  Image,
   TextInput,
   ActivityIndicator,
   Alert,
@@ -155,10 +155,12 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         <CoverImageUploader
           userId={userId}
           projectId={projectId}
+          category={category} // Send category til CoverImageUploader
           initialImageUri={coverImageURL}
           onUploadSuccess={(downloadURL) => {
             setCoverImageURL(downloadURL);
             Alert.alert("Success", `${categoryName} cover image uploaded.`);
+            onClose(); // Luk modalen efter upload
           }}
           onUploadFailure={(error) => {
             console.error("Cover Image Upload failed:", error);
