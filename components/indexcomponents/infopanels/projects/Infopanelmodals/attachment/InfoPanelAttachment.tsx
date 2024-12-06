@@ -16,7 +16,7 @@ import {
 import { Colors } from "@/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImageManipulator from "expo-image-manipulator";
 import {
   ref,
   uploadBytes,
@@ -30,10 +30,12 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // Definer typer for Props og data
 type Props = {
-  userId: string;
-  projectId: string;
+  projectData: {
+    id: string;
+    userId: string;
+  };
   onClose: () => void;
-  isEditEnabled: boolean; // Ny prop til Edit-tilstand
+  isEditEnabled: boolean;
 };
 
 type Attachment = {
@@ -41,7 +43,6 @@ type Attachment = {
   url: string;
 };
 
-// Ny komponent til at håndtere video attachments
 const VideoAttachment: React.FC<{ url: string }> = ({ url }) => {
   const player = useVideoPlayer(url);
 
@@ -58,28 +59,25 @@ const VideoAttachment: React.FC<{ url: string }> = ({ url }) => {
 };
 
 const InfoPanelAttachment: React.FC<Props> = ({
-  userId,
-  projectId,
+  projectData,
   onClose,
-  isEditEnabled, // Modtag isEditEnabled som en prop
+  isEditEnabled,
 }) => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Funktion til at gemme metadata i Firestore
   const saveToFirestore = async (
     type: Attachment["type"],
     fileName: string,
     url: string
   ) => {
     try {
-      const docRef = doc(database, `users/${userId}/projects/${projectId}`);
-      const currentDoc = await getDoc(docRef); // Brug getDoc i stedet for get()
+      const docRef = doc(database, `users/${projectData.userId}/projects/${projectData.id}`);
+      const currentDoc = await getDoc(docRef);
       const currentAttachments = currentDoc.exists()
         ? currentDoc.data().attachments || {}
         : {};
 
-      // Opdater attachments med nye data
       const updatedAttachments = {
         ...currentAttachments,
         [type]: {
@@ -90,9 +88,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
       await setDoc(
         docRef,
-        {
-          attachments: updatedAttachments,
-        },
+        { attachments: updatedAttachments },
         { merge: true }
       );
     } catch (error) {
@@ -100,7 +96,6 @@ const InfoPanelAttachment: React.FC<Props> = ({
     }
   };
 
-  // Funktion til at uploade filer
   const uploadFile = async (type: Attachment["type"]) => {
     try {
       let result;
@@ -126,24 +121,20 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
       const uri = result.assets[0].uri;
       const fileName = uri.split("/").pop() || `file_${Date.now()}`;
-
       let processedUri = uri;
 
       if (type === "images") {
-        // Resize og komprimer billedet
         const manipResult = await ImageManipulator.manipulateAsync(
           uri,
-          [{ resize: { width: 800 } }], // Juster bredden efter behov
+          [{ resize: { width: 800 } }],
           { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
         );
         processedUri = manipResult.uri;
       }
 
-      // Hvis du implementerer video-komprimering, gør det her
-
       const folderRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/data/attachments/${type}/${fileName}`
+        `users/${projectData.userId}/projects/${projectData.id}/data/attachments/${type}/${fileName}`
       );
 
       setIsLoading(true);
@@ -164,18 +155,22 @@ const InfoPanelAttachment: React.FC<Props> = ({
     }
   };
 
-  // Funktion til at hente vedhæftede filer
   const fetchAttachments = async (type: Attachment["type"]) => {
+    if (!projectData || !projectData.userId) {
+      console.error("Cannot fetch attachments: userId is undefined");
+      return;
+    }
+  
     try {
       setIsLoading(true);
-
+  
       const folderRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/data/attachments/${type}`
+        `users/${projectData.userId}/projects/${projectData.id}/data/attachments/${type}`
       );
       const { items } = await listAll(folderRef);
       const urls = await Promise.all(items.map((item) => getDownloadURL(item)));
-
+  
       setAttachments((prev) => [
         ...prev.filter((att) => att.type !== type),
         ...urls.map((url) => ({ type, url })),
@@ -191,25 +186,20 @@ const InfoPanelAttachment: React.FC<Props> = ({
     }
   };
 
-  // Funktion til at slette en fil
   const deleteFile = async (type: Attachment["type"], fileUrl: string) => {
     try {
-      // Ekstraher den relative sti fra URL'en
       const decodedUrl = decodeURIComponent(fileUrl);
-      const basePath = `users/${userId}/projects/${projectId}/data/attachments/${type}/`;
-      const filePath = decodedUrl.split(basePath)[1]?.split("?")[0]; // Få filnavnet uden query-parametre
+      const basePath = `users/${projectData.userId}/projects/${projectData.id}/data/attachments/${type}/`;
+      const filePath = decodedUrl.split(basePath)[1]?.split("?")[0];
 
       if (!filePath) {
         throw new Error("File path could not be determined.");
       }
 
       const fileRef = ref(storage, `${basePath}${filePath}`);
-
-      // Slet filen fra Firebase Storage
       await deleteObject(fileRef);
 
-      // Fjern filens metadata fra Firestore
-      const docRef = doc(database, `users/${userId}/projects/${projectId}`);
+      const docRef = doc(database, `users/${projectData.userId}/projects/${projectData.id}`);
       const currentDoc = await getDoc(docRef);
       if (currentDoc.exists()) {
         const currentAttachments = currentDoc.data().attachments || {};
@@ -220,25 +210,19 @@ const InfoPanelAttachment: React.FC<Props> = ({
           },
         };
 
-        // Fjern den specifikke fil fra metadata
         delete updatedAttachments[type][filePath];
 
         await setDoc(
           docRef,
-          {
-            attachments: updatedAttachments,
-          },
+          { attachments: updatedAttachments },
           { merge: true }
         );
 
-        // Opdater state for at reflektere ændringerne
         setAttachments((prev) =>
           prev.filter((attachment) => attachment.url !== fileUrl)
         );
 
-        // Opdater vedhæftede filer (henter den nyeste liste)
         fetchAttachments(type);
-
         Alert.alert("Delete Successful", `The file has been deleted.`);
       }
     } catch (error) {
@@ -250,9 +234,8 @@ const InfoPanelAttachment: React.FC<Props> = ({
     }
   };
 
-  // Render en enkelt vedhæftelse
   const renderAttachment = ({ item }: { item: Attachment }) => {
-    const fileName = item.url.split("/").pop() || ""; // Ekstraher filnavnet fra URL'en
+    const fileName = item.url.split("/").pop() || "";
 
     return (
       <View style={styles.attachmentContainer}>
@@ -276,10 +259,10 @@ const InfoPanelAttachment: React.FC<Props> = ({
             )}
           </Pressable>
         )}
-        {isEditEnabled && ( // Betinget rendering af Delete-knappen
+        {isEditEnabled && (
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => deleteFile(item.type, fileName)}
+            onPress={() => deleteFile(item.type, item.url)}
           >
             <Text style={styles.deleteText}>Delete</Text>
           </TouchableOpacity>
@@ -292,12 +275,12 @@ const InfoPanelAttachment: React.FC<Props> = ({
     fetchAttachments("images");
     fetchAttachments("pdf");
     fetchAttachments("videos");
-  }, []);
+  }, [projectData.userId, projectData.id]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Attachments</Text>
-      {isEditEnabled && ( // Betinget rendering af Upload-knapperne
+      {isEditEnabled && (
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.uploadButton}
@@ -334,89 +317,18 @@ const InfoPanelAttachment: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,   
-  },
-  header: { 
-    fontSize: 18, 
-    fontWeight: "bold", 
-    marginBottom: 10, 
-    textAlign: "center",
-    color: "#0a7ea4",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  uploadButton: {
-    flex: 1,
-    backgroundColor: "#007AFF",
-    padding: 10,
-    margin: 5,
-    borderRadius: 10,
-  },
-  buttonText: { 
-    color: "#FFF", 
-    textAlign: "center" 
-  },
-  attachment: { 
-    margin: 5,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,  
-  },
-  attachmentImage: { 
-    width: 70, 
-    height: 70,
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
-  },
-  closeButton: { 
-    marginTop: 10, 
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)", 
-    backgroundColor: "#FF3B30",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,  
-  },
-  closeText: { 
-    color: "#FFF", 
-    textAlign: "center" 
-  },
-  attachmentContainer: {
-    margin: 5,
-    alignItems: "center",
-  },
-  deleteButton: {
-    marginTop: 5,
-    padding: 5,
-    backgroundColor: "#FF3B30",
-    borderRadius: 4,
-  },
-  deleteText: {
-    color: "#FFF",
-    fontSize: 12,
-    textAlign: "center",
-  },
+  container: { flex: 1, padding: 20 },
+  header: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  buttonRow: { flexDirection: "row", justifyContent: "space-between" },
+  uploadButton: { backgroundColor: "#007AFF", padding: 10, margin: 5 },
+  buttonText: { color: "#FFF", textAlign: "center" },
+  attachment: { margin: 5 },
+  attachmentImage: { width: 70, height: 70 },
+  closeButton: { marginTop: 10, padding: 10, backgroundColor: "#FF3B30" },
+  closeText: { color: "#FFF", textAlign: "center" },
+  attachmentContainer: { alignItems: "center" },
+  deleteButton: { marginTop: 5, padding: 5, backgroundColor: "#FF3B30" },
+  deleteText: { color: "#FFF", fontSize: 12 },
 });
 
 export default InfoPanelAttachment;

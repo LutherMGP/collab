@@ -933,12 +933,14 @@ const InfoPanel = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <InfoPanelAttachment
-              userId={userId || ""}
-              projectId={projectData.id}
-              onClose={closeAttachmentModal}
-              isEditEnabled={isEditEnabled} // Pass isEditEnabled
-            />
+          <InfoPanelAttachment
+            projectData={{
+              id: projectData.id,
+              userId: projectData.userId || "",
+            }}
+            onClose={closeAttachmentModal}
+            isEditEnabled={isEditEnabled}
+          />
           </View>
         </View>
       </Modal>
