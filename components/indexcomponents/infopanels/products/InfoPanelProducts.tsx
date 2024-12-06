@@ -62,7 +62,7 @@ const InfoPanelProducts = () => {
     try {
       // Hent alle publicerede projekter
       const allPublishedProjectsQuery = query(
-        collectionGroup(database, "project"),
+        collectionGroup(database, "projects"),
         where("status", "==", "Published")
       );
 
