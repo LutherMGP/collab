@@ -1,8 +1,6 @@
-// @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
-
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, CollectionReference, DocumentData } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
 import { Colors } from "@/constants/Colors";
@@ -12,17 +10,17 @@ import { useAuth } from "@/hooks/useAuth";
 type ProjectData = {
   id: string;
   name?: string;
-  comment?: string;
+  description?: string; // Opdateret til 'description'
   status?: string;
   price?: number;
-  f8?: string;
+  f8CoverImage?: string; // Opdateret feltnavn
   f8PDF?: string;
   f8BrandImage?: string;
-  f5?: string;
+  f5CoverImage?: string; // Opdateret feltnavn
   f5PDF?: string;
-  f3?: string;
+  f3CoverImage?: string; // Opdateret feltnavn
   f3PDF?: string;
-  f2?: string;
+  f2CoverImage?: string; // Opdateret feltnavn
   f2PDF?: string;
   userId?: string | null;
 };
@@ -37,7 +35,7 @@ const InfoPanelProjects = () => {
   const config = {
     showFavorite: false, // true: favorit-ikonet kan benyttes (F1A)
     showPurchase: true, // true: purchase-ikonet kan benyttes (F1B)
-    showDelete: true, // true: slet-knappen kan benyttes (F8
+    showDelete: true, // true: slet-knappen kan benyttes (F8)
     showEdit: true, // true: redigerings-knappen kan benyttes (F8)
     showSnit: true, // true: pdf filen vises hvis der long-presses (F5)
     showGuide: true, // true: Viser guide-billede (F3)
@@ -46,13 +44,10 @@ const InfoPanelProjects = () => {
   useEffect(() => {
     if (!user) return;
 
+    console.log("Fetching projects for user:", user); // Tilføj dette
+
     // Peg på den aktuelle brugers 'projects'-samling
-    const userProjectsCollection = collection(
-      database,
-      "users",
-      user,
-      "projects"
-    );
+    const userProjectsCollection = collection(database, "users", user, "projects");
     const q = query(userProjectsCollection, where("status", "==", "Project"));
 
     const unsubscribe = onSnapshot(
@@ -61,23 +56,24 @@ const InfoPanelProjects = () => {
         // Map data fra Firestore-dokumenter til en liste af projekter
         const fetchedProjects = snapshot.docs.map((doc) => {
           const data = doc.data();
-          const documents = data.documents || {}; // Hent dokument-feltet, hvis det findes
+
+          console.log(`Project data for ${doc.id}:`, data); // Tilføj dette
 
           return {
             id: doc.id,
             name: data.name || "Uden navn",
-            comment: data.comment || "Ingen kommentar",
+            description: data.description || "Ingen kommentar", // Opdateret til 'description'
             status: data.status || "Project",
             price: data.price || null,
-            f8: documents.f8 || null, // Hent fra documents
-            f8PDF: documents.f8PDF || null, // Hent fra documents
-            f8BrandImage: data.f8BrandImage || null, // Direkte fra data
-            f5: documents.f5 || null, // Hent fra documents
-            f5PDF: documents.f5PDF || null, // Hent fra documents
-            f3: documents.f3 || null, // Hent fra documents
-            f3PDF: documents.f3PDF || null, // Hent fra documents
-            f2: documents.f2 || null, // Hent fra documents
-            f2PDF: documents.f2PDF || null, // Hent fra documents
+            f8CoverImage: data.f8CoverImage || null, // Opdateret feltnavn
+            f8PDF: data.f8PDF || null,
+            f8BrandImage: data.f8BrandImage || null,
+            f5CoverImage: data.f5CoverImage || null, // Opdateret feltnavn
+            f5PDF: data.f5PDF || null,
+            f3CoverImage: data.f3CoverImage || null, // Opdateret feltnavn
+            f3PDF: data.f3PDF || null,
+            f2CoverImage: data.f2CoverImage || null, // Opdateret feltnavn
+            f2PDF: data.f2PDF || null,
             userId: user || null,
           };
         }) as ProjectData[];

@@ -36,17 +36,18 @@ import { styles as baseStyles } from "@/components/indexcomponents/infopanels/pr
 type ProjectData = {
   id: string;
   name?: string;
-  comment?: string;
-  f8?: string | null;
-  f8PDF?: string | null;
-  f5?: string | null;
-  f5PDF?: string | null;
-  f3?: string | null;
-  f3PDF?: string | null;
-  f2?: string | null;
-  f2PDF?: string | null;
+  description?: string; // Opdateret til 'description'
   status?: string;
   price?: number;
+  f8CoverImage?: string | null; // Opdateret feltnavn
+  f8PDF?: string | null;
+  f8BrandImage?: string | null;
+  f5CoverImage?: string | null; // Opdateret feltnavn
+  f5PDF?: string | null;
+  f3CoverImage?: string | null; // Opdateret feltnavn
+  f3PDF?: string | null;
+  f2CoverImage?: string | null; // Opdateret feltnavn
+  f2PDF?: string | null;
   isFavorite?: boolean;
   toBePurchased?: boolean;
   guideId?: string | null;
@@ -86,16 +87,16 @@ const InfoPanel = ({
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
-  const f8 = projectData.f8 || null;
+  const f8CoverImage = projectData.f8CoverImage || null;
   const f8PDF = projectData.f8PDF || null;
-  const f5 = projectData.f5 || null;
+  const f5CoverImage = projectData.f5CoverImage || null;
   const f5PDF = projectData.f5PDF || null;
-  const f3 = projectData.f3 || null;
+  const f3CoverImage = projectData.f3CoverImage || null;
   const f3PDF = projectData.f3PDF || null;
-  const f2 = projectData.f2 || null;
+  const f2CoverImage = projectData.f2CoverImage || null;
   const f2PDF = projectData.f2PDF || null;
   const name = projectData.name || "Uden navn";
-  const comment = projectData.comment || "Ingen kommentar";
+  const description = projectData.description || "Ingen kommentar";
   const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
 
   const [isFavorite, setIsFavorite] = useState(projectData.isFavorite || false);
@@ -302,7 +303,11 @@ const InfoPanel = ({
   // Hent projektets billede
   useEffect(() => {
     const fetchProjectImage = async () => {
-      if (!currentUser || !projectData.id) return;
+      if (!userId || !projectData.id) return;
+
+      console.log(
+        `Fetching project image from path: users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
+      );
 
       let attempts = 0;
       const maxAttempts = 5;
@@ -312,11 +317,9 @@ const InfoPanel = ({
         try {
           const projectImageRef = ref(
             storage,
-            `users/${currentUser}/projects/${projectData.id}/projectimage/projectImage.jpg`
+            `users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
           );
-          const projectImageUrl = `${await getDownloadURL(
-            projectImageRef
-          )}?t=${Date.now()}`;
+          const projectImageUrl = `${await getDownloadURL(projectImageRef)}?t=${Date.now()}`;
           setProjectImage(projectImageUrl);
           console.log("Projektbillede hentet:", projectImageUrl);
           return; // Stop loopet, hvis billedet blev hentet
@@ -335,7 +338,7 @@ const InfoPanel = ({
     };
 
     fetchProjectImage();
-  }, [currentUser, projectData.id, refreshKey]);
+  }, [userId, projectData.id, refreshKey]);
 
   // Generisk handlePress funktion med conditional
   const handlePress = (button: string) => {
@@ -440,15 +443,15 @@ const InfoPanel = ({
         setProjectData((prev) => ({
           ...prev,
           name: data.name || "",
-          comment: data.comment || "",
-          f8: data.data?.f8?.coverImage || prev.f8 || null,
-          f8PDF: data.data?.f8?.pdf || prev.f8PDF || null,
-          f5: data.data?.f5?.coverImage || prev.f5 || null,
-          f5PDF: data.data?.f5?.pdf || prev.f5PDF || null,
-          f3: data.data?.f3?.coverImage || prev.f3 || null,
-          f3PDF: data.data?.f3?.pdf || prev.f3PDF || null,
-          f2: data.data?.f2?.coverImage || prev.f2 || null,
-          f2PDF: data.data?.f2?.pdf || prev.f2PDF || null,
+          description: data.description || "",
+          f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
+          f8PDF: data.f8PDF || prev.f8PDF || null,
+          f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
+          f5PDF: data.f5PDF || prev.f5PDF || null,
+          f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
+          f3PDF: data.f3PDF || prev.f3PDF || null,
+          f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
+          f2PDF: data.f2PDF || prev.f2PDF || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
@@ -475,7 +478,7 @@ const InfoPanel = ({
 
           setProjectData((prev) => ({
             ...prev,
-            [`${category}`]: coverImageUrl,
+            [`${category}CoverImage`]: coverImageUrl,
             [`${category}PDF`]: pdfUrl,
           }));
         } catch (error) {
@@ -579,7 +582,7 @@ const InfoPanel = ({
             setShowFullComment(!showFullComment);
           }}
         >
-          {comment}
+          {description}
         </Text>
       </View>
 
@@ -592,7 +595,7 @@ const InfoPanel = ({
           accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
-          {f8 && <Image source={{ uri: f8 }} style={baseStyles.f8CoverImage} />}
+          {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
 
           {/* Tekst i f8 toppen */}
           <View style={baseStyles.textTag}>
@@ -663,8 +666,8 @@ const InfoPanel = ({
                 accessibilityLabel="F2 Button"
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
-                {f2 && (
-                  <Image source={{ uri: f2 }} style={baseStyles.f2CoverImage} />
+                {f2CoverImage && (
+                  <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -722,8 +725,8 @@ const InfoPanel = ({
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
-              {f3 && (
-                <Image source={{ uri: f3 }} style={baseStyles.f3CoverImage} />
+              {f3CoverImage && (
+                <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
 
               {/* Tekst i f3 toppen */}
@@ -749,8 +752,8 @@ const InfoPanel = ({
             accessibilityLabel="F5 Button"
           >
             {/* Vis billede, hvis det er tilgængeligt */}
-            {f5 && (
-              <Image source={{ uri: f5 }} style={baseStyles.f5CoverImage} />
+            {f5CoverImage && (
+              <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
             )}
 
             {/* Tekst i f5 toppen */}
@@ -859,7 +862,7 @@ const InfoPanel = ({
             <InfoPanelNameComment
               onClose={closeNameCommentModal}
               name={name}
-              comment={comment}
+              comment={description}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />
