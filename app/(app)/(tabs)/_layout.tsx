@@ -120,7 +120,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="assetmanager"
         options={{
-          href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’
+          href: null, // Skjuler fanen fra fanebjælken
+          // href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’
           title: "Files",
           tabBarLabel: "Assets",
           tabBarIcon: ({ color }) => (
@@ -166,7 +167,7 @@ export default function TabLayout() {
         options={{
           href: isAdmin || isDesigner ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
           title: "Pending Agreements",
-          tabBarLabel: "Collab",
+          tabBarLabel: "CircShare",
           tabBarIcon: ({ color }) => (
             <View>
               <MaterialIcons
