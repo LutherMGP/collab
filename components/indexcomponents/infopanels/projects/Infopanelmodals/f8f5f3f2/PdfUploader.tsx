@@ -43,9 +43,8 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         type: "application/pdf",
       });
 
-      if (!result.canceled && result.assets) {
-        const pdfUri = result.assets[0].uri;
-        setSelectedPdfUri(pdfUri);
+      if (result.type === "success" && result.uri) {
+        setSelectedPdfUri(result.uri);
       }
     } catch (error: unknown) {
       console.error("Fejl ved valg af PDF:", error);
@@ -81,7 +80,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
       const pdfRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`
+        `users/${userId}/projects/${projectId}/${category}PDF.pdf`
       );
       console.log("Uploader PDF til:", pdfRef.fullPath);
 

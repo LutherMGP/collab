@@ -13,7 +13,6 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -39,15 +38,14 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
-  f8CoverImage?: string | null;
-  f8PDF?: string | null;
-  f8BrandImage?: string | null;
-  f5CoverImage?: string | null;
-  f5PDF?: string | null;
-  f3CoverImage?: string | null;
-  f3PDF?: string | null;
   f2CoverImage?: string | null;
   f2PDF?: string | null;
+  f3CoverImage?: string | null;
+  f3PDF?: string | null;
+  f5CoverImage?: string | null;
+  f5PDF?: string | null;
+  f8CoverImage?: string | null;
+  f8PDF?: string | null;
   isFavorite?: boolean;
   toBePurchased?: boolean;
   guideId?: string | null;
@@ -87,14 +85,14 @@ const InfoPanel = ({
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
-  const f8CoverImage = projectData.f8CoverImage || null;
-  const f8PDF = projectData.f8PDF || null;
-  const f5CoverImage = projectData.f5CoverImage || null;
-  const f5PDF = projectData.f5PDF || null;
-  const f3CoverImage = projectData.f3CoverImage || null;
-  const f3PDF = projectData.f3PDF || null;
   const f2CoverImage = projectData.f2CoverImage || null;
   const f2PDF = projectData.f2PDF || null;
+  const f3CoverImage = projectData.f3CoverImage || null;
+  const f3PDF = projectData.f3PDF || null;
+  const f5CoverImage = projectData.f5CoverImage || null;
+  const f5PDF = projectData.f5PDF || null;
+  const f8CoverImage = projectData.f8CoverImage || null;
+  const f8PDF = projectData.f8PDF || null;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
   const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
@@ -445,50 +443,19 @@ const InfoPanel = ({
           name: data.name || "",
           description: data.description || "",
           f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          // Fjern hentning af PDF-URL'er her
+          f8PDF: data.f8PDF || prev.f8PDF || null,
           f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
+          f5PDF: data.f5PDF || prev.f5PDF || null,
           f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
+          f3PDF: data.f3PDF || prev.f3PDF || null,
           f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
+          f2PDF: data.f2PDF || prev.f2PDF || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
           toBePurchased: data.toBePurchased || prev.toBePurchased || false,
         }));
       }
-
-      // Fjern eller kommenter ud denne del, hvis PDF-URL'er allerede er i Firestore
-      /*
-      const fetchDataForCategoryFromStorage = async (
-        category: "f8" | "f5" | "f3" | "f2"
-      ) => {
-        try {
-          const coverImageRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}CoverImage.jpg`
-          );
-          const coverImageUrl = await getDownloadURL(coverImageRef);
-
-          const pdfRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`
-          );
-          const pdfUrl = await getDownloadURL(pdfRef);
-
-          setProjectData((prev) => ({
-            ...prev,
-            [`${category}CoverImage`]: coverImageUrl,
-            [`${category}PDF`]: pdfUrl,
-          }));
-        } catch (error) {
-          console.warn(`Kunne ikke hente ${category} data fra Storage:`, error);
-        }
-      };
-
-      // Kald hentning fra Storage for alle kategorier
-      ["f8", "f5", "f3", "f2"].forEach((category) => {
-        fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
-      });
-      */
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");

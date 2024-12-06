@@ -14,7 +14,7 @@ import {
   Linking,
 } from "react-native";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
+import { getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/CoverImageUploader";
@@ -60,46 +60,35 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         if (snapshot.exists()) {
           const data = snapshot.data();
           console.log("Fetched data:", data);
-          const categoryData = data.data?.[category];
-          console.log("Category data:", categoryData);
 
-          if (!categoryData) {
-            console.warn(`Data for ${category} mangler i Firestore.`);
-            setPdfURL(null);
-            setCoverImageURL(null);
-            setComment("");
-            return;
-          }
-
-          setPdfURL(categoryData.pdf || null);
-          setCoverImageURL(categoryData.coverImage || null);
-          setComment(categoryData.comment || "");
+          // Hent de flade felter direkte
+          setPdfURL(data[`${category}PDF`] || null);
+          setCoverImageURL(data[`${category}CoverImage`] || null);
+          setComment(data[`${category}Comment`] || "");
         } else {
           console.warn(`Projekt ${projectId} findes ikke i Firestore.`);
         }
       } catch (error) {
         console.error(`Failed to fetch ${category} data:`, error);
+        Alert.alert("Fejl", `Kunne ikke hente ${categoryName} data.`);
       }
     };
 
     fetchData();
-  }, [userId, projectId, category]);
+  }, [userId, projectId, category, categoryName]);
 
   // Save changes to Firestore
   const handleSave = async () => {
     try {
+      setIsLoading(true);
       const docRef = doc(database, "users", userId, "projects", projectId);
       await setDoc(
         docRef,
         {
-          data: {
-            [category]: {
-              pdf: pdfURL,
-              coverImage: coverImageURL, // Gem den dynamiske filsti
-              comment: comment.trim(),
-              updatedAt: new Date().toISOString(),
-            },
-          },
+          [`${category}PDF`]: pdfURL,
+          [`${category}CoverImage`]: coverImageURL,
+          [`${category}Comment`]: comment.trim(),
+          updatedAt: new Date().toISOString(),
         },
         { merge: true }
       );
@@ -107,7 +96,9 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       onClose(); // Luk modalen efter lagring
     } catch (error) {
       console.error(`Failed to save ${categoryName} data:`, error);
-      Alert.alert("Error", `Could not save ${categoryName} data.`);
+      Alert.alert("Fejl", `Kunne ikke gemme ${categoryName} data.`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -122,14 +113,14 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           <TouchableOpacity
             onPress={() => {
               Linking.openURL(pdfURL).catch(() =>
-                Alert.alert("Error", "Could not open the PDF.")
+                Alert.alert("Fejl", "Kunne ikke åbne PDF'en.")
               );
             }}
           >
-            <Text style={styles.linkText}>Open PDF</Text>
+            <Text style={styles.linkText}>Åbn PDF</Text>
           </TouchableOpacity>
         ) : (
-          <Text>No PDF selected.</Text>
+          <Text>Ingen PDF valgt.</Text>
         )}
         <PdfUploader
           userId={userId}
@@ -138,11 +129,11 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           initialPdfUrl={pdfURL}
           onUploadSuccess={(downloadURL) => {
             setPdfURL(downloadURL);
-            Alert.alert("Success", `${categoryName} PDF uploaded.`);
+            Alert.alert("Success", `${categoryName} PDF uploadet.`);
           }}
           onUploadFailure={(error) => {
             console.error("PDF Upload failed:", error);
-            Alert.alert("Error", `Could not upload ${categoryName} PDF.`);
+            Alert.alert("Fejl", `Kunne ikke uploade ${categoryName} PDF.`);
           }}
           buttonLabel="Vælg PDF"
         />
@@ -154,7 +145,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         {coverImageURL ? (
           <Image source={{ uri: coverImageURL }} style={styles.image} />
         ) : (
-          <Text>No cover image selected.</Text>
+          <Text>Ingen cover image valgt.</Text>
         )}
         <CoverImageUploader
           userId={userId}
@@ -163,12 +154,12 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           initialImageUri={coverImageURL}
           onUploadSuccess={(downloadURL) => {
             setCoverImageURL(downloadURL);
-            Alert.alert("Success", `${categoryName} cover image uploaded.`);
+            Alert.alert("Success", `${categoryName} cover image uploadet.`);
             // onClose(); // Valgfrit: Luk modalen efter upload
           }}
           onUploadFailure={(error) => {
             console.error("Cover Image Upload failed:", error);
-            Alert.alert("Error", `Could not upload ${categoryName} cover image.`);
+            Alert.alert("Fejl", `Kunne ikke uploade ${categoryName} cover image.`);
           }}
           buttonLabel="Vælg billede"
         />
@@ -181,7 +172,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           style={styles.input}
           value={comment}
           onChangeText={setComment}
-          placeholder="Comment..."
+          placeholder="Kommentar..."
           multiline
         />
       </View>
@@ -191,13 +182,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+          <Text style={styles.saveButtonText}>Gem Ændringer</Text>
         )}
       </TouchableOpacity>
 
       {/* Close Modal */}
       <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.closeButtonText}>Close</Text>
+        <Text style={styles.closeButtonText}>Luk</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -237,10 +228,10 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    padding: 10,
-    marginVertical: 10,
-    borderRadius: 5,
     borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 10,
     height: 100,
     textAlignVertical: "top",
   },

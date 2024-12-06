@@ -13,9 +13,9 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
-import { categoryImageConfig, Category } from "@/constants/ImageConfig"; 
+import { categoryImageConfig, Category } from "@/constants/ImageConfig";
 
 type CoverImageUploaderProps = {
   userId: string;
@@ -30,7 +30,7 @@ type CoverImageUploaderProps = {
 const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   userId,
   projectId,
-  category, // Modtag category som en prop
+  category,
   initialImageUri = null,
   onUploadSuccess,
   onUploadFailure,
@@ -63,7 +63,7 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       });
 
       // Håndter ImagePicker-resultatet
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.cancelled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0].uri;
 
         // Reducer og resize billedet baseret på kategori
@@ -110,7 +110,7 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       console.log("Billede hentet og konverteret til blob");
 
       // Log værdierne for stien og kategori
-      const uploadPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImage.jpg`;
+      const uploadPath = `users/${userId}/projects/${projectId}/${category}CoverImage.jpg`;
       console.log("Upload path:", uploadPath);
       console.log("Category:", category);
 
