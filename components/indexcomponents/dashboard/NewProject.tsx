@@ -42,13 +42,16 @@ const NewProject: React.FC = () => {
         const userData = userDoc.data();
         const imageUrl = userData?.profileImage;
 
-        setProfileImage(imageUrl || Image.resolveAssetSource(defaultImage).uri);
+        const uniqueUrl = imageUrl
+          ? `${imageUrl}&t=${Date.now()}`
+          : `${Image.resolveAssetSource(defaultImage).uri}?t=${Date.now()}`;
+
+        setProfileImage(uniqueUrl);
       } else {
-        setProfileImage(Image.resolveAssetSource(defaultImage).uri);
+        setProfileImage(`${Image.resolveAssetSource(defaultImage).uri}?t=${Date.now()}`);
       }
     } catch (error) {
       console.error("Fejl ved hentning af profilbillede:", error);
-      setProfileImage(Image.resolveAssetSource(defaultImage).uri);
     }
   };
 
@@ -84,13 +87,9 @@ const NewProject: React.FC = () => {
         `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
       );
 
-      const response = await fetch(
-        profileImage || Image.resolveAssetSource(defaultImage).uri
-      );
+      const response = await fetch(profileImage || Image.resolveAssetSource(defaultImage).uri);
       const blob = await response.blob();
       await uploadBytes(projectProfileImageRef, blob);
-
-      console.log("Standardbillede kopieret til projektmappen.");
 
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
@@ -105,7 +104,6 @@ const NewProject: React.FC = () => {
   };
 
   const handlePlusButtonPress = async () => {
-    // Tjek og opdater baggrundsbilledet
     await fetchProfileImage();
     setModalVisible(true);
   };
@@ -122,7 +120,7 @@ const NewProject: React.FC = () => {
 
       <TouchableOpacity
         style={styles.iconContainer}
-        onPress={handlePlusButtonPress} // Brug ny funktion her
+        onPress={handlePlusButtonPress}
       >
         <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
     width: 40,
     borderWidth: 3,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    elevation: 3, // Tilføj skygge for et bedre design
+    elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

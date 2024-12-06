@@ -36,7 +36,7 @@ const Products = () => {
     const fetchProducts = async () => {
       // 1. Definer en query for at hente alle frigivne projekter
       const allProductsQuery = query(
-        collectionGroup(database, "project"),
+        collectionGroup(database, "projects"),
         where("status", "==", "Published")
       );
 

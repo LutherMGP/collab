@@ -11,7 +11,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
+import InfoPanel from "@/components/indexcomponents/infopanels/published/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -121,17 +121,17 @@ const InfoPanelPublished = () => {
 
   useEffect(() => {
     if (!user) return;
-
-    // Hent alle projekter med status "Published" fra Firestore
+  
     const qPublished = query(
-      collectionGroup(database, "project"),
+      collectionGroup(database, "projects"), // Sørg for at navnet matcher
       where("status", "==", "Published")
     );
-
+  
     const unsubscribe = onSnapshot(
       qPublished,
       async (snapshot) => {
-        setIsLoading(true);
+        console.log("Snapshot size:", snapshot.size); // Tjek antal resultater
+        snapshot.docs.forEach((doc) => console.log("Document data:", doc.data()));
         await fetchProjects(snapshot);
       },
       (err) => {
@@ -140,7 +140,7 @@ const InfoPanelPublished = () => {
         setIsLoading(false);
       }
     );
-
+  
     return () => unsubscribe();
   }, [user]);
 

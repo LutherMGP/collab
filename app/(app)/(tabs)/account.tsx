@@ -27,12 +27,10 @@ import { database, storage } from "@/firebaseConfig";
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
 
-  // Dynamisk tema-farvehåndtering
   const backgroundColor = useThemeColor({}, "background");
   const borderColor = useThemeColor({}, "border");
   const buttonTextColor = useThemeColor({}, "text");
 
-  // States for user profile data
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [location, setLocation] = useState("");
@@ -43,7 +41,6 @@ export default function AccountScreen() {
   const [themePreference, setThemePreference] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  // Funktion til at hente brugerdata fra Firebase
   useEffect(() => {
     const fetchUserData = async () => {
       if (user) {
@@ -62,36 +59,6 @@ export default function AccountScreen() {
             setPreferredLanguage(data.preferredLanguage || "");
             setThemePreference(data.themePreference || "");
             setNotificationsEnabled(data.notificationsEnabled ?? true);
-
-            // Hvis profilbilledet mangler, upload standardbilledet
-            if (!data.profileImage) {
-              const defaultImage = Image.resolveAssetSource(
-                require("@/assets/images/blomst.webp")
-              ).uri;
-
-              const response = await fetch(defaultImage);
-              const blob = await response.blob();
-              const storageRef = ref(
-                storage,
-                `users/${user}/profileimage/default.jpg`
-              );
-
-              await uploadBytes(storageRef, blob);
-              const downloadUrl = await getDownloadURL(storageRef);
-
-              // Tilføj unik query-parameter til billedets URI
-              const uniqueUrl = `${downloadUrl}?t=${Date.now()}`;
-
-              // Opdater Firestore med download-URL
-              await setDoc(
-                doc(database, "users", user),
-                { profileImage: uniqueUrl },
-                { merge: true }
-              );
-              console.log("Profilbillede opdateret i Firestore:", uniqueUrl);
-
-              setProfileImage(uniqueUrl); // Opdater tilstanden
-            }
           }
         } catch (error) {
           console.error("Fejl ved hentning af brugerdata:", error);
@@ -126,11 +93,8 @@ export default function AccountScreen() {
         notificationsEnabled,
       };
       try {
-        await updateUserProfile(user, profileData); // Opdatering i Firestore
-        Alert.alert(
-          "Oplysninger opdateret",
-          "Dine oplysninger er blevet gemt."
-        );
+        await updateUserProfile(user, profileData);
+        Alert.alert("Oplysninger opdateret", "Dine oplysninger er blevet gemt.");
       } catch (error) {
         console.error("Fejl ved opdatering af oplysninger:", error);
         Alert.alert("Fejl", "Kunne ikke opdatere oplysninger. Prøv igen.");
@@ -138,10 +102,9 @@ export default function AccountScreen() {
     }
   };
 
-  // Funktion til at vælge billede
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], // Angiver kun billedmedietyper
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -154,25 +117,17 @@ export default function AccountScreen() {
     }
   };
 
-  // Funktion til at uploade billedet til Firebase Storage
   const uploadImageToStorage = async (uri: string) => {
     if (!user) return;
 
     try {
       const profileImageFolderRef = ref(storage, `users/${user}/profileimage/`);
 
-      // Slet alle filer i mappen
-      try {
-        const files = await listAll(profileImageFolderRef);
-        for (const item of files.items) {
-          await deleteObject(item);
-          console.log("Slettet:", item.fullPath);
-        }
-      } catch (error) {
-        console.warn("Kunne ikke liste eller slette filer i mappen:", error);
+      const files = await listAll(profileImageFolderRef);
+      for (const item of files.items) {
+        await deleteObject(item);
       }
 
-      // Upload det nye billede
       const response = await fetch(uri);
       const blob = await response.blob();
       const newImageRef = ref(
@@ -183,21 +138,16 @@ export default function AccountScreen() {
       await uploadBytes(newImageRef, blob);
       const downloadUrl = await getDownloadURL(newImageRef);
 
-      // Tilføj unik query-parameter til billedets URI
       const uniqueUrl = `${downloadUrl}?t=${Date.now()}`;
 
-      // Opdater Firestore med den nye URL
       await setDoc(
         doc(database, "users", user),
         { profileImage: uniqueUrl },
         { merge: true }
       );
 
-      // Opdater state
       setProfileImage(uniqueUrl);
       console.log("Nyt profilbillede uploadet:", uniqueUrl);
-
-      Alert.alert("Profilbillede opdateret.");
     } catch (error) {
       console.error("Fejl ved upload af profilbillede:", error);
       Alert.alert("Fejl", "Kunne ikke uploade profilbillede.");
@@ -224,14 +174,12 @@ export default function AccountScreen() {
         <Text style={[styles.title, { color: buttonTextColor }]}>
           Opdater dine oplysninger
         </Text>
-
         <TextInput
           placeholder="Kaldenavn"
           value={nickname}
           onChangeText={setNickname}
           style={[styles.input, { borderColor }]}
         />
-
         <TextInput
           placeholder="Navn"
           value={name}
@@ -244,7 +192,6 @@ export default function AccountScreen() {
           onChangeText={setLocation}
           style={[styles.input, { borderColor }]}
         />
-
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
           <Text style={styles.buttonText}>Gem Oplysninger</Text>
         </TouchableOpacity>
