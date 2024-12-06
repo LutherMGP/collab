@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/published/InfoPanel.tsx
+// @/components/indexcomponents/infopanels/products/InfoPanel.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -31,7 +31,7 @@ import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/proje
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "@/components/indexcomponents/infopanels/published/InfoPanelStyles";
+import { styles as baseStyles } from "@/components/indexcomponents/infopanels/products/InfoPanelStyles";
 
 type ProjectData = {
   id: string;

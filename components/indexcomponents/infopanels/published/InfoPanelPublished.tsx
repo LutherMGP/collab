@@ -11,7 +11,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
+import InfoPanel from "@/components/indexcomponents/infopanels/published/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
