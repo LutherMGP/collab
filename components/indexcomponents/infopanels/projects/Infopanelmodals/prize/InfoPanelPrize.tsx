@@ -31,10 +31,10 @@ const InfoPanelPrize = ({
   const handleSave = async () => {
     const numericPrice = parseFloat(newPrice.replace(",", ".").trim()); // Konverter til tal
 
-    if (isNaN(numericPrice) || numericPrice <= 0) {
+    if (isNaN(numericPrice) || numericPrice < 0) {
       Alert.alert(
         "Ugyldig pris",
-        "Indtast en gyldig numerisk pris uden symboler."
+        "Indtast en gyldig numerisk pris eller vælg et passende forhold."
       );
       return;
     }
@@ -43,7 +43,6 @@ const InfoPanelPrize = ({
 
     try {
       const projectRef = doc(database, "users", userId, "projects", projectId);
-
       await updateDoc(projectRef, { price: numericPrice }); // Gem kun det numeriske værdi
       Alert.alert("Pris opdateret", "Prisen er blevet gemt.");
       onClose(); // Luk modal
@@ -58,15 +57,15 @@ const InfoPanelPrize = ({
   return (
     <View style={styles.modalContainer}>
       <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Prize</Text>
-        <Text style={styles.modalText}>Current Price: {price}</Text>
+        <Text style={styles.modalTitle}>Rediger Pris</Text>
+        <Text style={styles.modalText}>Aktuel Pris: {price}</Text>
 
         {/* TextInput til redigering */}
         <TextInput
           style={styles.input}
           value={newPrice}
           onChangeText={setNewPrice}
-          placeholder="Enter new price"
+          placeholder="Indtast ny pris"
           keyboardType="numeric"
         />
 
@@ -77,11 +76,11 @@ const InfoPanelPrize = ({
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? "Gemmer..." : "Gem"}
             </Text>
           </Pressable>
           <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
+            <Text style={styles.closeButtonText}>Luk</Text>
           </Pressable>
         </View>
       </View>
