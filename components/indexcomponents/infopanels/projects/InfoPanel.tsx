@@ -36,17 +36,17 @@ import { styles as baseStyles } from "@/components/indexcomponents/infopanels/pr
 type ProjectData = {
   id: string;
   name?: string;
-  description?: string; // Opdateret til 'description'
+  description?: string;
   status?: string;
   price?: number;
-  f8CoverImage?: string | null; // Opdateret feltnavn
+  f8CoverImage?: string | null;
   f8PDF?: string | null;
   f8BrandImage?: string | null;
-  f5CoverImage?: string | null; // Opdateret feltnavn
+  f5CoverImage?: string | null;
   f5PDF?: string | null;
-  f3CoverImage?: string | null; // Opdateret feltnavn
+  f3CoverImage?: string | null;
   f3PDF?: string | null;
-  f2CoverImage?: string | null; // Opdateret feltnavn
+  f2CoverImage?: string | null;
   f2PDF?: string | null;
   isFavorite?: boolean;
   toBePurchased?: boolean;
@@ -445,13 +445,10 @@ const InfoPanel = ({
           name: data.name || "",
           description: data.description || "",
           f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          f8PDF: data.f8PDF || prev.f8PDF || null,
+          // Fjern hentning af PDF-URL'er her
           f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
-          f5PDF: data.f5PDF || prev.f5PDF || null,
           f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
-          f3PDF: data.f3PDF || prev.f3PDF || null,
           f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
-          f2PDF: data.f2PDF || prev.f2PDF || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
@@ -459,7 +456,8 @@ const InfoPanel = ({
         }));
       }
 
-      // Dynamisk hentning fra Storage, hvis data mangler i Firestore
+      // Fjern eller kommenter ud denne del, hvis PDF-URL'er allerede er i Firestore
+      /*
       const fetchDataForCategoryFromStorage = async (
         category: "f8" | "f5" | "f3" | "f2"
       ) => {
@@ -490,6 +488,7 @@ const InfoPanel = ({
       ["f8", "f5", "f3", "f2"].forEach((category) => {
         fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
       });
+      */
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
