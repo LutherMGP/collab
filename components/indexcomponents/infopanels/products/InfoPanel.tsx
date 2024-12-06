@@ -303,43 +303,31 @@ const InfoPanel = ({
   // Hent projektets billede
   useEffect(() => {
     const fetchProjectImage = async () => {
-      if (!userId || !projectData.id) return;
-    
-      console.log(
-        `Fetching project image from path: gs://hub-genfoedt.firebasestorage.app/users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
-      );
-    
-      let attempts = 0;
-      const maxAttempts = 5;
-      const delay = 1000; // 1 sekund mellem forsøg
-    
-      while (attempts < maxAttempts) {
-        try {
-          // Brug den korrekte bucket-sti
-          const projectImageRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
-          );
-          const projectImageUrl = await getDownloadURL(projectImageRef);
-          setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
-          console.log("Projektbillede hentet:", projectImageUrl);
-          return; // Stop loopet, hvis billedet blev hentet
-        } catch (error) {
-          console.warn(
-            `Forsøg ${attempts + 1}: Fejl ved hentning af projektbillede.`,
-            error
-          );
-          attempts += 1;
-          await new Promise((res) => setTimeout(res, delay)); // Vent før nyt forsøg
-        }
+      if (!projectData.userId || !projectData.id) {
+        console.error("Project ownerId or projectId missing");
+        return;
       }
-    
-      console.error("Kunne ikke hente projektbillede efter flere forsøg.");
-      setProjectImage(null); // Brug standardbillede, hvis hentning fejler
+  
+      console.log(
+        `Fetching project image from path: gs://hub-genfoedt.firebasestorage.app/users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
+      );
+  
+      try {
+        const projectImageRef = ref(
+          storage,
+          `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
+        );
+        const projectImageUrl = await getDownloadURL(projectImageRef);
+        setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
+        console.log("Projektbillede hentet:", projectImageUrl);
+      } catch (error) {
+        console.error("Fejl ved hentning af projektbillede:", error);
+        setProjectImage(null);
+      }
     };
-
+  
     fetchProjectImage();
-  }, [userId, projectData.id, refreshKey]);
+  }, [projectData.userId, projectData.id]);
 
   // Generisk handlePress funktion med conditional
   const handlePress = (button: string) => {
