@@ -304,23 +304,24 @@ const InfoPanel = ({
   useEffect(() => {
     const fetchProjectImage = async () => {
       if (!userId || !projectData.id) return;
-
+    
       console.log(
-        `Fetching project image from path: users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
+        `Fetching project image from path: gs://hub-genfoedt.firebasestorage.app/users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
       );
-
+    
       let attempts = 0;
       const maxAttempts = 5;
       const delay = 1000; // 1 sekund mellem forsøg
-
+    
       while (attempts < maxAttempts) {
         try {
+          // Brug den korrekte bucket-sti
           const projectImageRef = ref(
             storage,
             `users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
           );
-          const projectImageUrl = `${await getDownloadURL(projectImageRef)}?t=${Date.now()}`;
-          setProjectImage(projectImageUrl);
+          const projectImageUrl = await getDownloadURL(projectImageRef);
+          setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
           console.log("Projektbillede hentet:", projectImageUrl);
           return; // Stop loopet, hvis billedet blev hentet
         } catch (error) {
@@ -332,7 +333,7 @@ const InfoPanel = ({
           await new Promise((res) => setTimeout(res, delay)); // Vent før nyt forsøg
         }
       }
-
+    
       console.error("Kunne ikke hente projektbillede efter flere forsøg.");
       setProjectImage(null); // Brug standardbillede, hvis hentning fejler
     };
