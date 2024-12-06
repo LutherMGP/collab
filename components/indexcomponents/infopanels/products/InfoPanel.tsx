@@ -308,10 +308,6 @@ const InfoPanel = ({
         return;
       }
   
-      console.log(
-        `Fetching project image from path: gs://hub-genfoedt.firebasestorage.app/users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
-      );
-  
       try {
         const projectImageRef = ref(
           storage,
