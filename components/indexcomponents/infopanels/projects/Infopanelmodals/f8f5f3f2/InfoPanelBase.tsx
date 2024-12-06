@@ -52,22 +52,25 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log("Fetching data for userId:", userId, "projectId:", projectId, "category:", category);
         const docRef = doc(database, "users", userId, "projects", projectId);
         const snapshot = await getDoc(docRef);
+        console.log("Snapshot exists:", snapshot.exists());
+  
         if (snapshot.exists()) {
           const data = snapshot.data();
-          const categoryData = data.data?.[category]; // Dynamisk hentning
-
-          // Tilføj denne kontrol
+          console.log("Fetched data:", data);
+          const categoryData = data.data?.[category];
+          console.log("Category data:", categoryData);
+  
           if (!categoryData) {
             console.warn(`Data for ${category} mangler i Firestore.`);
             setPdfURL(null);
             setCoverImageURL(null);
             setComment("");
-            return; // Stop yderligere behandling, hvis data mangler
+            return;
           }
-
-          // Hvis data findes, opdater state
+  
           setPdfURL(categoryData.pdf || null);
           setCoverImageURL(categoryData.coverImage || null);
           setComment(categoryData.comment || "");
@@ -78,7 +81,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         console.error(`Failed to fetch ${category} data:`, error);
       }
     };
-
+  
     fetchData();
   }, [userId, projectId, category]);
 

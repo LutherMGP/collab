@@ -1,5 +1,3 @@
-// @/app/(app)/(tabs)/index.tsx
-
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -54,20 +52,26 @@ const Index = () => {
   );
 
   useEffect(() => {
-    if (user) {
-      const updateLastUsed = async () => {
-        const userDocRef = doc(database, "users", user);
-        await updateDoc(userDocRef, {
-          lastUsed: serverTimestamp(),
-        });
-      };
+    const updateLastUsed = async () => {
+      if (user) {
+        try {
+          console.log("Current userId:", user); // Tilføj dette
+          const userDocRef = doc(database, "users", user); // Brug 'user' direkte
+          await updateDoc(userDocRef, {
+            lastUsed: serverTimestamp(),
+          });
+          console.log("Last used timestamp updated for user:", user);
+        } catch (error) {
+          console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    };
 
-      updateLastUsed().catch((error) => {
-        console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
-      });
-
-      setIsLoading(false);
-    }
+    updateLastUsed();
   }, [user]);
 
   return (
