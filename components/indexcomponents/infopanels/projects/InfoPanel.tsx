@@ -915,6 +915,7 @@ const InfoPanel = ({
               price={price}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
+              isEditEnabled={isEditEnabled} 
             />
           </View>
         </View>

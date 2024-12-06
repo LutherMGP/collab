@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelPrize.tsx
+// @/components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize.tsx
 
 import React, { useState } from "react";
 import {
@@ -17,6 +17,7 @@ type InfoPanelPrizeProps = {
   price: string;
   projectId: string;
   userId: string;
+  isEditEnabled: boolean; // Tilføj prop til at kontrollere Edit-tilstand
 };
 
 const InfoPanelPrize = ({
@@ -24,6 +25,7 @@ const InfoPanelPrize = ({
   price,
   projectId,
   userId,
+  isEditEnabled,
 }: InfoPanelPrizeProps) => {
   const [newPrice, setNewPrice] = useState(price.replace(" kr.", "")); // Fjern "kr." ved initialisering
   const [isSaving, setIsSaving] = useState(false);
@@ -61,29 +63,41 @@ const InfoPanelPrize = ({
         <Text style={styles.modalTitle}>Prize</Text>
         <Text style={styles.modalText}>Current Price: {price}</Text>
 
-        {/* TextInput til redigering */}
-        <TextInput
-          style={styles.input}
-          value={newPrice}
-          onChangeText={setNewPrice}
-          placeholder="Enter new price"
-          keyboardType="numeric"
-        />
-
-        <View style={styles.buttonContainer}>
-          <Pressable
-            style={styles.saveButton}
-            onPress={handleSave}
-            disabled={isSaving}
-          >
-            <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save"}
+        {isEditEnabled ? (
+          <>
+            {/* TextInput til redigering */}
+            <TextInput
+              style={styles.input}
+              value={newPrice}
+              onChangeText={setNewPrice}
+              placeholder="Enter new price"
+              keyboardType="numeric"
+            />
+            <View style={styles.buttonContainer}>
+              <Pressable
+                style={styles.saveButton}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {isSaving ? "Saving..." : "Save"}
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* Forklarende tekst */}
+            <Text style={styles.infoText}>
+              Prisen kan kun ændres, når 'Edit' er aktiveret. Kontakt venligst
+              en administrator, hvis ændringer er nødvendige.
             </Text>
-          </Pressable>
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </Pressable>
-        </View>
+          </>
+        )}
+
+        <Pressable style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.closeButtonText}>Close</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -149,6 +163,12 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "white",
     fontWeight: "bold",
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#555",
+    textAlign: "center",
+    marginTop: 10,
   },
 });
 
