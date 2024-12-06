@@ -19,7 +19,7 @@ import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
+import { ref, getDownloadURL, listAll, deleteObject } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
@@ -246,7 +246,7 @@ const InfoPanel = ({
 
   const handleDelete = () => {
     if (!config.showDelete) return;
-
+  
     Alert.alert(
       "Bekræft Sletning",
       "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
@@ -259,15 +259,9 @@ const InfoPanel = ({
             try {
               if (!userId || !projectData.id) {
                 Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log(
-                  "userId:",
-                  userId,
-                  "projectData.id:",
-                  projectData.id
-                );
                 return;
               }
-
+  
               const projectDocRef = doc(
                 database,
                 "users",
@@ -275,10 +269,48 @@ const InfoPanel = ({
                 "projects",
                 projectData.id
               );
-
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
+  
+              // Hent referencer til alle filer
+              const filesToDelete = [
+                `users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
+                `users/${userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
+                `users/${userId}/projects/${projectData.id}/data/f8/f8PDF.pdf`,
+                `users/${userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
+                `users/${userId}/projects/${projectData.id}/data/f5/f5PDF.pdf`,
+                `users/${userId}/projects/${projectData.id}/data/f3/f3CoverImage.jpg`,
+                `users/${userId}/projects/${projectData.id}/data/f3/f3PDF.pdf`,
+                `users/${userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
+                `users/${userId}/projects/${projectData.id}/data/f2/f2PDF.pdf`,
+              ];
+  
+              // Tilføj referencer til attachments (billeder, PDF'er og videoer)
+              const attachmentTypes = ["images", "pdf", "videos"];
+              for (const type of attachmentTypes) {
+                const folderRef = ref(
+                  storage,
+                  `users/${userId}/projects/${projectData.id}/data/attachments/${type}`
+                );
+                const { items } = await listAll(folderRef);
+                for (const item of items) {
+                  filesToDelete.push(item.fullPath);
+                }
+              }
+  
+              // Slet filer fra Storage
+              for (const filePath of filesToDelete) {
+                const fileRef = ref(storage, filePath);
+                try {
+                  await deleteObject(fileRef);
+                  console.log(`Slettede fil: ${filePath}`);
+                } catch (error) {
+                  console.warn(`Kunne ikke slette fil: ${filePath}`, error);
+                }
+              }
+  
+              // Slet projektdata fra Firestore
+              await deleteDoc(projectDocRef);
               console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
+              Alert.alert("Success", "Projektet og alle tilknyttede data er blevet slettet.");
             } catch (error) {
               console.error("Fejl ved sletning af projekt:", error);
               Alert.alert(
