@@ -13,14 +13,15 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { storage, database } from "@/firebaseConfig";
-import { categoryImageConfig, Category } from "@/constants/ImageConfig"; 
+import { storage, database } from "@/firebaseConfig"; // Importer både storage og database
+import { doc, setDoc } from "firebase/firestore"; // Importer nødvendige Firestore-funktioner
+import { Colors } from "@/constants/Colors";
+import { Category, categoryImageConfig } from "@/constants/ImageConfig"; 
 
 type CoverImageUploaderProps = {
   userId: string;
   projectId: string;
-  category: Category; // Brug den definerede Category type
+  category: "f8" | "f5" | "f3" | "f2"; // Definér kategorier som en union type
   initialImageUri?: string | null;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -30,7 +31,7 @@ type CoverImageUploaderProps = {
 const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   userId,
   projectId,
-  category, // Modtag category som en prop
+  category,
   initialImageUri = null,
   onUploadSuccess,
   onUploadFailure,
@@ -143,17 +144,19 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("Download URL hentet:", downloadURL);
 
-          // Opdater Firestore med den nye URL
-          await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            { [`${category}CoverImage`]: downloadURL }, // Opdater korrekt sti i Firestore
-            { merge: true }
-          );
-          console.log("Firestore opdateret med nye billed-URL");
+          // Gem URL'en i Firestore under det tilsvarende felt
+          const projectDocRef = doc(database, "users", userId, "projects", projectId);
+          const updateData: Partial<ProjectData> = {
+            [`${category}CoverImage`]: downloadURL,
+            [`updatedAt${category.toUpperCase()}`]: new Date().toISOString(),
+          };
+
+          await setDoc(projectDocRef, updateData, { merge: true });
+          console.log("URL gemt i Firestore:", updateData);
 
           // Afslutning af upload-processen
-          console.log("Nyt billede uploadet og Firestore opdateret");
-          Alert.alert("Succes", "Cover billedet er blevet opdateret.");
+          console.log("Nyt billede uploadet.");
+          Alert.alert("Success", "Cover billedet er blevet opdateret.");
           setSelectedImageUri(null);
           setIsUploading(false);
           onUploadSuccess(downloadURL);

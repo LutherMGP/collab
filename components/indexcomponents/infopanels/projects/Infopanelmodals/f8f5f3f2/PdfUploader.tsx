@@ -11,13 +11,15 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
-import { storage, database } from "@/firebaseConfig";
+import { storage, database } from "@/firebaseConfig"; // Importer både storage og database
+import { doc, setDoc } from "firebase/firestore"; // Importer nødvendige Firestore-funktioner
+import { Colors } from "@/constants/Colors";
+import { Category } from "@/constants/ImageConfig"; 
 
 type PdfUploaderProps = {
   userId: string;
   projectId: string;
-  category: string; // Tilføjet for dynamisk sti
+  category: "f8" | "f5" | "f3" | "f2"; // Definér kategorier som en union type
   initialPdfUrl?: string | null;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -43,7 +45,8 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         type: "application/pdf",
       });
 
-      if (!result.canceled && result.assets) {
+      // Håndter DocumentPicker-resultatet
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         const pdfUri = result.assets[0].uri;
         setSelectedPdfUri(pdfUri);
       }
@@ -110,17 +113,19 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("Download URL hentet:", downloadURL);
 
-          // Opdater Firestore med den nye URL
-          await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            { [`${category}PDF`]: downloadURL }, // Dynamisk sti baseret på kategori
-            { merge: true }
-          );
-          console.log("Firestore opdateret med nye PDF-URL");
+          // Gem URL'en i Firestore under det tilsvarende felt
+          const projectDocRef = doc(database, "users", userId, "projects", projectId);
+          const updateData: Partial<ProjectData> = {
+            [`${category}PDF`]: downloadURL,
+            [`updatedAt${category.toUpperCase()}`]: new Date().toISOString(),
+          };
+
+          await setDoc(projectDocRef, updateData, { merge: true });
+          console.log("URL gemt i Firestore:", updateData);
 
           // Afslutning af upload-processen
-          console.log("Ny PDF uploadet og Firestore opdateret");
-          Alert.alert("Succes", "PDF'en er blevet opdateret.");
+          console.log("Ny PDF uploadet.");
+          Alert.alert("Success", "PDF'en er blevet opdateret.");
           setSelectedPdfUri(null);
           setIsUploading(false);
           onUploadSuccess(downloadURL);

@@ -32,28 +32,7 @@ import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/proje
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
-
-type ProjectData = {
-  id: string;
-  name?: string;
-  description?: string;
-  status?: string;
-  price?: number;
-  f8CoverImage?: string | null;
-  f8PDF?: string | null;
-  f8BrandImage?: string | null;
-  f5CoverImage?: string | null;
-  f5PDF?: string | null;
-  f3CoverImage?: string | null;
-  f3PDF?: string | null;
-  f2CoverImage?: string | null;
-  f2PDF?: string | null;
-  isFavorite?: boolean;
-  toBePurchased?: boolean;
-  guideId?: string | null;
-  projectId?: string | null;
-  userId?: string | null;
-};
+import { ProjectData } from "@/types/ProjectData";
 
 type InfoPanelConfig = {
   showFavorite?: boolean;
@@ -82,7 +61,7 @@ const InfoPanel = ({
   const rightMargin = width * 0.03;
 
   const { user: currentUser } = useAuth();
-  const userId = currentUser;
+  const userId = currentUser?.uid || ""; // Antag at `userId` er en streng
 
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
@@ -445,50 +424,24 @@ const InfoPanel = ({
           name: data.name || "",
           description: data.description || "",
           f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          // Fjern hentning af PDF-URL'er her
+          f8PDF: data.f8PDF || prev.f8PDF || null,
           f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
+          f5PDF: data.f5PDF || prev.f5PDF || null,
           f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
+          f3PDF: data.f3PDF || prev.f3PDF || null,
           f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
+          f2PDF: data.f2PDF || prev.f2PDF || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
           toBePurchased: data.toBePurchased || prev.toBePurchased || false,
+          createdAt: data.createdAt || prev.createdAt,
+          updatedAtF2: data.updatedAtF2 || prev.updatedAtF2,
+          updatedAtF3: data.updatedAtF3 || prev.updatedAtF3,
+          updatedAtF5: data.updatedAtF5 || prev.updatedAtF5,
+          updatedAtF8: data.updatedAtF8 || prev.updatedAtF8,
         }));
       }
-
-      // Fjern eller kommenter ud denne del, hvis PDF-URL'er allerede er i Firestore
-      /*
-      const fetchDataForCategoryFromStorage = async (
-        category: "f8" | "f5" | "f3" | "f2"
-      ) => {
-        try {
-          const coverImageRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}CoverImage.jpg`
-          );
-          const coverImageUrl = await getDownloadURL(coverImageRef);
-
-          const pdfRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`
-          );
-          const pdfUrl = await getDownloadURL(pdfRef);
-
-          setProjectData((prev) => ({
-            ...prev,
-            [`${category}CoverImage`]: coverImageUrl,
-            [`${category}PDF`]: pdfUrl,
-          }));
-        } catch (error) {
-          console.warn(`Kunne ikke hente ${category} data fra Storage:`, error);
-        }
-      };
-
-      // Kald hentning fra Storage for alle kategorier
-      ["f8", "f5", "f3", "f2"].forEach((category) => {
-        fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
-      });
-      */
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
