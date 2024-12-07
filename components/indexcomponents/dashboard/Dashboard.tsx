@@ -7,6 +7,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import NewProject from "@/components/indexcomponents/dashboard/NewProject";
 import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
+import CircShare from "@/components/indexcomponents/dashboard/CircShare";
 import Published from "@/components/indexcomponents/dashboard/Published";
 import Products from "@/components/indexcomponents/dashboard/Products";
 import Purchased from "@/components/indexcomponents/dashboard/Purchased";
@@ -30,6 +31,9 @@ const Snit = () => {
 
       {/* Viser kun Projects, hvis brugerens rolle er 'Designer' eller 'Admin' */}
       {(userRole === "Designer" || userRole === "Admin") && <Projects />}
+
+      {/* Viser kun CircShare, hvis brugerens rolle er 'Designer' eller 'Admin' */}
+      {(userRole === "Designer" || userRole === "Admin") && <CircShare />}
 
       {/* Viser kun Published, hvis brugerens rolle er 'Designer' eller 'Admin' */}
       {(userRole === "Designer" || userRole === "Admin") && <Published />}

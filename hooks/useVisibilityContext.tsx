@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface VisibilityContextType {
   isInfoPanelProjectsVisible: boolean;
+  isInfoPanelCircshareVisible: boolean;
   isInfoPanelPublishedVisible: boolean;
   isInfoPanelProductsVisible: boolean;
   isInfoPanelPurchasedVisible: boolean;
@@ -12,6 +13,7 @@ interface VisibilityContextType {
   showPanel: (
     panel:
       | "projects"
+      | "circshare"
       | "published"
       | "products"
       | "purchased"
@@ -42,6 +44,8 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
 }) => {
   const [isInfoPanelProjectsVisible, setIsInfoPanelProjectsVisible] =
     useState(false);
+  const [isInfoPanelCircshareVisible, setIsInfoPanelCircshareVisible] =
+    useState(false);
   const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
     useState(false);
   const [isInfoPanelProductsVisible, setIsInfoPanelProductsVisible] =
@@ -55,6 +59,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   const showPanel = (
     panel:
       | "projects"
+      | "circshare"
       | "published"
       | "products"
       | "purchased"
@@ -62,6 +67,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       | "development"
   ) => {
     setIsInfoPanelProjectsVisible(panel === "projects");
+    setIsInfoPanelCircshareVisible(panel === "circshare");
     setIsInfoPanelPublishedVisible(panel === "published");
     setIsInfoPanelProductsVisible(panel === "products");
     setIsInfoPanelPurchasedVisible(panel === "purchased");
@@ -71,6 +77,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
 
   const hideAllPanels = () => {
     setIsInfoPanelProjectsVisible(false);
+    setIsInfoPanelCircshareVisible(false);
     setIsInfoPanelPublishedVisible(false);
     setIsInfoPanelProductsVisible(false);
     setIsInfoPanelPurchasedVisible(false);
@@ -82,6 +89,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     <VisibilityContext.Provider
       value={{
         isInfoPanelProjectsVisible,
+        isInfoPanelCircshareVisible,
         isInfoPanelPublishedVisible,
         isInfoPanelProductsVisible,
         isInfoPanelPurchasedVisible,
