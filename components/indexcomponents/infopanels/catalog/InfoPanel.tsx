@@ -238,17 +238,13 @@ const InfoPanel = ({
           {/* Vis billede, hvis det er tilgængeligt */}
           {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
 
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectImage && (
+            {/* Projektbilledet i det runde felt med onPress */}
             <Pressable
               style={baseStyles.projectImageContainer}
             >
-              <Image
-                source={{ uri: projectImage }}
-                style={baseStyles.projectImage}
-              />
+            {/* Vis billede, hvis det er tilgængeligt */}
+            {projectImage && <Image source={{ uri: projectImage }} style={baseStyles.projectImage} />}
             </Pressable>
-          )}
         </Pressable>
       </View>
 
