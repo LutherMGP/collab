@@ -254,7 +254,7 @@ const InfoPanel = ({
                 <AntDesign
                   name={isFavorite ? "heart" : "hearto"} // Dynamisk ikon baseret på favoritstatus
                   size={24}
-                  color={isFavorite ? Colors[theme].tint : "black"} // Brug Colors[theme].tint til det aktive hjerte
+                  color={isFavorite ? "#0a7ea4" : "#0a7ea4"} // Brug Colors[theme].tint til det aktive hjerte
                 />
               </Pressable>
             </View>
@@ -265,9 +265,9 @@ const InfoPanel = ({
                   accessibilityLabel="Purchase Button"
                 >
                   <MaterialIcons
-                    name="join-full"
+                    name={toBePurchased ? "join-right" : "join-left"}
                     size={30}
-                    color={toBePurchased ? Colors[theme].tint : "black"} // Brug Colors[theme].tint
+                    color={toBePurchased ? "#0a7ea4" : "#0a7ea4"}
                   />
                 </Pressable>
               </View>

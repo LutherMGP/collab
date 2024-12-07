@@ -33,13 +33,14 @@ export const styles = StyleSheet.create({
   F8: {
     width: "94%",
     height: "98.7%",
-    borderRadius: 10,
+    borderRadius: 11,
     justifyContent: "flex-start", // Placér indholdet øverst
     alignItems: "center", // Centrer indholdet vandret
     // paddingTop: 5, // Giv afstand fra toppen
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
+    // borderColor: "rgba(255, 255, 255, 0.7)",
     position: "relative",
     elevation: 4,
     shadowColor: "#000",
@@ -112,7 +113,7 @@ export const styles = StyleSheet.create({
   lowerContainer: {
     flex: 5,
     flexDirection: "row",
-    width: "100%",
+    width: "99%",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -140,7 +141,7 @@ export const styles = StyleSheet.create({
   F2: {
     width: "88%",
     height: "100%",
-    borderRadius: 10,
+    borderRadius: 11,
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: 0,
@@ -228,10 +229,9 @@ export const styles = StyleSheet.create({
   F3: {
     width: "93%",
     height: "96.5%",
-    borderRadius: 10,
+    borderRadius: 11,
     justifyContent: "flex-start",
     alignItems: "center",
-    // paddingTop: 10,
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     position: "absolute",
     bottom: 0,
@@ -268,7 +268,7 @@ export const styles = StyleSheet.create({
     padding: 0,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    borderRadius: 10,
+    borderRadius: 11,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },

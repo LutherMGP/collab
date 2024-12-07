@@ -1,4 +1,4 @@
-// @/app/(app)/(tabs)/collab.tsx
+// @/app/(app)/(tabs)/cart.tsx
 
 import React, { useEffect, useState } from "react";
 import {
@@ -46,7 +46,7 @@ type ProjectData = {
   pdfPath: string;
 };
 
-const CollabScreen = () => {
+const CartScreen = () => {
   const colorScheme = useColorScheme() || "light";
   const themeColors = Colors[colorScheme];
   const { user } = useAuth();
@@ -446,4 +446,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CollabScreen;
+export default CartScreen;

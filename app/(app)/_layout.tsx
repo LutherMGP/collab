@@ -22,6 +22,10 @@ export default function AppEntry() {
         name="modal_account"
         options={{ headerShown: false, presentation: "modal" }}
       />
+      <Stack.Screen
+        name="modal_cart"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
     </Stack>
   );
