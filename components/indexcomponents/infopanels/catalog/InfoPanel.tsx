@@ -164,6 +164,50 @@ const InfoPanel = ({
     console.log("Henter billede for projekt:", projectData.id);
   }, [projectData.id]);
 
+    // Hent projektets billede
+    useEffect(() => {
+      const fetchImages = async () => {
+        if (!projectData.userId || !projectData.id) {
+          console.error("UserId eller projectId mangler.");
+          return;
+        }
+    
+        try {
+          const imagePaths: Record<
+            "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage",
+            string
+          > = {
+            f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f8/f8CoverImage.jpg`,
+            f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f5/f5CoverImage.jpg`,
+            f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f3/f3CoverImage.jpg`,
+            f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f2/f2CoverImage.jpg`,
+          };
+    
+          const updatedImages: Partial<ProjectData> = {};
+    
+          for (const [key, path] of Object.entries(imagePaths)) {
+            try {
+              const refPath = ref(storage, path);
+              const url = await getDownloadURL(refPath);
+              updatedImages[key as keyof ProjectData] = (url + `?t=${Date.now()}`) as any; // Cache-bypass
+            } catch (error) {
+              console.warn(`Fejl ved hentning af ${key}:`, error);
+            }
+          }
+    
+          // Opdater kun de valgfri felter
+          setProjectData((prev) => ({
+            ...prev,
+            ...updatedImages,
+          }));
+        } catch (error) {
+          console.error("Fejl ved billedhentning:", error);
+        }
+      };
+    
+      fetchImages();
+    }, [projectData.userId, projectData.id]);
+
   // Hent projektets billede
   useEffect(() => {
     const fetchImages = async () => {
@@ -177,10 +221,10 @@ const InfoPanel = ({
           "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage",
           string
         > = {
-          f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f8/f8CoverImage.jpg`,
-          f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f5/f5CoverImage.jpg`,
-          f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f3/f3CoverImage.jpg`,
-          f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f2/f2CoverImage.jpg`,
+          f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
+          f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
+          f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f3/f3CoverImage.jpg`,
+          f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
         };
   
         const updatedImages: Partial<ProjectData> = {};
