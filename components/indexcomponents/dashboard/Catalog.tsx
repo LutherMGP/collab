@@ -1,4 +1,4 @@
-// @/components/indexcomponents/dashboard/Products.tsx
+// @/components/indexcomponents/dashboard/Catalog.tsx
 
 import React, { useEffect, useState } from "react";
 import {
@@ -23,10 +23,10 @@ import {
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
-const Products = () => {
+const Catalog = () => {
   const theme = "light";
   const { user } = useAuth();
-  const { isInfoPanelProductsVisible, showPanel, hideAllPanels } =
+  const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } =
     useVisibility();
   const [productCount, setProductCount] = useState(0);
 
@@ -89,13 +89,13 @@ const Products = () => {
   }, [user]);
 
   const handlePress = () => {
-    if (isInfoPanelProductsVisible) {
+    if (isInfoPanelCatalogVisible) {
       hideAllPanels();
     } else {
-      showPanel("products");
+      showPanel("catalog");
     }
     console.log(
-      `Product count button pressed. InfoPanelProducts visibility set to ${!isInfoPanelProductsVisible}.`
+      `Product count button pressed. InfoPanelProducts visibility set to ${!isInfoPanelCatalogVisible}.`
     );
   };
 
@@ -110,7 +110,7 @@ const Products = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelProductsVisible ? styles.iconPressed : null,
+          isInfoPanelCatalogVisible ? styles.iconPressed : null,
         ]}
         onPress={handlePress}
       >
@@ -191,4 +191,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Products;
+export default Catalog;

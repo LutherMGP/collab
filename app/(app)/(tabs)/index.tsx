@@ -14,7 +14,7 @@ import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
-import InfoPanelProducts from "@/components/indexcomponents/infopanels/products/InfoPanelProducts";
+import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
 
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
@@ -35,7 +35,7 @@ const Index = () => {
   const {
     isInfoPanelProjectsVisible,
     isInfoPanelPublishedVisible,
-    isInfoPanelProductsVisible,
+    isInfoPanelCatalogVisible,
     isInfoPanelPurchasedVisible,
     isInfoPanelCartVisible,
     isInfoPanelDevelopmentVisible,
@@ -45,7 +45,7 @@ const Index = () => {
   const shouldShowWelcomeMessage = !(
     isInfoPanelProjectsVisible ||
     isInfoPanelPublishedVisible ||
-    isInfoPanelProductsVisible ||
+    isInfoPanelCatalogVisible ||
     isInfoPanelPurchasedVisible ||
     isInfoPanelCartVisible ||
     isInfoPanelDevelopmentVisible
@@ -126,10 +126,10 @@ const Index = () => {
         </View>
       )}
 
-      {/* Render InfoPanelProducts kun hvis synlig */}
-      {isInfoPanelProductsVisible && (
-        <View style={styles.infoPanelProductsContainer}>
-          <InfoPanelProducts />
+      {/* Render InfoPanelCatalog kun hvis synlig */}
+      {isInfoPanelCatalogVisible && (
+        <View style={styles.infoPanelCatalogContainer}>
+          <InfoPanelCatalog />
         </View>
       )}
     </Animated.ScrollView>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelProductsContainer: {
+  infoPanelCatalogContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,

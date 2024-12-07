@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
 import CircShare from "@/components/indexcomponents/dashboard/CircShare";
 import Published from "@/components/indexcomponents/dashboard/Published";
-import Products from "@/components/indexcomponents/dashboard/Products";
+import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Purchased from "@/components/indexcomponents/dashboard/Purchased";
 
 const Snit = () => {
@@ -38,8 +38,8 @@ const Snit = () => {
       {/* Viser kun Published, hvis brugerens rolle er 'Designer' eller 'Admin' */}
       {(userRole === "Designer" || userRole === "Admin") && <Published />}
 
-      {/* Vis Products, for alle */}
-      <Products />
+      {/* Vis Catalog, for alle */}
+      <Catalog />
 
       {/* Viser kun Purchased, hvis brugerens rolle er 'Designer' eller 'Admin' */}
       {(userRole === "Designer" || userRole === "Admin") && <Purchased />}

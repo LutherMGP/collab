@@ -109,27 +109,6 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  editIconContainer: {
-    position: "absolute", // Absolut position for placering i nederste venstre hjørne
-    bottom: 5, // Afstand fra bunden
-    left: 5, // Afstand fra venstre
-    padding: 6,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    backgroundColor: "gray", // Standardfarve
-  },
-  editEnabled: {
-    backgroundColor: "green", // Farve når Edit-tilstand er aktiveret
-  },
-  editDisabled: {
-    backgroundColor: "transparent", // Farve når Edit-tilstand er deaktiveret
-  },
-  editText: {
-    marginLeft: 4,
-    fontSize: 12,
-  },
   lowerContainer: {
     flex: 5,
     flexDirection: "row",

@@ -6,7 +6,7 @@ interface VisibilityContextType {
   isInfoPanelProjectsVisible: boolean;
   isInfoPanelCircshareVisible: boolean;
   isInfoPanelPublishedVisible: boolean;
-  isInfoPanelProductsVisible: boolean;
+  isInfoPanelCatalogVisible: boolean;
   isInfoPanelPurchasedVisible: boolean;
   isInfoPanelCartVisible: boolean;
   isInfoPanelDevelopmentVisible: boolean;
@@ -15,7 +15,7 @@ interface VisibilityContextType {
       | "projects"
       | "circshare"
       | "published"
-      | "products"
+      | "catalog"
       | "purchased"
       | "cart"
       | "development"
@@ -48,7 +48,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     useState(false);
   const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
     useState(false);
-  const [isInfoPanelProductsVisible, setIsInfoPanelProductsVisible] =
+  const [isInfoPanelCatalogVisible, setIsInfoPanelCatalogVisible] =
     useState(false);
   const [isInfoPanelPurchasedVisible, setIsInfoPanelPurchasedVisible] =
     useState(false);
@@ -61,7 +61,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       | "projects"
       | "circshare"
       | "published"
-      | "products"
+      | "catalog"
       | "purchased"
       | "cart"
       | "development"
@@ -69,7 +69,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelProjectsVisible(panel === "projects");
     setIsInfoPanelCircshareVisible(panel === "circshare");
     setIsInfoPanelPublishedVisible(panel === "published");
-    setIsInfoPanelProductsVisible(panel === "products");
+    setIsInfoPanelCatalogVisible(panel === "catalog");
     setIsInfoPanelPurchasedVisible(panel === "purchased");
     setIsInfoPanelCartVisible(panel === "cart");
     setIsInfoPanelDevelopmentVisible(panel === "development");
@@ -79,7 +79,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelProjectsVisible(false);
     setIsInfoPanelCircshareVisible(false);
     setIsInfoPanelPublishedVisible(false);
-    setIsInfoPanelProductsVisible(false);
+    setIsInfoPanelCatalogVisible(false);
     setIsInfoPanelPurchasedVisible(false);
     setIsInfoPanelCartVisible(false);
     setIsInfoPanelDevelopmentVisible(false);
@@ -91,7 +91,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
         isInfoPanelProjectsVisible,
         isInfoPanelCircshareVisible,
         isInfoPanelPublishedVisible,
-        isInfoPanelProductsVisible,
+        isInfoPanelCatalogVisible,
         isInfoPanelPurchasedVisible,
         isInfoPanelCartVisible,
         isInfoPanelDevelopmentVisible,
