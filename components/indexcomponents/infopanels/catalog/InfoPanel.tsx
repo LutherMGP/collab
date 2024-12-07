@@ -245,7 +245,7 @@ const InfoPanel = ({
             >
               <Image
                 source={{ uri: projectImage }}
-                style={{ width: 100, height: 100 }}
+                style={baseStyles.projectImage}
               />
             </Pressable>
           )}
