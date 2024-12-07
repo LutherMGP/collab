@@ -72,28 +72,29 @@ const CartScreen = () => {
       q,
       async (querySnapshot) => {
         const purchases: PurchaseItem[] = [];
-
+    
         for (const docSnap of querySnapshot.docs) {
           const data = docSnap.data();
           const projectId = data.projectId;
           const projectOwnerId = data.projectOwnerId;
-
+    
           if (!projectId || !projectOwnerId) {
             console.warn(
               `Purchase ${docSnap.id} har manglende projektId eller ejerId.`
             );
             continue;
           }
-
+    
+          // Hent projektdata fra ejerens projekt
           const projectDocRef = doc(
             database,
             "users",
             projectOwnerId,
-            "project",
+            "projects",
             projectId
           );
           const projectDocSnap = await getDoc(projectDocRef);
-
+    
           if (projectDocSnap.exists()) {
             const projectData = projectDocSnap.data();
             purchases.push({
@@ -113,7 +114,7 @@ const CartScreen = () => {
             console.warn(`Projekt dokumentet ${projectId} findes ikke.`);
           }
         }
-
+    
         setCartItems(purchases);
         setIsLoading(false);
         setError(null);
