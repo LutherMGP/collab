@@ -29,6 +29,7 @@ type ProjectData = {
   f5CoverImage?: string | null;
   f3CoverImage?: string | null;
   f2CoverImage?: string | null;
+  projectImage?: string | null;
   isFavorite?: boolean;
   toBePurchased?: boolean;
   userId?: string | null;
@@ -66,6 +67,7 @@ const InfoPanel = ({
   const f5CoverImage = projectData.f5CoverImage || null;
   const f3CoverImage = projectData.f3CoverImage || null;
   const f2CoverImage = projectData.f2CoverImage || null;
+  const projectImage = projectData.projectImage || null;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
 
@@ -157,58 +159,14 @@ const InfoPanel = ({
     }
   };
 
-  const [projectImage, setProjectImage] = useState<string | null>(null);
+  const [ setProjectImage] = useState<string | null>(null);
 
   // Log projekt-ID for debugging
   useEffect(() => {
     console.log("Henter billede for projekt:", projectData.id);
   }, [projectData.id]);
 
-    // Hent projektets billede
-    useEffect(() => {
-      const fetchImages = async () => {
-        if (!projectData.userId || !projectData.id) {
-          console.error("UserId eller projectId mangler.");
-          return;
-        }
-    
-        try {
-          const imagePaths: Record<
-            "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage",
-            string
-          > = {
-            f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f8/f8CoverImage.jpg`,
-            f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f5/f5CoverImage.jpg`,
-            f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f3/f3CoverImage.jpg`,
-            f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f2/f2CoverImage.jpg`,
-          };
-    
-          const updatedImages: Partial<ProjectData> = {};
-    
-          for (const [key, path] of Object.entries(imagePaths)) {
-            try {
-              const refPath = ref(storage, path);
-              const url = await getDownloadURL(refPath);
-              updatedImages[key as keyof ProjectData] = (url + `?t=${Date.now()}`) as any; // Cache-bypass
-            } catch (error) {
-              console.warn(`Fejl ved hentning af ${key}:`, error);
-            }
-          }
-    
-          // Opdater kun de valgfri felter
-          setProjectData((prev) => ({
-            ...prev,
-            ...updatedImages,
-          }));
-        } catch (error) {
-          console.error("Fejl ved billedhentning:", error);
-        }
-      };
-    
-      fetchImages();
-    }, [projectData.userId, projectData.id]);
-
-  // Hent projektets billede
+  // Hent projektets billeder fra storage
   useEffect(() => {
     const fetchImages = async () => {
       if (!projectData.userId || !projectData.id) {
@@ -218,13 +176,14 @@ const InfoPanel = ({
   
       try {
         const imagePaths: Record<
-          "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage",
+          "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage" | "projectImage",
           string
         > = {
           f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
           f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
           f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f3/f3CoverImage.jpg`,
           f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
+          projectImage: `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
         };
   
         const updatedImages: Partial<ProjectData> = {};
@@ -244,6 +203,7 @@ const InfoPanel = ({
           ...prev,
           ...updatedImages,
         }));
+
       } catch (error) {
         console.error("Fejl ved billedhentning:", error);
       }
@@ -285,7 +245,7 @@ const InfoPanel = ({
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.projectImage}
+                style={{ width: 100, height: 100 }}
               />
             </Pressable>
           )}
