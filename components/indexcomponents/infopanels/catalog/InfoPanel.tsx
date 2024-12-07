@@ -166,27 +166,46 @@ const InfoPanel = ({
 
   // Hent projektets billede
   useEffect(() => {
-    const fetchProjectImage = async () => {
+    const fetchImages = async () => {
       if (!projectData.userId || !projectData.id) {
-        console.error("Project ownerId or projectId missing");
+        console.error("UserId eller projectId mangler.");
         return;
       }
   
       try {
-        const projectImageRef = ref(
-          storage,
-          `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
-        );
-        const projectImageUrl = await getDownloadURL(projectImageRef);
-        setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
-        console.log("Projektbillede hentet:", projectImageUrl);
+        const imagePaths: Record<
+          "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage",
+          string
+        > = {
+          f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f8/f8CoverImage.jpg`,
+          f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f5/f5CoverImage.jpg`,
+          f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f3/f3CoverImage.jpg`,
+          f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/f2/f2CoverImage.jpg`,
+        };
+  
+        const updatedImages: Partial<ProjectData> = {};
+  
+        for (const [key, path] of Object.entries(imagePaths)) {
+          try {
+            const refPath = ref(storage, path);
+            const url = await getDownloadURL(refPath);
+            updatedImages[key as keyof ProjectData] = (url + `?t=${Date.now()}`) as any; // Cache-bypass
+          } catch (error) {
+            console.warn(`Fejl ved hentning af ${key}:`, error);
+          }
+        }
+  
+        // Opdater kun de valgfri felter
+        setProjectData((prev) => ({
+          ...prev,
+          ...updatedImages,
+        }));
       } catch (error) {
-        console.error("Fejl ved hentning af projektbillede:", error);
-        setProjectImage(null);
+        console.error("Fejl ved billedhentning:", error);
       }
     };
   
-    fetchProjectImage();
+    fetchImages();
   }, [projectData.userId, projectData.id]);
 
   return (
