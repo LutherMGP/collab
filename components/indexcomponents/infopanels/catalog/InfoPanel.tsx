@@ -5,7 +5,6 @@ import {
   View,
   Text,
   Pressable,
-  Image,
   Alert,
   ActivityIndicator,
   Dimensions,
@@ -19,6 +18,7 @@ import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/catalog/InfoPanelStyles";
+import { Image } from 'expo-image';
 
 type ProjectData = {
   id: string;
@@ -174,36 +174,38 @@ const InfoPanel = ({
         return;
       }
   
+      const imagePaths = {
+        f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
+        f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
+        f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f3/f3CoverImage.jpg`,
+        f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
+        projectImage: `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
+      };
+  
       try {
-        const imagePaths: Record<
-          "f8CoverImage" | "f5CoverImage" | "f3CoverImage" | "f2CoverImage" | "projectImage",
-          string
-        > = {
-          f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
-          f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
-          f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f3/f3CoverImage.jpg`,
-          f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
-          projectImage: `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
-        };
-  
-        const updatedImages: Partial<ProjectData> = {};
-  
-        for (const [key, path] of Object.entries(imagePaths)) {
+        const fetchImage = async (key: keyof typeof imagePaths, path: string) => {
           try {
             const refPath = ref(storage, path);
             const url = await getDownloadURL(refPath);
-            updatedImages[key as keyof ProjectData] = (url + `?t=${Date.now()}`) as any; // Cache-bypass
+            return { [key]: `${url}?t=${Date.now()}` }; // Cache-bypass
           } catch (error) {
             console.warn(`Fejl ved hentning af ${key}:`, error);
+            return { [key]: null };
           }
-        }
+        };
   
-        // Opdater kun de valgfri felter
+        const imagePromises = Object.entries(imagePaths).map(([key, path]) =>
+          fetchImage(key as keyof typeof imagePaths, path)
+        );
+  
+        const imageResults = await Promise.all(imagePromises);
+        const updatedImages = Object.assign({}, ...imageResults);
+  
+        // Opdater kun de felter, der har gyldige URL'er
         setProjectData((prev) => ({
           ...prev,
           ...updatedImages,
         }));
-
       } catch (error) {
         console.error("Fejl ved billedhentning:", error);
       }
@@ -236,14 +238,28 @@ const InfoPanel = ({
           style={baseStyles.F8}
         >
           {/* Vis billede, hvis det er tilgængeligt */}
-          {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
+          {f8CoverImage && (
+            <Image
+              source={{ uri: f8CoverImage }}
+              style={baseStyles.f8CoverImage}
+              contentFit="cover" // Justerer billedets indhold
+              transition={700}  // Tilføjer en overgangseffekt på 1 sekund
+            />
+          )}
 
             {/* Projektbilledet i det runde felt med onPress */}
             <Pressable
               style={baseStyles.projectImageContainer}
             >
             {/* Vis billede, hvis det er tilgængeligt */}
-            {projectImage && <Image source={{ uri: projectImage }} style={baseStyles.projectImage} />}
+            {projectImage && (
+              <Image
+                source={{ uri: projectImage }}
+                style={baseStyles.projectImage}
+                contentFit="cover" // Justerer billedets indhold
+                transition={500}  // Tilføjer en overgangseffekt på 1 sekund
+              />
+            )}
             </Pressable>
         </Pressable>
       </View>
@@ -258,7 +274,12 @@ const InfoPanel = ({
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
                 {f2CoverImage && (
-                  <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
+                  <Image
+                    source={{ uri: f2CoverImage }}
+                    style={baseStyles.f2CoverImage}
+                    contentFit="cover"
+                    transition={1000}
+                  />
                 )}
               </Pressable>
 
@@ -298,7 +319,12 @@ const InfoPanel = ({
             >
               {/* Vis billede, hvis det er tilgængeligt */}
               {f3CoverImage && (
-                <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
+                <Image
+                  source={{ uri: f3CoverImage }}
+                  style={baseStyles.f3CoverImage}
+                  contentFit="cover"
+                  transition={900}
+                />
               )}
             </Pressable>
           </View>
@@ -309,7 +335,12 @@ const InfoPanel = ({
           >
             {/* Vis billede, hvis det er tilgængeligt */}
             {f5CoverImage && (
-              <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
+              <Image
+                source={{ uri: f5CoverImage }}
+                style={baseStyles.f5CoverImage}
+                contentFit="cover"
+                transition={800}
+              />
             )}
           </Pressable>
         </View>

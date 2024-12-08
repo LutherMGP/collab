@@ -69,6 +69,7 @@ Hvad er næste skridt?
    • npx expo install expo-file-system expo-sharing expo-av
    • npx expo install expo-video expo-file-system
    • npx expo install expo-av
+   • npx expo install expo-image
 
    ## Opstart af iOS Simulator
 
