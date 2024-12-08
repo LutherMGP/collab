@@ -58,25 +58,26 @@ const InfoPanelProducts = () => {
 
   const fetchAvailableProjects = async () => {
     if (!user) return;
-
+  
     try {
-      // Hent alle publicerede projekter
-      const allPublishedProjectsQuery = query(
+      // Hent alle projekter med status "Application"
+      const allApplicationProjectsQuery = query(
         collectionGroup(database, "projects"),
-        where("status", "==", "Published")
+        where("status", "==", "Application") // Ændret til "Application"
       );
-
-      const allPublishedProjectsSnapshot = await getDocs(
-        allPublishedProjectsQuery
+  
+      const allApplicationProjectsSnapshot = await getDocs(
+        allApplicationProjectsQuery
       );
-      const allPublishedProjects = allPublishedProjectsSnapshot.docs.map(
+  
+      const allApplicationProjects = allApplicationProjectsSnapshot.docs.map(
         (docSnap) => ({
           id: docSnap.id,
           ...(docSnap.data() as DocumentData),
           userId: docSnap.ref.parent.parent?.id || null,
         })
       ) as ProjectData[];
-
+  
       // Hent brugerens købte projekter
       const userPurchasesSnapshot = await getDocs(
         query(
@@ -84,27 +85,27 @@ const InfoPanelProducts = () => {
           where("purchased", "==", true)
         )
       );
-
+  
       const purchasedProjectIds = new Set(
         userPurchasesSnapshot.docs.map((purchaseDoc) => {
           const purchaseData = purchaseDoc.data() as DocumentData;
           return purchaseData.projectId;
         })
       );
-
+  
       // Filtrer projekter for at udelukke brugerens egne og allerede købte
-      const filteredProjects = allPublishedProjects.filter(
+      const filteredProjects = allApplicationProjects.filter(
         (project) =>
           project.userId !== user && !purchasedProjectIds.has(project.id)
       );
-
+  
       // Hent billeder for hvert filtreret projekt
       const projectsWithImages = await Promise.all(
         filteredProjects.map(async (project) => {
           let projectImage = null;
           let guideImage = null;
           let previewUrl = null;
-
+  
           // Hent projektbillede fra assets
           if (project.projectId && project.userId) {
             const projectDocRef = doc(
@@ -119,7 +120,7 @@ const InfoPanelProducts = () => {
               projectImage = projectDocSnap.data().coverUrl || null;
             }
           }
-
+  
           // Hent guidebillede fra assets
           if (project.guideId && project.userId) {
             const guideDocRef = doc(
@@ -135,7 +136,7 @@ const InfoPanelProducts = () => {
               previewUrl = guideDocSnap.data().previewUrl || null;
             }
           }
-
+  
           return {
             ...project,
             projectImage,
@@ -144,7 +145,7 @@ const InfoPanelProducts = () => {
           };
         })
       );
-
+  
       setProjects(projectsWithImages);
       setError(null);
     } catch (err) {

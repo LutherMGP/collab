@@ -121,16 +121,16 @@ const InfoPanel = ({
 
   const handlePurchase = async () => {
     if (!config.showPurchase) return;
-
+  
     try {
       const newToBePurchasedStatus = !toBePurchased;
       setToBePurchased(newToBePurchasedStatus);
-
+  
       if (!userId) {
         Alert.alert("Fejl", "Bruger ikke logget ind.");
         return;
       }
-
+  
       const purchaseDocRef = doc(
         database,
         "users",
@@ -138,7 +138,7 @@ const InfoPanel = ({
         "purchases",
         projectData.id
       );
-
+  
       if (newToBePurchasedStatus) {
         await setDoc(
           purchaseDocRef,
@@ -146,6 +146,7 @@ const InfoPanel = ({
             projectId: projectData.id,
             projectOwnerId: projectData.userId,
             purchased: false,
+            status: "Application", // Hvis status skal gemmes
           },
           { merge: true }
         );

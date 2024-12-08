@@ -11,7 +11,7 @@ import CircShare from "@/components/indexcomponents/dashboard/CircShare";
 import Published from "@/components/indexcomponents/dashboard/Published";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Purchased from "@/components/indexcomponents/dashboard/Purchased";
-import Applications from "./Applications";
+import Applications from "@/components/indexcomponents/dashboard/Applications";
 
 const Snit = () => {
   const theme = useColorScheme() || "light";
