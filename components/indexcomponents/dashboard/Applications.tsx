@@ -102,7 +102,7 @@ const Applications = () => {
   return (
     <View style={[styles.createStoryContainer]}>
       <Image
-        source={require("@/assets/images/offerings.webp")}
+        source={require("@/assets/images/applications.jpg")}
         style={styles.profileImg}
         resizeMode="cover"
       />
@@ -119,7 +119,7 @@ const Applications = () => {
 
       <View style={styles.createStoryTextContainer}>
         <Text style={[styles.createStoryText, { color: Colors[theme].text }]}>
-          Catalog
+          Applications
         </Text>
       </View>
     </View>

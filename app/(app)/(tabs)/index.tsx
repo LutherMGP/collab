@@ -39,6 +39,7 @@ const Index = () => {
     isInfoPanelCatalogVisible,
     isInfoPanelPurchasedVisible,
     isInfoPanelCartVisible,
+    isInfoPanelApplicationsVisible,
     isInfoPanelDevelopmentVisible,
   } = useVisibility();
 
@@ -49,6 +50,7 @@ const Index = () => {
     isInfoPanelCatalogVisible ||
     isInfoPanelPurchasedVisible ||
     isInfoPanelCartVisible ||
+    isInfoPanelApplicationsVisible ||
     isInfoPanelDevelopmentVisible
   );
 
@@ -177,6 +179,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   infoPanelCatalogContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelApplicationsContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,

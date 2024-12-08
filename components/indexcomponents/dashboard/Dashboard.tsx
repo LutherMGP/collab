@@ -11,6 +11,7 @@ import CircShare from "@/components/indexcomponents/dashboard/CircShare";
 import Published from "@/components/indexcomponents/dashboard/Published";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Purchased from "@/components/indexcomponents/dashboard/Purchased";
+import Applications from "./Applications";
 
 const Snit = () => {
   const theme = useColorScheme() || "light";
@@ -37,6 +38,9 @@ const Snit = () => {
 
       {/* Viser kun Published, hvis brugerens rolle er 'Designer' eller 'Admin' */}
       {(userRole === "Designer" || userRole === "Admin") && <Published />}
+
+      {/* Viser kun Applications, hvis brugerens rolle er 'Designer' eller 'Admin' */}
+      {(userRole === "Designer" || userRole === "Admin") && <Applications />}
 
       {/* Vis Catalog, for alle */}
       <Catalog />
