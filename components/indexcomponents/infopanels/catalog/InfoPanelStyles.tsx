@@ -509,4 +509,38 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    width: "100%",
+    marginBottom: 20,
+    textAlignVertical: "top",
+    height: 80,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  cancelButton: {
+    backgroundColor: "red",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+  },
+  submitButton: {
+    backgroundColor: Colors.light.tint,
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginLeft: 5,
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
 });

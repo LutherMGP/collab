@@ -8,33 +8,44 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collectionGroup,
-  collection,
+  doc,
+  setDoc,
   query,
   where,
   onSnapshot,
-  DocumentData,
-  CollectionReference,
+  serverTimestamp,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+
+interface Project {
+  id: string;
+  ownerId: string;
+  [key: string]: any;
+}
 
 const Catalog = () => {
   const theme = "light";
   const { user } = useAuth();
   const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } =
     useVisibility();
+
   const [productCount, setProductCount] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [applicationMessage, setApplicationMessage] = useState("");
 
   useEffect(() => {
     if (!user) return;
 
     const fetchProducts = async () => {
-      // 1. Definer en query for at hente alle frigivne projekter
       const allProductsQuery = query(
         collectionGroup(database, "projects"),
         where("status", "==", "Published")
@@ -44,42 +55,17 @@ const Catalog = () => {
         const allProductIds = snapshot.docs.map((doc) => ({
           id: doc.id,
           ownerId: doc.ref.parent.parent?.id || null,
+          ...doc.data(),
         }));
 
-        // 2. Definer en query for at hente brugerens egne projekter
-        const userProjectsCollection = collection(
-          database,
-          "users",
-          user,
-          "projects"
-        ) as CollectionReference<DocumentData>;
-
-        const userProjectsQuery = query(
-          userProjectsCollection,
-          where("status", "==", "Published")
+        const availableProducts = allProductIds.filter(
+          ({ ownerId }) => ownerId !== user
         );
 
-        const userProjectsUnsub = onSnapshot(
-          userProjectsQuery,
-          (userSnapshot) => {
-            const userProjectIds = new Set(
-              userSnapshot.docs.map((doc) => doc.id)
-            );
-
-            // 3. Filtrer for at fjerne brugerens egne projekter fra alle frigivne projekter
-            const availableProducts = allProductIds.filter(
-              ({ id, ownerId }) => !userProjectIds.has(id) && ownerId !== user
-            );
-
-            // 4. Opdater `productCount` med antallet af tilgængelige produkter
-            setProductCount(availableProducts.length);
-          }
-        );
-
-        return () => userProjectsUnsub(); // Unsubscribe userProjectsQuery
+        setProductCount(availableProducts.length);
       });
 
-      return () => unsubscribe(); // Unsubscribe allProductsQuery
+      return () => unsubscribe();
     };
 
     fetchProducts().catch((error) => {
@@ -88,15 +74,47 @@ const Catalog = () => {
     });
   }, [user]);
 
-  const handlePress = () => {
-    if (isInfoPanelCatalogVisible) {
-      hideAllPanels();
-    } else {
-      showPanel("catalog");
+  const handleApply = (project: Project) => {
+    setSelectedProject(project);
+    setModalVisible(true);
+  };
+
+  const submitApplication = async () => {
+    if (!selectedProject) {
+      Alert.alert("Fejl", "Ingen projekt valgt.");
+      return;
     }
-    console.log(
-      `Product count button pressed. InfoPanelProducts visibility set to ${!isInfoPanelCatalogVisible}.`
-    );
+
+    if (!applicationMessage.trim()) {
+      Alert.alert("Fejl", "Skriv en besked før du sender ansøgningen.");
+      return;
+    }
+
+    try {
+      const applicationRef = doc(
+        database,
+        "users",
+        selectedProject.ownerId,
+        "projects",
+        selectedProject.id,
+        "applications",
+        `${user}_${Date.now()}`
+      );
+
+      await setDoc(applicationRef, {
+        applicantId: user,
+        message: applicationMessage.trim(),
+        status: "pending",
+        createdAt: serverTimestamp(),
+      });
+
+      Alert.alert("Ansøgning sendt!", "Din ansøgning er blevet sendt.");
+      setApplicationMessage("");
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Fejl ved indsendelse af ansøgning:", error);
+      Alert.alert("Fejl", "Kunne ikke sende ansøgningen. Prøv igen.");
+    }
   };
 
   return (
@@ -112,7 +130,10 @@ const Catalog = () => {
           styles.iconContainer,
           isInfoPanelCatalogVisible ? styles.iconPressed : null,
         ]}
-        onPress={handlePress}
+        onPress={() => {
+          if (isInfoPanelCatalogVisible) hideAllPanels();
+          else showPanel("catalog");
+        }}
       >
         <Text style={styles.productCountText}>{productCount}</Text>
       </TouchableOpacity>
@@ -122,6 +143,40 @@ const Catalog = () => {
           Catalog
         </Text>
       </View>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Ansøg om projekt</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Skriv din besked..."
+              value={applicationMessage}
+              onChangeText={setApplicationMessage}
+              multiline
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Annuller</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={submitApplication}
+              >
+                <Text style={styles.buttonText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -161,7 +216,7 @@ const styles = StyleSheet.create({
     width: 40,
     borderWidth: 3,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    elevation: 3, // Tilføj skygge for et bedre design
+    elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -188,6 +243,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginTop: 22,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    width: "100%",
+    marginBottom: 20,
+    textAlignVertical: "top",
+    height: 80,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  cancelButton: {
+    backgroundColor: "red",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+  },
+  submitButton: {
+    backgroundColor: Colors.light.tint,
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginLeft: 5,
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });
 

@@ -13,7 +13,6 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
-  collectionGroup,
   collection,
   query,
   where,
@@ -28,65 +27,29 @@ const Applications = () => {
   const { user } = useAuth();
   const { isInfoPanelApplicationsVisible, showPanel, hideAllPanels } =
     useVisibility();
-  const [productCount, setProductCount] = useState(0);
+  const [applicationCount, setApplicationCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
-  
-    const fetchProducts = async () => {
-      // 1. Definer en query for at hente alle projekter med status "Application"
-      const allApplicationsQuery = query(
-        collectionGroup(database, "projects"),
-        where("status", "==", "Application") // Ændret til "Application"
+
+    const fetchApplications = () => {
+      // Query for at hente alle ansøgninger med status "pending" for brugeren
+      const applicationsQuery = query(
+        collection(database, "users", user, "applications"),
+        where("status", "==", "pending")
       );
-  
-      const unsubscribe = onSnapshot(allApplicationsQuery, (snapshot) => {
-        const allApplicationIds = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ownerId: doc.ref.parent.parent?.id || null,
-        }));
-  
-        // 2. Definer en query for at hente brugerens egne projekter
-        const userProjectsCollection = collection(
-          database,
-          "users",
-          user,
-          "projects"
-        ) as CollectionReference<DocumentData>;
-  
-        const userApplicationsQuery = query(
-          userProjectsCollection,
-          where("status", "==", "Application") // Ændret til "Application"
-        );
-  
-        const userProjectsUnsub = onSnapshot(
-          userApplicationsQuery,
-          (userSnapshot) => {
-            const userApplicationIds = new Set(
-              userSnapshot.docs.map((doc) => doc.id)
-            );
-  
-            // 3. Filtrer for at fjerne brugerens egne projekter fra alle "Application"-projekter
-            const availableApplications = allApplicationIds.filter(
-              ({ id, ownerId }) =>
-                !userApplicationIds.has(id) && ownerId !== user
-            );
-  
-            // 4. Opdater `productCount` med antallet af tilgængelige "Application"-projekter
-            setProductCount(availableApplications.length);
-          }
-        );
-  
-        return () => userProjectsUnsub(); // Unsubscribe userApplicationsQuery
+
+      const unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+        setApplicationCount(snapshot.size);
+      }, (error) => {
+        console.error("Fejl ved hentning af ansøgninger:", error);
+        Alert.alert("Fejl", "Kunne ikke hente ansøgninger.");
       });
-  
-      return () => unsubscribe(); // Unsubscribe allApplicationsQuery
+
+      return () => unsubscribe();
     };
-  
-    fetchProducts().catch((error) => {
-      console.error("Fejl ved hentning af applications:", error);
-      Alert.alert("Fejl", "Kunne ikke hente applications.");
-    });
+
+    fetchApplications();
   }, [user]);
 
   const handlePress = () => {
@@ -96,12 +59,12 @@ const Applications = () => {
       showPanel("applications");
     }
     console.log(
-      `Product count button pressed. InfoPanelApplications visibility set to ${!isInfoPanelApplicationsVisible}.`
+      `Applications button pressed. InfoPanelApplications visibility set to ${!isInfoPanelApplicationsVisible}.`
     );
   };
 
   return (
-    <View style={[styles.createStoryContainer]}>
+    <View style={styles.createStoryContainer}>
       <Image
         source={require("@/assets/images/applications.jpg")}
         style={styles.profileImg}
@@ -115,7 +78,7 @@ const Applications = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.productCountText}>{productCount}</Text>
+        <Text style={styles.productCountText}>{applicationCount}</Text>
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>

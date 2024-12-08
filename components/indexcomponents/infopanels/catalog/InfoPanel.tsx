@@ -5,15 +5,19 @@ import {
   View,
   Text,
   Pressable,
+  TouchableOpacity,
+  TextInput,
   Alert,
   ActivityIndicator,
   Dimensions,
+  Modal,
   ScrollView,
 } from "react-native";
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/hooks/useAuth";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { useAuth, useRole } from "@/hooks/useAuth";
+import { useVisibility } from "@/hooks/useVisibilityContext";
+import { doc, setDoc, deleteDoc, serverTimestamp, collection } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
@@ -57,8 +61,9 @@ const InfoPanel = ({
   const height = (width * 8) / 5;
   const rightMargin = width * 0.03;
 
-  const { user: currentUser } = useAuth();
-  const userId = currentUser;
+  const { user, userRole } = useAuth();
+  const { isDesigner, isAdmin } = useRole();
+  const { showPanel } = useVisibility();
 
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
@@ -78,6 +83,10 @@ const InfoPanel = ({
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // State for ansøgningsmodal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
+
   const handleFavoriteToggle = async () => {
     if (!config.showFavorite) return;
 
@@ -86,7 +95,7 @@ const InfoPanel = ({
       console.log("Favorite button pressed");
       setIsFavorite(newFavoriteStatus);
 
-      if (!userId) {
+      if (!user) {
         Alert.alert("Fejl", "Bruger ikke logget ind.");
         return;
       }
@@ -94,7 +103,7 @@ const InfoPanel = ({
       const favoriteDocRef = doc(
         database,
         "users",
-        userId,
+        user,
         "favorites",
         projectData.id
       );
@@ -126,7 +135,7 @@ const InfoPanel = ({
       const newToBePurchasedStatus = !toBePurchased;
       setToBePurchased(newToBePurchasedStatus);
 
-      if (!userId) {
+      if (!user) {
         Alert.alert("Fejl", "Bruger ikke logget ind.");
         return;
       }
@@ -134,7 +143,7 @@ const InfoPanel = ({
       const purchaseDocRef = doc(
         database,
         "users",
-        userId,
+        user,
         "purchases",
         projectData.id
       );
@@ -146,6 +155,7 @@ const InfoPanel = ({
             projectId: projectData.id,
             projectOwnerId: projectData.userId,
             purchased: false,
+            status: "Application",
           },
           { merge: true }
         );
@@ -156,10 +166,12 @@ const InfoPanel = ({
       }
     } catch (error) {
       console.error("Fejl ved opdatering af køb status:", error);
+      Alert.alert(
+        "Fejl",
+        "Der opstod en fejl under opdatering af køb status."
+      );
     }
   };
-
-  const [ setProjectImage] = useState<string | null>(null);
 
   // Log projekt-ID for debugging
   useEffect(() => {
@@ -173,7 +185,7 @@ const InfoPanel = ({
         console.error("UserId eller projectId mangler.");
         return;
       }
-  
+
       const imagePaths = {
         f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
         f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
@@ -181,27 +193,26 @@ const InfoPanel = ({
         f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
         projectImage: `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
       };
-  
+
       try {
         const fetchImage = async (key: keyof typeof imagePaths, path: string) => {
           try {
             const refPath = ref(storage, path);
             const url = await getDownloadURL(refPath);
-            return { [key]: `${url}?t=${Date.now()}` }; // Cache-bypass
+            return { [key]: `${url}?t=${Date.now()}` };
           } catch (error) {
             console.warn(`Fejl ved hentning af ${key}:`, error);
             return { [key]: null };
           }
         };
-  
+
         const imagePromises = Object.entries(imagePaths).map(([key, path]) =>
           fetchImage(key as keyof typeof imagePaths, path)
         );
-  
+
         const imageResults = await Promise.all(imagePromises);
         const updatedImages = Object.assign({}, ...imageResults);
-  
-        // Opdater kun de felter, der har gyldige URL'er
+
         setProjectData((prev) => ({
           ...prev,
           ...updatedImages,
@@ -210,9 +221,57 @@ const InfoPanel = ({
         console.error("Fejl ved billedhentning:", error);
       }
     };
-  
+
     fetchImages();
   }, [projectData.userId, projectData.id]);
+
+  // Funktion til at åbne ansøgningsmodal
+  const handleApply = () => {
+    setModalVisible(true);
+  };
+
+  // Funktion til at indsende ansøgning
+  const submitApplication = async () => {
+    if (!user) {
+      Alert.alert("Fejl", "Bruger ikke logget ind.");
+      return;
+    }
+
+    if (!applicationMessage.trim()) {
+      Alert.alert("Fejl", "Skriv en besked før du sender ansøgningen.");
+      return;
+    }
+
+    try {
+      const projectId = projectData.id;
+      if (!projectId) {
+        Alert.alert("Fejl", "Projekt-ID mangler.");
+        return;
+      }
+
+      const applicationRef = doc(
+        collection(database, "users", projectData.userId || "", "projects", projectId, "applications")
+      );
+
+      await setDoc(applicationRef, {
+        applicantId: user,
+        message: applicationMessage.trim(),
+        status: "pending",
+        createdAt: serverTimestamp(),
+      });
+
+      Alert.alert("Ansøgning sendt!", "Din ansøgning er blevet sendt.");
+      setApplicationMessage("");
+      setModalVisible(false);
+
+      // Vis Applications panel
+      showPanel("applications");
+      console.log("Applications panel should now be visible.");
+    } catch (error) {
+      console.error("Fejl ved indsendelse af ansøgning:", error);
+      Alert.alert("Fejl", "Kunne ikke sende ansøgningen. Prøv igen.");
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
@@ -247,20 +306,20 @@ const InfoPanel = ({
             />
           )}
 
-            {/* Projektbilledet i det runde felt med onPress */}
-            <Pressable
-              style={baseStyles.projectImageContainer}
-            >
+          {/* Projektbilledet i det runde felt med onPress */}
+          <Pressable
+            style={baseStyles.projectImageContainer}
+          >
             {/* Vis billede, hvis det er tilgængeligt */}
             {projectImage && (
               <Image
                 source={{ uri: projectImage }}
                 style={baseStyles.projectImage}
                 contentFit="cover" // Justerer billedets indhold
-                transition={2000}  // Tilføjer en overgangseffekt på 1 sekund
+                transition={2000}  // Tilføjer en overgangseffekt på 2 sekunder
               />
             )}
-            </Pressable>
+          </Pressable>
         </Pressable>
       </View>
 
@@ -282,33 +341,48 @@ const InfoPanel = ({
                   />
                 )}
               </Pressable>
-
             </View>
             <View style={baseStyles.rightTop}>
-            <View style={baseStyles.f1topHalf}>
-              <Pressable
-                style={baseStyles.F1A}
-                onPress={handleFavoriteToggle} // Kalder handleFavoriteToggle
-                accessibilityLabel="Favorite Button"
-              >
-                <AntDesign
-                  name={isFavorite ? "heart" : "hearto"} // Dynamisk ikon baseret på favoritstatus
-                  size={24}
-                  color={isFavorite ? "#0a7ea4" : "#0a7ea4"} // Brug Colors[theme].tint til det aktive hjerte
-                />
-              </Pressable>
-            </View>
+              <View style={baseStyles.f1topHalf}>
+                <Pressable
+                  style={baseStyles.F1A}
+                  onPress={handleFavoriteToggle} // Kalder handleFavoriteToggle
+                  accessibilityLabel="Favorite Button"
+                >
+                  <AntDesign
+                    name={isFavorite ? "heart" : "hearto"} // Dynamisk ikon baseret på favoritstatus
+                    size={24}
+                    color="#0a7ea4" // Brug Colors[theme].tint til det aktive hjerte
+                  />
+                </Pressable>
+              </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handlePurchase} // Kalder handlePurchase
-                  accessibilityLabel="Purchase Button"
+                  onPress={
+                    isDesigner || isAdmin
+                      ? handleApply
+                      : handlePurchase
+                  } // Dynamisk handling baseret på brugerens rolle
+                  accessibilityLabel={
+                    isDesigner || isAdmin
+                      ? "Ansøg knap"
+                      : "Purchase Button"
+                  }
                 >
-                  <MaterialIcons
-                    name={toBePurchased ? "join-right" : "join-left"}
-                    size={30}
-                    color={toBePurchased ? "#0a7ea4" : "#0a7ea4"}
-                  />
+                  {isDesigner || isAdmin ? (
+                    <MaterialIcons
+                      name="send" // Vælg et ikon, der repræsenterer ansøgning
+                      size={30}
+                      color="#0a7ea4"
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={toBePurchased ? "join-right" : "join-left"}
+                      size={30}
+                      color="#0a7ea4"
+                    />
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -345,6 +419,43 @@ const InfoPanel = ({
           </Pressable>
         </View>
       </View>
+
+      {/* Ansøgningsmodal */}
+      {(isDesigner || isAdmin) && (
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={baseStyles.modalContainer}>
+            <View style={baseStyles.modalContent}>
+              <Text style={baseStyles.modalTitle}>Ansøg om projekt</Text>
+              <TextInput
+                style={baseStyles.textInput}
+                placeholder="Skriv din besked..."
+                value={applicationMessage}
+                onChangeText={setApplicationMessage}
+                multiline
+              />
+              <View style={baseStyles.modalActions}>
+                <TouchableOpacity
+                  style={baseStyles.cancelButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={baseStyles.buttonText}>Annuller</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={baseStyles.submitButton}
+                  onPress={submitApplication}
+                >
+                  <Text style={baseStyles.buttonText}>Send</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {isLoading && (
         <View style={baseStyles.loadingOverlay}>
