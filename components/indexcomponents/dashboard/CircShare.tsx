@@ -18,7 +18,7 @@ import { database } from "@/firebaseConfig";
 const CircShare = () => {
   const theme = "light";
   const { user } = useAuth();
-  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
+  const { isInfoPanelCircshareVisible, showPanel, hideAllPanels } =
     useVisibility();
   const [draftCount, setDraftCount] = useState(0);
 
@@ -52,13 +52,13 @@ const CircShare = () => {
   }, [user]);
 
   const handlePress = () => {
-    if (isInfoPanelProjectsVisible) {
+    if (isInfoPanelCircshareVisible) {
       hideAllPanels();
     } else {
-      showPanel("projects");
+      showPanel("circshare");
     }
     console.log(
-      `Draft count button pressed. InfoPanelProjects visibility set to ${!isInfoPanelProjectsVisible}.`
+      `Draft count button pressed. InfoPanelCircshare visibility set to ${!isInfoPanelCircshareVisible}.`
     );
   };
 
@@ -73,7 +73,7 @@ const CircShare = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelProjectsVisible ? styles.iconPressed : null,
+          isInfoPanelCircshareVisible ? styles.iconPressed : null,
         ]}
         onPress={handlePress}
       >
