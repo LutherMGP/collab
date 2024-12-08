@@ -243,7 +243,7 @@ const InfoPanel = ({
               source={{ uri: f8CoverImage }}
               style={baseStyles.f8CoverImage}
               contentFit="cover" // Justerer billedets indhold
-              transition={700}  // Tilføjer en overgangseffekt på 1 sekund
+              transition={1000}  // Tilføjer en overgangseffekt på 1 sekund
             />
           )}
 
@@ -257,7 +257,7 @@ const InfoPanel = ({
                 source={{ uri: projectImage }}
                 style={baseStyles.projectImage}
                 contentFit="cover" // Justerer billedets indhold
-                transition={500}  // Tilføjer en overgangseffekt på 1 sekund
+                transition={2000}  // Tilføjer en overgangseffekt på 1 sekund
               />
             )}
             </Pressable>
@@ -323,7 +323,7 @@ const InfoPanel = ({
                   source={{ uri: f3CoverImage }}
                   style={baseStyles.f3CoverImage}
                   contentFit="cover"
-                  transition={900}
+                  transition={1000}
                 />
               )}
             </Pressable>
@@ -339,7 +339,7 @@ const InfoPanel = ({
                 source={{ uri: f5CoverImage }}
                 style={baseStyles.f5CoverImage}
                 contentFit="cover"
-                transition={800}
+                transition={1000}
               />
             )}
           </Pressable>
