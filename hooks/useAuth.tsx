@@ -9,16 +9,20 @@ import React, {
 } from "react";
 import { useRouter } from "expo-router";
 import { auth, database } from "@/firebaseConfig";
-import { signOut as firebaseSignOut } from "firebase/auth";
+import {
+  signOut as firebaseSignOut,
+  signInWithCredential,
+  onAuthStateChanged,
+  OAuthProvider,
+} from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import * as SecureStore from "expo-secure-store";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { Alert } from "react-native";
 
 type AuthContextType = {
-  user: string | null;
+  user: string | null; // Firebase UID
   userRole: string | null;
-  setUser: React.Dispatch<React.SetStateAction<string | null>>;
-  setUserRole: React.Dispatch<React.SetStateAction<string | null>>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   updateUserProfile: (userId: string, profileData: any) => Promise<void>;
@@ -27,8 +31,6 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   userRole: null,
-  setUser: () => {},
-  setUserRole: () => {},
   signInWithApple: async () => {},
   signOut: async () => {},
   updateUserProfile: async () => {},
@@ -50,26 +52,30 @@ export const useRole = () => {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<string | null>(null);
+  const [user, setUser] = useState<string | null>(null); // Firebase UID
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkStoredUser = async () => {
-      const storedUserId = await SecureStore.getItemAsync("userId");
-
-      if (storedUserId) {
-        setUser(storedUserId);
-        const userDoc = await getDoc(doc(database, "users", storedUserId));
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const uid = firebaseUser.uid;
+        setUser(uid);
+        const userDoc = await getDoc(doc(database, "users", uid));
         if (userDoc.exists()) {
           setUserRole(userDoc.data().role);
-          router.replace("/(app)/(tabs)");
+        } else {
+          // Hvis brugeren ikke har et dokument, kan du oprette et her eller sætte en standardrolle
+          setUserRole("Bruger");
         }
+        router.replace("/(app)/(tabs)");
       } else {
+        setUser(null);
+        setUserRole(null);
         router.replace("/(app)/(auth)/login");
       }
-    };
+    });
 
-    checkStoredUser();
+    return () => unsubscribe();
   }, []);
 
   const signInWithApple = async () => {
@@ -82,32 +88,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (appleAuth) {
-        const userId = appleAuth.user;
-        const userEmail =
-          appleAuth.email ||
-          (await getDoc(doc(database, "users", userId))).data()?.email ||
-          "generated_email@domain.com";
+        const { identityToken, authorizationCode } = appleAuth;
 
-        await SecureStore.setItemAsync("userId", userId);
+        if (!identityToken || !authorizationCode) {
+          throw new Error("Apple Authentication failed - Missing tokens");
+        }
 
-        const userDocRef = doc(database, "users", userId);
+        // Opret Firebase Credential
+        const provider = new OAuthProvider("apple.com");
+        const credential = provider.credential({
+          idToken: identityToken,
+          rawNonce: authorizationCode, // Hvis du bruger nonce
+        });
+
+        // Sign in med Firebase
+        const firebaseUserCredential = await signInWithCredential(auth, credential);
+        const firebaseUser = firebaseUserCredential.user;
+
+        const uid = firebaseUser.uid;
+        const userEmail = firebaseUser.email || "generated_email@domain.com";
+
+        // Gem UID i SecureStore
+        await SecureStore.setItemAsync("userId", uid);
+
+        // Hent eller opret brugerens dokument i Firestore
+        const userDocRef = doc(database, "users", uid);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
           await setDoc(userDocRef, {
             email: userEmail,
-            name: appleAuth.fullName?.givenName || "Bruger",
+            name: firebaseUser.displayName || "Bruger",
             role: "Bruger",
             createdAt: new Date().toISOString(),
           });
         }
 
-        setUser(userId);
-        setUserRole("Bruger");
+        setUser(uid);
+        setUserRole(userDoc.exists() ? userDoc.data().role : "Bruger");
         router.replace("/(app)/(tabs)");
       }
     } catch (error) {
       console.error("Fejl ved Apple-login:", error);
+      Alert.alert("Login Fejl", "Der opstod en fejl under login. Prøv igen.");
     }
   };
 
@@ -120,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.replace("/(app)/(auth)/login");
     } catch (error) {
       console.error("Fejl ved logout:", error);
+      Alert.alert("Logout Fejl", "Der opstod en fejl under logout. Prøv igen.");
     }
   };
 
@@ -129,8 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         merge: true,
       });
       console.log("Brugeroplysninger opdateret!");
+      Alert.alert("Succes", "Brugeroplysninger opdateret!");
     } catch (error) {
       console.error("Fejl ved opdatering af brugeroplysninger:", error);
+      Alert.alert("Opdaterings Fejl", "Der opstod en fejl under opdatering af brugeroplysninger. Prøv igen.");
     }
   };
 
@@ -139,8 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         userRole,
-        setUser,
-        setUserRole,
         signInWithApple,
         signOut,
         updateUserProfile,

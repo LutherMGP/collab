@@ -57,6 +57,8 @@ const InfoPanelApplications = () => {
         where("status", "==", "pending")
       );
 
+      console.log("Firestore Query:", applicationsQuery);
+
       const unsubscribe = onSnapshot(
         applicationsQuery,
         (snapshot) => {
@@ -114,17 +116,21 @@ const InfoPanelApplications = () => {
         </Text>
       ) : (
         applications.map((application) => (
-          <InfoPanel
-            key={application.id}
-            projectData={{
-              id: application.projectId || "",
-              name: "Projekt: " + application.projectId,
-              description: application.message,
-              status: application.status,
-              userId: "000668.97aa4f945b144d9cb7c896adbca41069.1640", // Victor's userId
-            }}
-            config={config}
-          />
+          <View key={application.id}>
+            <Text style={{ color: Colors[theme].text }}>
+              Ansøgning: {application.message}
+            </Text>
+            <InfoPanel
+              projectData={{
+                id: application.projectId || "",
+                name: "Projekt: " + application.projectId,
+                description: application.message,
+                status: application.status,
+                userId: "000668.97aa4f945b144d9cb7c896adbca41069.1640", // Victor's UID
+              }}
+              config={config}
+            />
+          </View>
         ))
       )}
     </View>
