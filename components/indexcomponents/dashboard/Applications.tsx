@@ -26,7 +26,7 @@ import { database } from "@/firebaseConfig";
 const Applications = () => {
   const theme = "light";
   const { user } = useAuth();
-  const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } =
+  const { isInfoPanelApplicationsVisible, showPanel, hideAllPanels } =
     useVisibility();
   const [productCount, setProductCount] = useState(0);
 
@@ -90,13 +90,13 @@ const Applications = () => {
   }, [user]);
 
   const handlePress = () => {
-    if (isInfoPanelCatalogVisible) {
+    if (isInfoPanelApplicationsVisible) {
       hideAllPanels();
     } else {
-      showPanel("catalog");
+      showPanel("applications");
     }
     console.log(
-      `Product count button pressed. InfoPanelProducts visibility set to ${!isInfoPanelCatalogVisible}.`
+      `Product count button pressed. InfoPanelApplications visibility set to ${!isInfoPanelApplicationsVisible}.`
     );
   };
 
@@ -111,7 +111,7 @@ const Applications = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelCatalogVisible ? styles.iconPressed : null,
+          isInfoPanelApplicationsVisible ? styles.iconPressed : null,
         ]}
         onPress={handlePress}
       >

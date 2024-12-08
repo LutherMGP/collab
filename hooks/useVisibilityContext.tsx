@@ -61,26 +61,27 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   const [isInfoPanelDevelopmentVisible, setIsInfoPanelDevelopmentVisible] =
     useState(false);
 
-  const showPanel = (
-    panel:
-      | "projects"
-      | "circshare"
-      | "published"
-      | "catalog"
-      | "purchased"
-      | "cart"
-      | "applications"
-      | "development"
-  ) => {
-    setIsInfoPanelProjectsVisible(panel === "projects");
-    setIsInfoPanelCircshareVisible(panel === "circshare");
-    setIsInfoPanelPublishedVisible(panel === "published");
-    setIsInfoPanelCatalogVisible(panel === "catalog");
-    setIsInfoPanelPurchasedVisible(panel === "purchased");
-    setIsInfoPanelCartVisible(panel === "cart");
-    setIsInfoPanelApplicationsVisible(panel === "applications");
-    setIsInfoPanelDevelopmentVisible(panel === "development");
-  };
+    const showPanel = (
+      panel:
+        | "projects"
+        | "circshare"
+        | "published"
+        | "catalog"
+        | "purchased"
+        | "cart"
+        | "applications"
+        | "development"
+    ) => {
+      // Sæt synlighed kun for det angivne panel
+      setIsInfoPanelProjectsVisible(panel === "projects");
+      setIsInfoPanelCircshareVisible(panel === "circshare");
+      setIsInfoPanelPublishedVisible(panel === "published");
+      setIsInfoPanelCatalogVisible(panel === "catalog");
+      setIsInfoPanelPurchasedVisible(panel === "purchased");
+      setIsInfoPanelCartVisible(panel === "cart");
+      setIsInfoPanelApplicationsVisible(panel === "applications");
+      setIsInfoPanelDevelopmentVisible(panel === "development");
+    };
 
   const hideAllPanels = () => {
     setIsInfoPanelProjectsVisible(false);
