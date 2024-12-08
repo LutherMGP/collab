@@ -15,6 +15,7 @@ import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage"
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
 import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
+import InfoPanelApplications from "@/components/indexcomponents/infopanels/applications/InfoPanelApplications";
 
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
@@ -130,6 +131,13 @@ const Index = () => {
       {isInfoPanelCatalogVisible && (
         <View style={styles.infoPanelCatalogContainer}>
           <InfoPanelCatalog />
+        </View>
+      )}
+
+      {/* Render InfoPanelApplications kun hvis synlig */}
+      {isInfoPanelApplicationsVisible && (
+        <View style={styles.infoPanelApplicationsContainer}>
+          <InfoPanelApplications />
         </View>
       )}
     </Animated.ScrollView>

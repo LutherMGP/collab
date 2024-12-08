@@ -9,6 +9,7 @@ interface VisibilityContextType {
   isInfoPanelCatalogVisible: boolean;
   isInfoPanelPurchasedVisible: boolean;
   isInfoPanelCartVisible: boolean;
+  isInfoPanelApplicationsVisible: boolean;
   isInfoPanelDevelopmentVisible: boolean;
   showPanel: (
     panel:
@@ -18,6 +19,7 @@ interface VisibilityContextType {
       | "catalog"
       | "purchased"
       | "cart"
+      | "applications"
       | "development"
   ) => void;
   hideAllPanels: () => void;
@@ -52,7 +54,10 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     useState(false);
   const [isInfoPanelPurchasedVisible, setIsInfoPanelPurchasedVisible] =
     useState(false);
-  const [isInfoPanelCartVisible, setIsInfoPanelCartVisible] = useState(false);
+  const [isInfoPanelCartVisible, setIsInfoPanelCartVisible] = 
+    useState(false);
+  const [isInfoPanelApplicationsVisible, setIsInfoPanelApplicationsVisible] =
+    useState(false);
   const [isInfoPanelDevelopmentVisible, setIsInfoPanelDevelopmentVisible] =
     useState(false);
 
@@ -64,6 +69,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       | "catalog"
       | "purchased"
       | "cart"
+      | "applications"
       | "development"
   ) => {
     setIsInfoPanelProjectsVisible(panel === "projects");
@@ -72,6 +78,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelCatalogVisible(panel === "catalog");
     setIsInfoPanelPurchasedVisible(panel === "purchased");
     setIsInfoPanelCartVisible(panel === "cart");
+    setIsInfoPanelApplicationsVisible(panel === "applications");
     setIsInfoPanelDevelopmentVisible(panel === "development");
   };
 
@@ -82,6 +89,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelCatalogVisible(false);
     setIsInfoPanelPurchasedVisible(false);
     setIsInfoPanelCartVisible(false);
+    setIsInfoPanelApplicationsVisible(false);
     setIsInfoPanelDevelopmentVisible(false);
   };
 
@@ -94,6 +102,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
         isInfoPanelCatalogVisible,
         isInfoPanelPurchasedVisible,
         isInfoPanelCartVisible,
+        isInfoPanelApplicationsVisible,
         isInfoPanelDevelopmentVisible,
         showPanel,
         hideAllPanels,
