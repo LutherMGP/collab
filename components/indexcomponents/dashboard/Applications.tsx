@@ -32,20 +32,20 @@ const Applications = () => {
 
   useEffect(() => {
     if (!user) return;
-
+  
     const fetchProducts = async () => {
-      // 1. Definer en query for at hente alle frigivne projekter
-      const allProductsQuery = query(
+      // 1. Definer en query for at hente alle projekter med status "Application"
+      const allApplicationsQuery = query(
         collectionGroup(database, "projects"),
-        where("status", "==", "Published")
+        where("status", "==", "Application") // Ændret til "Application"
       );
-
-      const unsubscribe = onSnapshot(allProductsQuery, (snapshot) => {
-        const allProductIds = snapshot.docs.map((doc) => ({
+  
+      const unsubscribe = onSnapshot(allApplicationsQuery, (snapshot) => {
+        const allApplicationIds = snapshot.docs.map((doc) => ({
           id: doc.id,
           ownerId: doc.ref.parent.parent?.id || null,
         }));
-
+  
         // 2. Definer en query for at hente brugerens egne projekter
         const userProjectsCollection = collection(
           database,
@@ -53,38 +53,39 @@ const Applications = () => {
           user,
           "projects"
         ) as CollectionReference<DocumentData>;
-
-        const userProjectsQuery = query(
+  
+        const userApplicationsQuery = query(
           userProjectsCollection,
-          where("status", "==", "Published")
+          where("status", "==", "Application") // Ændret til "Application"
         );
-
+  
         const userProjectsUnsub = onSnapshot(
-          userProjectsQuery,
+          userApplicationsQuery,
           (userSnapshot) => {
-            const userProjectIds = new Set(
+            const userApplicationIds = new Set(
               userSnapshot.docs.map((doc) => doc.id)
             );
-
-            // 3. Filtrer for at fjerne brugerens egne projekter fra alle frigivne projekter
-            const availableProducts = allProductIds.filter(
-              ({ id, ownerId }) => !userProjectIds.has(id) && ownerId !== user
+  
+            // 3. Filtrer for at fjerne brugerens egne projekter fra alle "Application"-projekter
+            const availableApplications = allApplicationIds.filter(
+              ({ id, ownerId }) =>
+                !userApplicationIds.has(id) && ownerId !== user
             );
-
-            // 4. Opdater `productCount` med antallet af tilgængelige produkter
-            setProductCount(availableProducts.length);
+  
+            // 4. Opdater `productCount` med antallet af tilgængelige "Application"-projekter
+            setProductCount(availableApplications.length);
           }
         );
-
-        return () => userProjectsUnsub(); // Unsubscribe userProjectsQuery
+  
+        return () => userProjectsUnsub(); // Unsubscribe userApplicationsQuery
       });
-
-      return () => unsubscribe(); // Unsubscribe allProductsQuery
+  
+      return () => unsubscribe(); // Unsubscribe allApplicationsQuery
     };
-
+  
     fetchProducts().catch((error) => {
-      console.error("Fejl ved hentning af produkter:", error);
-      Alert.alert("Fejl", "Kunne ikke hente produkter.");
+      console.error("Fejl ved hentning af applications:", error);
+      Alert.alert("Fejl", "Kunne ikke hente applications.");
     });
   }, [user]);
 
