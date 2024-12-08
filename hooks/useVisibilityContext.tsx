@@ -2,103 +2,84 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-interface VisibilityContextType {
+type VisibilityContextType = {
   isInfoPanelProjectsVisible: boolean;
-  isInfoPanelCircshareVisible: boolean;
   isInfoPanelPublishedVisible: boolean;
   isInfoPanelCatalogVisible: boolean;
   isInfoPanelPurchasedVisible: boolean;
   isInfoPanelCartVisible: boolean;
   isInfoPanelApplicationsVisible: boolean;
   isInfoPanelDevelopmentVisible: boolean;
-  showPanel: (
-    panel:
-      | "projects"
-      | "circshare"
-      | "published"
-      | "catalog"
-      | "purchased"
-      | "cart"
-      | "applications"
-      | "development"
-  ) => void;
+  showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
-}
-
-const VisibilityContext = createContext<VisibilityContextType | undefined>(
-  undefined
-);
-
-export const useVisibility = () => {
-  const context = useContext(VisibilityContext);
-  if (context === undefined) {
-    throw new Error("useVisibility must be used within a VisibilityProvider");
-  }
-  return context;
 };
 
-interface VisibilityProviderProps {
-  children: ReactNode;
-}
+const VisibilityContext = createContext<VisibilityContextType>({
+  isInfoPanelProjectsVisible: false,
+  isInfoPanelPublishedVisible: false,
+  isInfoPanelCatalogVisible: false,
+  isInfoPanelPurchasedVisible: false,
+  isInfoPanelCartVisible: false,
+  isInfoPanelApplicationsVisible: false,
+  isInfoPanelDevelopmentVisible: false,
+  showPanel: () => {},
+  hideAllPanels: () => {},
+});
 
-export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
-  children,
-}) => {
-  const [isInfoPanelProjectsVisible, setIsInfoPanelProjectsVisible] =
-    useState(false);
-  const [isInfoPanelCircshareVisible, setIsInfoPanelCircshareVisible] =
-    useState(false);
-  const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
-    useState(false);
-  const [isInfoPanelCatalogVisible, setIsInfoPanelCatalogVisible] =
-    useState(false);
-  const [isInfoPanelPurchasedVisible, setIsInfoPanelPurchasedVisible] =
-    useState(false);
-  const [isInfoPanelCartVisible, setIsInfoPanelCartVisible] = 
-    useState(false);
-  const [isInfoPanelApplicationsVisible, setIsInfoPanelApplicationsVisible] =
-    useState(false);
-  const [isInfoPanelDevelopmentVisible, setIsInfoPanelDevelopmentVisible] =
-    useState(false);
+export const useVisibility = () => useContext(VisibilityContext);
 
-    const showPanel = (
-      panel:
-        | "projects"
-        | "circshare"
-        | "published"
-        | "catalog"
-        | "purchased"
-        | "cart"
-        | "applications"
-        | "development"
-    ) => {
-      // Sæt synlighed kun for det angivne panel
-      setIsInfoPanelProjectsVisible(panel === "projects");
-      setIsInfoPanelCircshareVisible(panel === "circshare");
-      setIsInfoPanelPublishedVisible(panel === "published");
-      setIsInfoPanelCatalogVisible(panel === "catalog");
-      setIsInfoPanelPurchasedVisible(panel === "purchased");
-      setIsInfoPanelCartVisible(panel === "cart");
-      setIsInfoPanelApplicationsVisible(panel === "applications");
-      setIsInfoPanelDevelopmentVisible(panel === "development");
-    };
+export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
+  const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] = useState(false);
+  const [isInfoPanelPublishedVisible, setInfoPanelPublishedVisible] = useState(false);
+  const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] = useState(false);
+  const [isInfoPanelPurchasedVisible, setInfoPanelPurchasedVisible] = useState(false);
+  const [isInfoPanelCartVisible, setInfoPanelCartVisible] = useState(false);
+  const [isInfoPanelApplicationsVisible, setInfoPanelApplicationsVisible] = useState(false);
+  const [isInfoPanelDevelopmentVisible, setInfoPanelDevelopmentVisible] = useState(false);
+
+  const showPanel = (panelName: string) => {
+    hideAllPanels();
+    switch (panelName) {
+      case "projects":
+        setInfoPanelProjectsVisible(true);
+        break;
+      case "published":
+        setInfoPanelPublishedVisible(true);
+        break;
+      case "catalog":
+        setInfoPanelCatalogVisible(true);
+        break;
+      case "purchased":
+        setInfoPanelPurchasedVisible(true);
+        break;
+      case "cart":
+        setInfoPanelCartVisible(true);
+        break;
+      case "applications":
+        setInfoPanelApplicationsVisible(true);
+        break;
+      case "development":
+        setInfoPanelDevelopmentVisible(true);
+        break;
+      default:
+        break;
+    }
+  };
 
   const hideAllPanels = () => {
-    setIsInfoPanelProjectsVisible(false);
-    setIsInfoPanelCircshareVisible(false);
-    setIsInfoPanelPublishedVisible(false);
-    setIsInfoPanelCatalogVisible(false);
-    setIsInfoPanelPurchasedVisible(false);
-    setIsInfoPanelCartVisible(false);
-    setIsInfoPanelApplicationsVisible(false);
-    setIsInfoPanelDevelopmentVisible(false);
+    setInfoPanelProjectsVisible(false);
+    setInfoPanelPublishedVisible(false);
+    setInfoPanelCatalogVisible(false);
+    setInfoPanelPurchasedVisible(false);
+    setInfoPanelCartVisible(false);
+    setInfoPanelApplicationsVisible(false);
+    setInfoPanelDevelopmentVisible(false);
   };
 
   return (
     <VisibilityContext.Provider
       value={{
         isInfoPanelProjectsVisible,
-        isInfoPanelCircshareVisible,
         isInfoPanelPublishedVisible,
         isInfoPanelCatalogVisible,
         isInfoPanelPurchasedVisible,

@@ -236,34 +236,35 @@ const InfoPanel = ({
       Alert.alert("Fejl", "Bruger ikke logget ind.");
       return;
     }
-
+  
     if (!applicationMessage.trim()) {
       Alert.alert("Fejl", "Skriv en besked før du sender ansøgningen.");
       return;
     }
-
+  
     try {
       const projectId = projectData.id;
       if (!projectId) {
         Alert.alert("Fejl", "Projekt-ID mangler.");
         return;
       }
-
+  
       const applicationRef = doc(
         collection(database, "users", projectData.userId || "", "projects", projectId, "applications")
       );
-
+  
       await setDoc(applicationRef, {
         applicantId: user,
+        projectOwnerId: projectData.userId, // Tilføj projectOwnerId her
         message: applicationMessage.trim(),
         status: "pending",
         createdAt: serverTimestamp(),
       });
-
+  
       Alert.alert("Ansøgning sendt!", "Din ansøgning er blevet sendt.");
       setApplicationMessage("");
       setModalVisible(false);
-
+  
       // Vis Applications panel
       showPanel("applications");
       console.log("Applications panel should now be visible.");

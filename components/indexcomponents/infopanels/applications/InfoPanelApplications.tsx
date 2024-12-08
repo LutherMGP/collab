@@ -30,6 +30,7 @@ const InfoPanelApplications = () => {
   const [error, setError] = useState<string | null>(null);
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
+  const [applicationCount, setApplicationCount] = useState(0);
 
   const config = {
     showFavorite: true,
@@ -46,14 +47,15 @@ const InfoPanelApplications = () => {
   useEffect(() => {
     if (!user) {
       console.log("Ingen bruger logget ind.");
+      setIsLoading(false);
       return;
     }
 
+    console.log("Fetching applications for:", user);
+
     const fetchApplications = () => {
-      // Brug collectionGroup til at lytte til alle 'applications' samlinger
       const applicationsQuery = query(
         collectionGroup(database, "applications"),
-        where("applicantId", "==", user),
         where("status", "==", "pending")
       );
 
@@ -62,7 +64,14 @@ const InfoPanelApplications = () => {
         (snapshot) => {
           const fetchedApplications = snapshot.docs.map((docSnap) => {
             const data = docSnap.data() as DocumentData;
+
+            // Prøv at finde projektets ID fra dokumentets sti
             const projectId = docSnap.ref.parent.parent?.id || null;
+
+            if (!projectId) {
+              console.warn("Project ID mangler for ansøgning:", docSnap.id);
+            }
+
             return {
               id: docSnap.id,
               applicantId: data.applicantId,
@@ -73,14 +82,15 @@ const InfoPanelApplications = () => {
             };
           });
 
-          console.log("Fetched applications for Maya:", fetchedApplications);
-          setApplications(fetchedApplications);
-          setIsLoading(false);
+          console.log("Applications found:", fetchedApplications);
+          setApplications(fetchedApplications); // Opdaterer ansøgninger
+          setApplicationCount(snapshot.size); // Opdater knappen
+          setIsLoading(false); // Stop loading
         },
         (error) => {
           console.error("Fejl ved hentning af ansøgninger:", error);
           setError("Kunne ikke hente ansøgninger. Prøv igen senere.");
-          setIsLoading(false);
+          setIsLoading(false); // Stop loading ved fejl
         }
       );
 
@@ -108,6 +118,9 @@ const InfoPanelApplications = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={{ color: Colors[theme].text, textAlign: "center", marginBottom: 10 }}>
+        Antal ansøgninger: {applicationCount}
+      </Text>
       {applications.length === 0 ? (
         <Text style={{ color: Colors[theme].text, textAlign: "center" }}>
           Ingen ansøgninger fundet.
@@ -117,11 +130,11 @@ const InfoPanelApplications = () => {
           <InfoPanel
             key={application.id}
             projectData={{
-              id: application.projectId || "",
-              name: "Projekt: " + application.projectId,
-              description: application.message,
-              status: application.status,
-              userId: "000668.97aa4f945b144d9cb7c896adbca41069.1640", // Victor's userId
+              id: application.projectId || "Uden ID",
+              name: "Projekt: " + (application.projectId || "Uden navn"),
+              description: application.message || "Ingen besked",
+              status: application.status || "Ukendt status",
+              userId: user, // TestBruger userId
             }}
             config={config}
           />
