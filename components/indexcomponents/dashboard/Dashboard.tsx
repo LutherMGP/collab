@@ -42,8 +42,8 @@ const Dashboard = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingLeft: "3%",
-    paddingRight: "3%",
+    paddingLeft: "0%",
+    paddingRight: "0%",
     marginBottom: "3%",
     marginTop: "3%",
     elevation: 4, // Tilføj skygge for et bedre design
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   contentContainerStyle: {
-    paddingRight: 10,
+    paddingRight: 0,
   },
 });
 
