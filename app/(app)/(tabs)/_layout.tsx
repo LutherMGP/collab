@@ -161,18 +161,19 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 'collab' Tab */}
+      {/* 'Cart' Tab */}
       <Tabs.Screen
-        name="collab"
+        name="cart"
         options={{
-          href: isAdmin || isDesigner ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
-          title: "Pending Agreements",
+          // href: isAdmin || isDesigner ? undefined : null, // Viser fanen for 'Admin' og 'Designer', skjuler for 'Bruger'
+          href: !(isAdmin || isDesigner) ? undefined : null,
+          title: "Pending Requests",
           tabBarLabel: "CircShare",
           tabBarIcon: ({ color }) => (
             <View>
               <MaterialIcons
                 size={30}
-                name="join-left"
+                name="join-right"
                 color={color}
                 style={{ marginBottom: -3 }}
               />
@@ -195,7 +196,7 @@ export default function TabLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_collab" asChild>
+              <Link href="/modal_cart" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
@@ -368,7 +369,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: -6,
     top: 3,
-    backgroundColor: "red",
+    backgroundColor: "#0a7ea4",
     borderRadius: 8,
     width: 16,
     height: 16,

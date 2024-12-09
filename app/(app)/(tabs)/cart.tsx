@@ -1,4 +1,4 @@
-// @/app/(app)/(tabs)/collab.tsx
+// @/app/(app)/(tabs)/cart.tsx
 
 import React, { useEffect, useState } from "react";
 import {
@@ -27,6 +27,7 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
+import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import { database } from "@/firebaseConfig";
 import { useRouter } from "expo-router";
 
@@ -46,7 +47,7 @@ type ProjectData = {
   pdfPath: string;
 };
 
-const CollabScreen = () => {
+const CartScreen = () => {
   const colorScheme = useColorScheme() || "light";
   const themeColors = Colors[colorScheme];
   const { user } = useAuth();
@@ -64,37 +65,54 @@ const CollabScreen = () => {
       setIsLoading(false);
       return;
     }
-
+  
     const purchasesRef = collection(database, "users", user, "purchases");
     const q = query(purchasesRef, where("purchased", "==", false));
-
+  
     const unsubscribe = onSnapshot(
       q,
       async (querySnapshot) => {
         const purchases: PurchaseItem[] = [];
-
+  
         for (const docSnap of querySnapshot.docs) {
           const data = docSnap.data();
           const projectId = data.projectId;
           const projectOwnerId = data.projectOwnerId;
-
+  
           if (!projectId || !projectOwnerId) {
             console.warn(
               `Purchase ${docSnap.id} har manglende projektId eller ejerId.`
             );
             continue;
           }
-
+  
+          // Hent projektdata fra ejerens projekt
           const projectDocRef = doc(
             database,
             "users",
             projectOwnerId,
-            "project",
+            "projects",
             projectId
           );
           const projectDocSnap = await getDoc(projectDocRef);
-
+  
+          let projectImageUrl = "";
           if (projectDocSnap.exists()) {
+            // Hent billedet fra Firebase Storage
+            const storage = getStorage();
+            const imageRef = ref(
+              storage,
+              `users/${projectOwnerId}/projects/${projectId}/projectimage/projectImage.jpg`
+            );
+            try {
+              projectImageUrl = await getDownloadURL(imageRef);
+            } catch (error) {
+              console.warn(
+                `Billedet for projekt ${projectId} kunne ikke hentes:`,
+                error
+              );
+            }
+  
             const projectData = projectDocSnap.data();
             purchases.push({
               id: docSnap.id,
@@ -105,7 +123,7 @@ const CollabScreen = () => {
                 id: projectDocSnap.id,
                 name: projectData.name || "Uden navn",
                 price: projectData.price || 0,
-                image: projectData.image || "",
+                image: projectImageUrl, // Tilføj det hentede billede
                 pdfPath: projectData.pdfPath || "",
               },
             });
@@ -113,7 +131,7 @@ const CollabScreen = () => {
             console.warn(`Projekt dokumentet ${projectId} findes ikke.`);
           }
         }
-
+  
         setCartItems(purchases);
         setIsLoading(false);
         setError(null);
@@ -124,7 +142,7 @@ const CollabScreen = () => {
         setIsLoading(false);
       }
     );
-
+  
     return () => unsubscribe();
   }, [user]);
 
@@ -157,48 +175,22 @@ const CollabScreen = () => {
         Alert.alert("Fejl", "Bruger ikke logget ind.");
         return;
       }
-
-      for (const item of cartItems) {
-        try {
-          // Marker projektet som købt
-          const purchaseDocRef = doc(
-            database,
-            "users",
-            user,
-            "purchases",
-            item.id
-          );
-          await updateDoc(purchaseDocRef, { purchased: true });
-
-          // Tilføj salget til ejerens `sales`-kollektion
-          const projectOwnerId = item.projectOwnerId;
-          const saleDocRef = doc(
-            database,
-            "users",
-            projectOwnerId,
-            "sales",
-            item.projectId // Brug projekt-ID som dokumentnavn
-          );
-          await setDoc(
-            saleDocRef,
-            {
-              projectId: item.projectId,
-              buyerId: user,
-              price: item.projectData?.price || 0,
-              soldAt: new Date().toISOString(),
-            },
-            { merge: true }
-          );
-
-          console.log(`Køb og salg af projekt ${item.projectId} håndteret.`);
-        } catch (error) {
-          console.error(`Fejl ved opdatering af køb ${item.id}:`, error);
-        }
+  
+      try {
+        // Ændring af brugerens rolle til 'Designer'
+        const userDocRef = doc(database, "users", user);
+        await updateDoc(userDocRef, { role: "Designer" });
+  
+        console.log("Brugerens rolle ændret til Designer.");
+        Alert.alert("Succes", "Du er nu Designer og har adgang til alle projekter.");
+  
+        setIsPaymentModalVisible(false);
+        setPaymentCode("");
+        router.replace("/");
+      } catch (error) {
+        console.error("Fejl ved opdatering af brugerens rolle:", error);
+        Alert.alert("Fejl", "Der opstod en fejl ved opdatering af din status.");
       }
-
-      setIsPaymentModalVisible(false);
-      setPaymentCode("");
-      router.replace("/");
     } else {
       Alert.alert("Fejl", "Ugyldig betalingskode.");
     }
@@ -208,57 +200,61 @@ const CollabScreen = () => {
     <ScrollView
       style={[styles.container, { backgroundColor: themeColors.background }]}
     >
-      <View style={styles.cartContainer}>
-        {isLoading ? (
-          <Text style={[styles.emptyCartText, { color: themeColors.text }]}>
-            Indlæser...
-          </Text>
-        ) : cartItems.length === 0 ? (
-          <Text style={[styles.emptyCartText, { color: themeColors.text }]}>
-            Din kurv er tom.
-          </Text>
-        ) : (
-          cartItems.map((item) => (
-            <View key={item.id} style={styles.cartItem}>
-              <Image
-                source={
-                  item.projectData?.image
-                    ? { uri: item.projectData.image }
-                    : require("@/assets/images/join-full.png")
-                }
-                style={styles.cartImage}
-              />
-              <View style={styles.cartDetails}>
-                <Text style={[styles.itemTitle, { color: themeColors.text }]}>
-                  {item.projectData?.name || "Uden navn"}
-                </Text>
-                <Text
-                  style={[styles.itemPrice, { color: themeColors.text }]}
-                >{`${item.projectData?.price} DKK`}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => handleRemove(item.id)}
-              >
-                <FontAwesome name="trash" size={20} color="gray" />
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
+    <View style={styles.cartContainer}>
+      <View style={styles.subscriptionDetails}>
+        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+          Du får adgang til circShare
+        </Text>
+        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+          For 299 DKK pr. måned
+        </Text>
+        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+        </Text>
+        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+          Abonnementet giver dig også mulighed for at tilføje og dele dine egne circShare's.
+        </Text>
       </View>
-
-      {cartItems.length > 0 && (
-        <View style={styles.totalContainer}>
-          <Text style={[styles.totalText, { color: themeColors.text }]}>
-            Total:{" "}
-            {cartItems.reduce(
-              (acc, item) => acc + (item.projectData?.price || 0),
-              0
-            )}{" "}
-            DKK
-          </Text>
-        </View>
+      {isLoading ? (
+        <Text style={[styles.emptyCartText, { color: themeColors.text }]}>
+          Indlæser...
+        </Text>
+      ) : cartItems.length === 0 ? (
+        <Text style={[styles.emptyCartText, { color: themeColors.text }]}>
+          Din kurv er tom.
+        </Text>
+      ) : (
+        cartItems.map((item) => (
+          <View key={item.id} style={styles.cartItem}>
+            <Image
+              source={
+                item.projectData?.image
+                  ? { uri: item.projectData.image }
+                  : require("@/assets/images/join-full.png")
+              }
+              style={styles.cartImage}
+            />
+            <View style={styles.cartDetails}>
+              <Text style={[styles.itemTitle, { color: themeColors.text }]}>
+                {item.projectData?.name || "Uden navn"}
+              </Text>
+              {/* Prisen fjernes, så der ikke vises noget her */}
+            </View>
+            <TouchableOpacity
+              style={styles.requestButton}
+              onPress={() => Alert.alert("Funktion endnu ikke implementeret")}
+            >
+              <FontAwesome name="envelope" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => handleRemove(item.id)}
+            >
+              <FontAwesome name="trash" size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
+        ))
       )}
+    </View>
 
       <TouchableOpacity
         style={[
@@ -322,27 +318,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   cartContainer: {
     flexDirection: "column",
     justifyContent: "flex-start",
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   cartItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    borderWidth: 1,
     borderRadius: 8,
-    borderColor: "#ccc",
     padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   cartImage: {
     width: 60,
     height: 60,
     marginRight: 10,
-    borderRadius: 8,
+    borderRadius: 30,
     backgroundColor: "#eee",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   cartDetails: {
     flex: 1,
@@ -356,8 +378,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
   },
+  requestButton: {
+    padding: 10,
+    marginRight: 20,
+  },
   removeButton: {
     padding: 10,
+  },
+  subscriptionDetails: {
+    marginBottom: 16,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
+  },
+  subscriptionText: {
+    fontSize: 20,
+    lineHeight: 20,
+    textAlign: "center",
   },
   totalContainer: {
     borderTopWidth: 1,
@@ -375,6 +412,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   activeButton: {
     backgroundColor: "#007AFF",
@@ -436,9 +480,23 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: "#ccc",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   confirmButton: {
     backgroundColor: "#007AFF",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   modalButtonText: {
     color: "#fff",
@@ -446,4 +504,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CollabScreen;
+export default CartScreen;

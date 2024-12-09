@@ -8,10 +8,10 @@ import { Text, View } from "@/components/themed/Themed";
 export default function ModalScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Velkommen til Collab</Text>
+      <Text style={styles.title}>Velkommen til Cart</Text>
 
       <Text style={styles.sectionTitle}>
-        Oversigt over Collab funktionaliteter
+        Oversigt over Cart funktionaliteter
       </Text>
 
       <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />

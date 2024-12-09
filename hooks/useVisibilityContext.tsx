@@ -2,80 +2,89 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-interface VisibilityContextType {
+type VisibilityContextType = {
   isInfoPanelProjectsVisible: boolean;
   isInfoPanelPublishedVisible: boolean;
-  isInfoPanelProductsVisible: boolean;
+  isInfoPanelCatalogVisible: boolean;
   isInfoPanelPurchasedVisible: boolean;
   isInfoPanelCartVisible: boolean;
+  isInfoPanelApplicationsVisible: boolean;
   isInfoPanelDevelopmentVisible: boolean;
-  showPanel: (
-    panel:
-      | "projects"
-      | "published"
-      | "products"
-      | "purchased"
-      | "cart"
-      | "development"
-  ) => void;
+  isInfoPanelApplicationsUdVisible: boolean;
+  isInfoPanelApplicationsIndVisible: boolean;
+  showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
-}
-
-const VisibilityContext = createContext<VisibilityContextType | undefined>(
-  undefined
-);
-
-export const useVisibility = () => {
-  const context = useContext(VisibilityContext);
-  if (context === undefined) {
-    throw new Error("useVisibility must be used within a VisibilityProvider");
-  }
-  return context;
 };
 
-interface VisibilityProviderProps {
-  children: ReactNode;
-}
+const VisibilityContext = createContext<VisibilityContextType>({
+  isInfoPanelProjectsVisible: false,
+  isInfoPanelPublishedVisible: false,
+  isInfoPanelCatalogVisible: false,
+  isInfoPanelPurchasedVisible: false,
+  isInfoPanelCartVisible: false,
+  isInfoPanelApplicationsVisible: false,
+  isInfoPanelDevelopmentVisible: false,
+  isInfoPanelApplicationsUdVisible: false,
+  isInfoPanelApplicationsIndVisible: false,
+  showPanel: () => {},
+  hideAllPanels: () => {},
+});
 
-export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
-  children,
-}) => {
-  const [isInfoPanelProjectsVisible, setIsInfoPanelProjectsVisible] =
-    useState(false);
-  const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
-    useState(false);
-  const [isInfoPanelProductsVisible, setIsInfoPanelProductsVisible] =
-    useState(false);
-  const [isInfoPanelPurchasedVisible, setIsInfoPanelPurchasedVisible] =
-    useState(false);
-  const [isInfoPanelCartVisible, setIsInfoPanelCartVisible] = useState(false);
-  const [isInfoPanelDevelopmentVisible, setIsInfoPanelDevelopmentVisible] =
-    useState(false);
+export const useVisibility = () => useContext(VisibilityContext);
 
-  const showPanel = (
-    panel:
-      | "projects"
-      | "published"
-      | "products"
-      | "purchased"
-      | "cart"
-      | "development"
-  ) => {
-    setIsInfoPanelProjectsVisible(panel === "projects");
-    setIsInfoPanelPublishedVisible(panel === "published");
-    setIsInfoPanelProductsVisible(panel === "products");
-    setIsInfoPanelPurchasedVisible(panel === "purchased");
-    setIsInfoPanelCartVisible(panel === "cart");
-    setIsInfoPanelDevelopmentVisible(panel === "development");
+export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
+  const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] = useState(false);
+  const [isInfoPanelPublishedVisible, setInfoPanelPublishedVisible] = useState(false);
+  const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] = useState(false);
+  const [isInfoPanelPurchasedVisible, setInfoPanelPurchasedVisible] = useState(false);
+  const [isInfoPanelCartVisible, setInfoPanelCartVisible] = useState(false);
+  const [isInfoPanelApplicationsVisible, setInfoPanelApplicationsVisible] = useState(false);
+  const [isInfoPanelDevelopmentVisible, setInfoPanelDevelopmentVisible] = useState(false);
+  const [isInfoPanelApplicationsUdVisible, setInfoPanelApplicationsUdVisible] = useState(false);
+  const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] = useState(false);
+
+  const showPanel = (panelName: string) => {
+    hideAllPanels();
+    switch (panelName) {
+      case "projects":
+        setInfoPanelProjectsVisible(true);
+        break;
+      case "published":
+        setInfoPanelPublishedVisible(true);
+        break;
+      case "catalog":
+        setInfoPanelCatalogVisible(true);
+        break;
+      case "purchased":
+        setInfoPanelPurchasedVisible(true);
+        break;
+      case "cart":
+        setInfoPanelCartVisible(true);
+        break;
+      case "applicationsUd":
+        setInfoPanelApplicationsUdVisible(true);
+        break;
+      case "applicationsInd":
+        setInfoPanelApplicationsIndVisible(true);
+        break;
+      case "development":
+        setInfoPanelDevelopmentVisible(true);
+        break;
+      default:
+        break;
+    }
   };
 
   const hideAllPanels = () => {
-    setIsInfoPanelProjectsVisible(false);
-    setIsInfoPanelPublishedVisible(false);
-    setIsInfoPanelProductsVisible(false);
-    setIsInfoPanelPurchasedVisible(false);
-    setIsInfoPanelCartVisible(false);
-    setIsInfoPanelDevelopmentVisible(false);
+    setInfoPanelProjectsVisible(false);
+    setInfoPanelPublishedVisible(false);
+    setInfoPanelCatalogVisible(false);
+    setInfoPanelPurchasedVisible(false);
+    setInfoPanelCartVisible(false);
+    setInfoPanelApplicationsVisible(false);
+    setInfoPanelDevelopmentVisible(false);
+    setInfoPanelApplicationsUdVisible(false);
+    setInfoPanelApplicationsIndVisible(false);
   };
 
   return (
@@ -83,10 +92,13 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       value={{
         isInfoPanelProjectsVisible,
         isInfoPanelPublishedVisible,
-        isInfoPanelProductsVisible,
+        isInfoPanelCatalogVisible,
         isInfoPanelPurchasedVisible,
         isInfoPanelCartVisible,
+        isInfoPanelApplicationsVisible,
         isInfoPanelDevelopmentVisible,
+        isInfoPanelApplicationsUdVisible,
+        isInfoPanelApplicationsIndVisible,
         showPanel,
         hideAllPanels,
       }}

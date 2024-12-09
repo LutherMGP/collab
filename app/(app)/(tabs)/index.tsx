@@ -1,3 +1,5 @@
+// @/app/(app)/(tabs)/index.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -14,7 +16,10 @@ import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
-import InfoPanelProducts from "@/components/indexcomponents/infopanels/products/InfoPanelProducts";
+import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
+import InfoPanelApplications from "@/components/indexcomponents/infopanels/applications/InfoPanelApplications";
+import InfoPanelApplicationsUd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsUd";
+import InfoPanelApplicationsInd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsInd";
 
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
@@ -35,9 +40,12 @@ const Index = () => {
   const {
     isInfoPanelProjectsVisible,
     isInfoPanelPublishedVisible,
-    isInfoPanelProductsVisible,
+    isInfoPanelCatalogVisible,
     isInfoPanelPurchasedVisible,
     isInfoPanelCartVisible,
+    isInfoPanelApplicationsVisible,
+    isInfoPanelApplicationsUdVisible,
+    isInfoPanelApplicationsIndVisible,
     isInfoPanelDevelopmentVisible,
   } = useVisibility();
 
@@ -45,9 +53,12 @@ const Index = () => {
   const shouldShowWelcomeMessage = !(
     isInfoPanelProjectsVisible ||
     isInfoPanelPublishedVisible ||
-    isInfoPanelProductsVisible ||
+    isInfoPanelCatalogVisible ||
     isInfoPanelPurchasedVisible ||
     isInfoPanelCartVisible ||
+    isInfoPanelApplicationsVisible ||
+    isInfoPanelApplicationsUdVisible ||
+    isInfoPanelApplicationsIndVisible ||
     isInfoPanelDevelopmentVisible
   );
 
@@ -126,10 +137,31 @@ const Index = () => {
         </View>
       )}
 
-      {/* Render InfoPanelProducts kun hvis synlig */}
-      {isInfoPanelProductsVisible && (
-        <View style={styles.infoPanelProductsContainer}>
-          <InfoPanelProducts />
+      {/* Render InfoPanelCatalog kun hvis synlig */}
+      {isInfoPanelCatalogVisible && (
+        <View style={styles.infoPanelCatalogContainer}>
+          <InfoPanelCatalog />
+        </View>
+      )}
+
+      {/* Render InfoPanelApplications kun hvis synlig */}
+      {isInfoPanelApplicationsVisible && (
+        <View style={styles.infoPanelApplicationsContainer}>
+          <InfoPanelApplications />
+        </View>
+      )}
+
+      {/* Render InfoPanelApplicationsUd kun hvis synlig */}
+      {isInfoPanelApplicationsUdVisible && (
+        <View style={styles.infoPanelApplicationsUdContainer}>
+          <InfoPanelApplicationsUd />
+        </View>
+      )}
+
+      {/* Render InfoPanelApplicationsInd kun hvis synlig */}
+      {isInfoPanelApplicationsIndVisible && (
+        <View style={styles.infoPanelApplicationsIndContainer}>
+          <InfoPanelApplicationsInd />
         </View>
       )}
     </Animated.ScrollView>
@@ -154,7 +186,6 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
     marginBottom: "1.5%",
-    // marginTop: "3%",
   },
   infoPanelProjectsContainer: {
     width: "100%",
@@ -168,7 +199,25 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelProductsContainer: {
+  infoPanelCatalogContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelApplicationsContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelApplicationsUdContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelApplicationsIndContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
