@@ -20,12 +20,12 @@ import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/In
 import InfoPanelApplications from "@/components/indexcomponents/infopanels/applications/InfoPanelApplications";
 import InfoPanelApplicationsUd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsUd";
 import InfoPanelApplicationsInd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsInd";
+import EnsureProfileImage from "@/components/newuser/EnsureProfileImage";
 
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   getDoc,
   doc,
-  collectionGroup,
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -96,6 +96,9 @@ const Index = () => {
       )}
       scrollEventThrottle={16}
     >
+      {/* Sørg for, at standard profilbillede er oprettet */}
+      {user && <EnsureProfileImage userId={user} />}
+
       {/* Dashboard komponenten */}
       <View style={styles.dashboardContainer}>
         <Dashboard />
