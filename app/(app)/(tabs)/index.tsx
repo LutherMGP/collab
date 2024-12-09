@@ -148,15 +148,15 @@ const Index = () => {
       )}
 
       {/* Render InfoPanelApplicationsUd kun hvis synlig */}
-      {isInfoPanelApplicationsVisibleUd && (
-        <View style={styles.infoPanelApplicationsContainerUd}>
+      {isInfoPanelApplicationsUdVisible && (
+        <View style={styles.infoPanelApplicationsUdContainer}>
           <InfoPanelApplicationsUd />
         </View>
       )}
 
       {/* Render InfoPanelApplicationsInd kun hvis synlig */}
-      {isInfoPanelApplicationsVisibleInd && (
-        <View style={styles.infoPanelApplicationsContainerInd}>
+      {isInfoPanelApplicationsIndVisible && (
+        <View style={styles.infoPanelApplicationsIndContainer}>
           <InfoPanelApplicationsInd />
         </View>
       )}
@@ -207,13 +207,13 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelApplicationsContainerUd: {
+  infoPanelApplicationsUdContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelApplicationsContainerInd: {
+  infoPanelApplicationsIndContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
