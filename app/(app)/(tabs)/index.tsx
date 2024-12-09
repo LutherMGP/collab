@@ -44,6 +44,8 @@ const Index = () => {
     isInfoPanelPurchasedVisible,
     isInfoPanelCartVisible,
     isInfoPanelApplicationsVisible,
+    isInfoPanelApplicationsUdVisible,
+    isInfoPanelApplicationsIndVisible,
     isInfoPanelDevelopmentVisible,
   } = useVisibility();
 
@@ -55,6 +57,8 @@ const Index = () => {
     isInfoPanelPurchasedVisible ||
     isInfoPanelCartVisible ||
     isInfoPanelApplicationsVisible ||
+    isInfoPanelApplicationsUdVisible ||
+    isInfoPanelApplicationsIndVisible ||
     isInfoPanelDevelopmentVisible
   );
 
