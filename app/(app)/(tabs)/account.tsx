@@ -23,6 +23,7 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
+import * as ImageManipulator from "expo-image-manipulator";
 
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
@@ -119,35 +120,44 @@ export default function AccountScreen() {
 
   const uploadImageToStorage = async (uri: string) => {
     if (!user) return;
-
+  
     try {
-      const profileImageFolderRef = ref(storage, `users/${user}/profileimage/`);
-
-      const files = await listAll(profileImageFolderRef);
-      for (const item of files.items) {
-        await deleteObject(item);
-      }
-
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const newImageRef = ref(
-        storage,
-        `users/${user}/profileimage/${Date.now()}.jpg`
+      // Resize og komprimer billedet
+      const resizedImage = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 300, height: 300 } }], // Resize til 300x300 px
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Komprimer til 70% kvalitet
       );
-
-      await uploadBytes(newImageRef, blob);
-      const downloadUrl = await getDownloadURL(newImageRef);
-
-      const uniqueUrl = `${downloadUrl}?t=${Date.now()}`;
-
+  
+      // Reference til profilbilledemappen
+      const profileImageRef = ref(storage, `users/${user}/profileimage/profileImage.jpg`);
+  
+      // Slet eventuelle gamle billeder (valgfrit, da vi bruger fast navn)
+      const folderRef = ref(storage, `users/${user}/profileimage/`);
+      const files = await listAll(folderRef);
+      for (const file of files.items) {
+        await deleteObject(file);
+      }
+  
+      // Upload det komprimerede billede
+      const response = await fetch(resizedImage.uri);
+      const blob = await response.blob();
+      await uploadBytes(profileImageRef, blob);
+  
+      // Generér download-link
+      const downloadUrl = await getDownloadURL(profileImageRef);
+      const uniqueUrl = `${downloadUrl}?t=${Date.now()}`; // Undgå cache-problemer
+  
+      // Opdater Firestore med det nye download-link
       await setDoc(
         doc(database, "users", user),
         { profileImage: uniqueUrl },
         { merge: true }
       );
-
+  
+      // Opdater lokal state
       setProfileImage(uniqueUrl);
-      console.log("Nyt profilbillede uploadet:", uniqueUrl);
+      console.log("Nyt profilbillede uploadet og gemt:", uniqueUrl);
     } catch (error) {
       console.error("Fejl ved upload af profilbillede:", error);
       Alert.alert("Fejl", "Kunne ikke uploade profilbillede.");
