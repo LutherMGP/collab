@@ -19,7 +19,7 @@ import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
+import { ref, getDownloadURL, listAll, deleteObject } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
@@ -32,6 +32,35 @@ import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/proje
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
+
+/**
+ * Sletter en mappe og alle dens filer rekursivt fra Firebase Storage.
+ * @param folderPath Stien til mappen, der skal slettes.
+ */
+const deleteFolder = async (folderPath: string) => {
+  const folderRef = ref(storage, folderPath);
+
+  try {
+    // List alle filer og undermapper i mappen
+    const result = await listAll(folderRef);
+
+    // Slet alle filer i mappen
+    for (const fileRef of result.items) {
+      await deleteObject(fileRef);
+      console.log(`Slettede fil: ${fileRef.fullPath}`);
+    }
+
+    // Slet alle undermapper rekursivt
+    for (const subFolderRef of result.prefixes) {
+      await deleteFolder(subFolderRef.fullPath);
+    }
+
+    console.log(`Slettede mappe: ${folderPath}`);
+  } catch (error) {
+    console.error(`Fejl ved sletning af mappe: ${folderPath}`, error);
+  }
+};
+
 
 type ProjectData = {
   id: string;
@@ -246,7 +275,7 @@ const InfoPanel = ({
 
   const handleDelete = () => {
     if (!config.showDelete) return;
-
+  
     Alert.alert(
       "Bekræft Sletning",
       "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
@@ -259,15 +288,28 @@ const InfoPanel = ({
             try {
               if (!userId || !projectData.id) {
                 Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log(
-                  "userId:",
-                  userId,
-                  "projectData.id:",
-                  projectData.id
-                );
+                console.log("userId:", userId, "projectData.id:", projectData.id);
                 return;
               }
-
+  
+              // Slet alle relaterede filer og mapper i projektet
+              const basePath = `users/${userId}/projects/${projectData.id}`;
+              const foldersToDelete = [
+                `${basePath}/projectimage/`,
+                `${basePath}/data/f8/`,
+                `${basePath}/data/f5/`,
+                `${basePath}/data/f3/`,
+                `${basePath}/data/f2/`,
+                `${basePath}/data/attachments/images/`,
+                `${basePath}/data/attachments/pdf/`,
+                `${basePath}/data/attachments/videos/`,
+              ];
+  
+              for (const folderPath of foldersToDelete) {
+                await deleteFolder(folderPath);
+              }
+  
+              // Slet projektets dokument fra Firestore
               const projectDocRef = doc(
                 database,
                 "users",
@@ -275,10 +317,10 @@ const InfoPanel = ({
                 "projects",
                 projectData.id
               );
-
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
-              console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
+              await deleteDoc(projectDocRef);
+  
+              console.log(`Projekt ${projectData.id} slettet.`);
+              Alert.alert("Succes", "Projektet og alle relaterede filer er blevet slettet.");
             } catch (error) {
               console.error("Fejl ved sletning af projekt:", error);
               Alert.alert(
