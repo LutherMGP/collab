@@ -1,15 +1,18 @@
 // @/components/indexcomponents/infopanels/applications/InfoPanelApplications.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Text, StyleSheet, FlatList } from "react-native";
 import {
   collectionGroup,
   query,
   where,
   onSnapshot,
   DocumentData,
+  doc,
+  getDoc,
 } from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { ref, getDownloadURL } from "firebase/storage";
+import { database, storage } from "@/firebaseConfig";
 import InfoPanel from "@/components/indexcomponents/infopanels/applications/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -17,11 +20,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 type ApplicationData = {
   id: string;
-  applicantId?: string;
-  message?: string;
-  status?: string;
-  createdAt?: any;
-  projectId?: string | null;
+  applicantId: string;
+  message: string;
+  status: string;
+  projectOwnerId: string;
+  createdAt: any; // Timestamp
+  name?: string; // Tilføjet projektets navn
+  description?: string; // Tilføjet projektets beskrivelse
+  projectImage?: string | null; // Tilføjet projektets billede
+  projectId?: string | null; // Tilføjet projektets ID
 };
 
 const InfoPanelApplications = () => {
@@ -61,31 +68,71 @@ const InfoPanelApplications = () => {
 
       const unsubscribe = onSnapshot(
         applicationsQuery,
-        (snapshot) => {
-          const fetchedApplications = snapshot.docs.map((docSnap) => {
-            const data = docSnap.data() as DocumentData;
+        async (snapshot) => {
+          try {
+            const fetchedApplications: ApplicationData[] = await Promise.all(
+              snapshot.docs.map(async (docSnap) => {
+                const data = docSnap.data() as DocumentData;
 
-            // Prøv at finde projektets ID fra dokumentets sti
-            const projectId = docSnap.ref.parent.parent?.id || null;
+                // Hent projektets ID fra dokumentets sti
+                const projectRef = docSnap.ref.parent.parent!;
+                const projectId = projectRef.id;
+                const projectOwnerId = projectRef.parent.parent?.id || "Uden ejer ID";
 
-            if (!projectId) {
-              console.warn("Project ID mangler for ansøgning:", docSnap.id);
-            }
+                // Hent projektets data fra Firestore
+                let projectData = {
+                  name: "Ukendt projekt",
+                  description: "Ingen beskrivelse",
+                  projectImage: null as string | null,
+                };
 
-            return {
-              id: docSnap.id,
-              applicantId: data.applicantId,
-              message: data.message,
-              status: data.status,
-              createdAt: data.createdAt,
-              projectId: projectId,
-            };
-          });
+                try {
+                  const projectDoc = await getDoc(projectRef);
+                  if (projectDoc.exists()) {
+                    const projectInfo = projectDoc.data();
+                    projectData.name = projectInfo.name || "Ukendt projekt";
+                    projectData.description = projectInfo.description || "Ingen beskrivelse";
 
-          console.log("Applications found:", fetchedApplications);
-          setApplications(fetchedApplications); // Opdaterer ansøgninger
-          setApplicationCount(snapshot.size); // Opdater knappen
-          setIsLoading(false); // Stop loading
+                    // Hent projektets billede fra Storage, hvis det findes
+                    if (projectInfo.projectImage) {
+                      try {
+                        const projectImageRef = ref(storage, projectInfo.projectImage);
+                        projectData.projectImage = await getDownloadURL(projectImageRef);
+                      } catch (imageError) {
+                        console.warn(`Ingen projektbillede fundet for projekt: ${projectId}`, imageError);
+                      }
+                    }
+                  } else {
+                    console.warn("Projekt dokument eksisterer ikke for ID:", projectId);
+                  }
+                } catch (projectError) {
+                  console.error("Fejl ved hentning af projektdata:", projectError);
+                }
+
+                return {
+                  id: docSnap.id,
+                  applicantId: data.applicantId,
+                  message: data.message,
+                  status: data.status,
+                  projectOwnerId: projectOwnerId,
+                  createdAt: data.createdAt,
+                  name: projectData.name,
+                  description: projectData.description,
+                  projectImage: projectData.projectImage,
+                  projectId: projectId, // Inkluder projektId
+                };
+              })
+            );
+
+            console.log("Applications found:", fetchedApplications);
+            setApplications(fetchedApplications); // Opdaterer ansøgninger
+            setApplicationCount(snapshot.size); // Opdater knappen
+            setIsLoading(false); // Stop loading
+          } catch (error) {
+            console.error("Fejl ved behandling af ansøgninger:", error);
+            setError("Kunne ikke behandle ansøgningerne korrekt.");
+            setIsLoading(false);
+          }
         },
         (error) => {
           console.error("Fejl ved hentning af ansøgninger:", error);
@@ -123,19 +170,24 @@ const InfoPanelApplications = () => {
           Ingen ansøgninger fundet.
         </Text>
       ) : (
-        applications.map((application) => (
-          <InfoPanel
-            key={application.id}
-            projectData={{
-              id: application.projectId || "Uden ID",
-              name: "Projekt: " + (application.projectId || "Uden navn"),
-              description: application.message || "Ingen besked",
-              status: application.status || "Ukendt status",
-              userId: user, // TestBruger userId
-            }}
-            config={config}
-          />
-        ))
+        <FlatList
+          data={applications}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <InfoPanel
+              key={item.id}
+              projectData={{
+                id: item.projectId || "Uden ID",
+                name: "Projekt: " + (item.name || "Uden navn"),
+                description: item.description || "Ingen besked",
+                status: item.status || "Ukendt status",
+                projectImage: item.projectImage, // Inkluder projektbillede
+                userId: item.projectOwnerId, // Ejerens ID
+              }}
+              config={config}
+            />
+          )}
+        />
       )}
     </View>
   );

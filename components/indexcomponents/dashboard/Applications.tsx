@@ -24,9 +24,9 @@ import { database } from "@/firebaseConfig";
 const Applications = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth(); // 'user' er en string (userId) eller null
-  const { isInfoPanelApplicationsVisible, showPanel, hideAllPanels } =
-    useVisibility();
-  const [applicationCount, setApplicationCount] = useState(0);
+  const { isInfoPanelApplicationsUdVisible, isInfoPanelApplicationsIndVisible, showPanel, hideAllPanels } = useVisibility();
+  const [applicationCountUd, setApplicationCountUd] = useState(0);
+  const [applicationCountInd, setApplicationCountInd] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -36,40 +36,72 @@ const Applications = () => {
 
     console.log("Tæller ansøgninger for bruger (projectOwner):", user);
 
-    // Brug collectionGroup til at søge i alle 'applications' under 'projects' for den aktuelle bruger
-    const applicationsQuery = query(
+    // Query for 'Ud' ansøgninger
+    const applicationsQueryUd = query(
       collectionGroup(database, "applications"),
-      where("projectOwnerId", "==", user), // Matcher med "testBruger"
-      where("status", "==", "pending")      // Kun "pending" ansøgninger
+      where("projectOwnerId", "==", user), // Udbudte ansøgninger
+      where("status", "==", "pending")
     );
 
-    const unsubscribe = onSnapshot(
-      applicationsQuery,
+    // Query for 'Ind' ansøgninger
+    const applicationsQueryInd = query(
+      collectionGroup(database, "applications"),
+      where("applicantId", "==", user), // Ansøgte projekter
+      where("status", "==", "pending")
+    );
+
+    // Lyt til 'Ud' ansøgninger
+    const unsubscribeUd = onSnapshot(
+      applicationsQueryUd,
       (snapshot) => {
-        console.log(`Fundet ${snapshot.size} pending ansøgninger for bruger: ${user}`);
-        // Log hvert dokument for yderligere debugging
-        snapshot.docs.forEach(doc => {
-          console.log("Application Document:", doc.id, doc.data());
-        });
-        setApplicationCount(snapshot.size); // Opdaterer tallet på knappen
+        console.log(`Fundet ${snapshot.size} pending udbudte ansøgninger for bruger: ${user}`);
+        setApplicationCountUd(snapshot.size);
       },
       (error) => {
-        console.error("Fejl ved hentning af ansøgninger:", error);
-        Alert.alert("Fejl", "Kunne ikke hente ansøgninger.");
+        console.error("Fejl ved hentning af udbudte ansøgninger:", error);
+        Alert.alert("Fejl", "Kunne ikke hente udbudte ansøgninger.");
       }
     );
 
-    return () => unsubscribe();
+    // Lyt til 'Ind' ansøgninger
+    const unsubscribeInd = onSnapshot(
+      applicationsQueryInd,
+      (snapshot) => {
+        console.log(`Fundet ${snapshot.size} pending ansøgte projekter for bruger: ${user}`);
+        setApplicationCountInd(snapshot.size);
+      },
+      (error) => {
+        console.error("Fejl ved hentning af ansøgte projekter:", error);
+        Alert.alert("Fejl", "Kunne ikke hente ansøgte projekter.");
+      }
+    );
+
+    // Ryd op ved unmount
+    return () => {
+      unsubscribeUd();
+      unsubscribeInd();
+    };
   }, [user]);
 
-  const handlePress = () => {
-    if (isInfoPanelApplicationsVisible) {
+  const handlePressUd = () => {
+    if (isInfoPanelApplicationsUdVisible) {
       hideAllPanels();
     } else {
-      showPanel("applications");
+      showPanel("applicationsUd");
     }
     console.log(
-      `Applications button pressed. InfoPanelApplications visibility set to ${!isInfoPanelApplicationsVisible}.`
+      `Ud button pressed. InfoPanelApplicationsUd visibility set to ${!isInfoPanelApplicationsUdVisible}.`
+    );
+  };
+
+  const handlePressInd = () => {
+    if (isInfoPanelApplicationsIndVisible) {
+      hideAllPanels();
+    } else {
+      showPanel("applicationsInd");
+    }
+    console.log(
+      `Ind button pressed. InfoPanelApplicationsInd visibility set to ${!isInfoPanelApplicationsIndVisible}.`
     );
   };
 
@@ -81,15 +113,31 @@ const Applications = () => {
         resizeMode="cover"
       />
 
+      {/* Ud knappen */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelApplicationsVisible ? styles.iconPressed : null,
+          isInfoPanelApplicationsUdVisible ? styles.iconPressed : null,
+          styles.leftButton,
         ]}
-        onPress={handlePress}
+        onPress={handlePressUd}
       >
         <Text style={styles.productCountText}>
-          {applicationCount > 0 ? applicationCount : "0"}
+          {applicationCountUd > 0 ? applicationCountUd : "0"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Ind knappen */}
+      <TouchableOpacity
+        style={[
+          styles.iconContainer,
+          isInfoPanelApplicationsIndVisible ? styles.iconPressed : null,
+          styles.rightButton,
+        ]}
+        onPress={handlePressInd}
+      >
+        <Text style={styles.productCountText}>
+          {applicationCountInd > 0 ? applicationCountInd : "0"}
         </Text>
       </TouchableOpacity>
 
@@ -127,7 +175,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     position: "absolute",
     top: 108,
-    left: "50%",
     transform: [{ translateX: -20 }],
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
@@ -164,6 +211,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginTop: 22,
+  },
+  leftButton: {
+    left: "25%", // Juster efter behov for at placere til venstre
+  },
+  rightButton: {
+    right: "-10%", // Juster efter behov for at placere til højre
   },
 });
 

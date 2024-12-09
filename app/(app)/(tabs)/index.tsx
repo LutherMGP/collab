@@ -1,4 +1,4 @@
-// @/components/indexcomponents/index.tsx
+// @/app/(app)/(tabs)/index.tsx
 
 import React, { useEffect, useState } from "react";
 import {
