@@ -14,7 +14,7 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext"; // Importer kontekst for profilbillede
 import { doc, collection, setDoc } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -32,17 +32,35 @@ const NewProject: React.FC = () => {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
       return;
     }
-
+  
     if (!name || !description) {
       Alert.alert("Manglende oplysninger", "Udfyld både navn og beskrivelse.");
       return;
     }
-
+  
     setIsCreating(true);
-
+  
     try {
       const projectRef = doc(collection(database, "users", user, "projects"));
-
+  
+      let projectProfileImageUrl = null;
+  
+      if (profileImage) {
+        const projectProfileImageRef = ref(
+          storage,
+          `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
+        );
+  
+        const response = await fetch(profileImage);
+        const blob = await response.blob();
+        await uploadBytes(projectProfileImageRef, blob);
+  
+        // Hent download-URL for det uploadede billede
+        projectProfileImageUrl = await getDownloadURL(projectProfileImageRef);
+      } else {
+        console.warn("Ingen profilbillede fundet. Projekt oprettes uden billede.");
+      }
+  
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -50,24 +68,11 @@ const NewProject: React.FC = () => {
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
+        projectImage: projectProfileImageUrl, // Tilføj URL til projektets dokument
       };
-
+  
       await setDoc(projectRef, projectData);
-
-      // Brug det globale profilbillede
-      if (profileImage) {
-        const projectProfileImageRef = ref(
-          storage,
-          `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
-        );
-
-        const response = await fetch(profileImage);
-        const blob = await response.blob();
-        await uploadBytes(projectProfileImageRef, blob);
-      } else {
-        console.warn("Ingen profilbillede fundet. Projekt oprettes uden billede.");
-      }
-
+  
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
