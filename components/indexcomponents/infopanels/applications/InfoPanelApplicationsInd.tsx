@@ -1,56 +1,22 @@
 // @/components/indexcomponents/infopanels/applications/InfoPanelApplicationsInd.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator, Text, StyleSheet, FlatList } from "react-native";
 import {
-  View,
-  Text,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  Dimensions,
-  ScrollView,
-  Modal,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/hooks/useAuth";
-import { useVisibility } from "@/hooks/useVisibilityContext";
-import { doc, setDoc, deleteDoc, serverTimestamp, collection, query, where, onSnapshot } from "firebase/firestore";
+  collectionGroup,
+  query,
+  where,
+  onSnapshot,
+  DocumentData,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
+import InfoPanel from "@/components/indexcomponents/infopanels/applications/InfoPanel";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "@/components/indexcomponents/infopanels/applications/InfoPanelStyles";
-import { Image } from 'expo-image';
-
-type ProjectData = {
-  id: string;
-  name?: string;
-  description?: string;
-  status?: string;
-  f8CoverImage?: string | null;
-  f5CoverImage?: string | null;
-  f3CoverImage?: string | null;
-  f2CoverImage?: string | null;
-  projectImage?: string | null;
-  isFavorite?: boolean;
-  toBePurchased?: boolean;
-  userId?: string | null;
-};
-
-type InfoPanelConfig = {
-  showFavorite?: boolean;
-  showPurchase?: boolean;
-  showProject?: boolean;
-  checkPurchaseStatus?: boolean;
-  checkFavoriteStatus?: boolean;
-};
-
-type InfoPanelProps = {
-  projectData: ProjectData;
-  config: InfoPanelConfig;
-};
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { useAuth } from "@/hooks/useAuth";
 
 type ApplicationData = {
   id: string;
@@ -59,492 +25,189 @@ type ApplicationData = {
   status: string;
   projectOwnerId: string;
   createdAt: any; // Timestamp
+  name?: string; // Tilføjet projektets navn
+  description?: string; // Tilføjet projektets beskrivelse
+  projectImage?: string | null; // Tilføjet projektets billede
+  projectId?: string | null; // Tilføjet projektets ID
 };
 
-const InfoPanelApplicationsInd = ({
-  projectData: initialProjectData,
-  config,
-}: InfoPanelProps) => {
-  const theme = useColorScheme() || "light";
-  const { width } = Dimensions.get("window");
-  const height = (width * 8) / 5;
-  const rightMargin = width * 0.03;
-
-  const { user: currentUser } = useAuth();
-  const { isInfoPanelApplicationsVisible, showPanel, hideAllPanels } = useVisibility(); // Hent isInfoPanelApplicationsVisible
-  const userId = currentUser;
-
-  // Definer projectData som en state-variabel
-  const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
-
-  const f8CoverImage = projectData.f8CoverImage || null;
-  const f5CoverImage = projectData.f5CoverImage || null;
-  const f3CoverImage = projectData.f3CoverImage || null;
-  const f2CoverImage = projectData.f2CoverImage || null;
-  const projectImage = projectData.projectImage || null;
-  const name = projectData.name || "Uden navn";
-  const description = projectData.description || "Ingen kommentar";
-
-  const [isFavorite, setIsFavorite] = useState(projectData.isFavorite || false);
-  const [toBePurchased, setToBePurchased] = useState(
-    projectData.toBePurchased || false
-  );
-  const [showFullComment, setShowFullComment] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // State for ansøgningsmodal
-  const [modalVisible, setModalVisible] = useState(false);
-  const [applicationMessage, setApplicationMessage] = useState("");
-
-  // State til at gemme ansøgninger
+const InfoPanelApplicationsInd = () => {
   const [applications, setApplications] = useState<ApplicationData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const theme = useColorScheme() || "light";
+  const { user } = useAuth();
+  const [applicationCount, setApplicationCount] = useState(0);
 
-  const handleFavoriteToggle = async () => {
-    if (!config.showFavorite) return;
-
-    try {
-      const newFavoriteStatus = !isFavorite;
-      console.log("Favorite button pressed");
-      setIsFavorite(newFavoriteStatus);
-
-      if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
-        return;
-      }
-
-      const favoriteDocRef = doc(
-        database,
-        "users",
-        userId,
-        "favorites",
-        projectData.id
-      );
-
-      if (newFavoriteStatus) {
-        await setDoc(
-          favoriteDocRef,
-          { projectId: projectData.id },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} markeret som favorit.`);
-      } else {
-        await deleteDoc(favoriteDocRef);
-        console.log(`Project ${projectData.id} fjernet fra favoritter.`);
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af favoritstatus:", error);
-      Alert.alert(
-        "Fejl",
-        "Der opstod en fejl under opdatering af favoritstatus."
-      );
-    }
+  const config = {
+    showFavorite: true,
+    showPurchase: true,
+    showDelete: false,
+    showEdit: false,
+    showSnit: false,
+    showGuide: false,
+    longPressForPdf: true,
+    checkPurchaseStatus: true,
+    checkFavoriteStatus: true,
   };
 
-  const handlePurchase = async () => {
-    if (!config.showPurchase) return;
-
-    try {
-      const newToBePurchasedStatus = !toBePurchased;
-      setToBePurchased(newToBePurchasedStatus);
-
-      if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
-        return;
-      }
-
-      const purchaseDocRef = doc(
-        database,
-        "users",
-        userId,
-        "purchases",
-        projectData.id
-      );
-
-      if (newToBePurchasedStatus) {
-        await setDoc(
-          purchaseDocRef,
-          {
-            projectId: projectData.id,
-            projectOwnerId: projectData.userId,
-            purchased: false,
-            status: "Application", // Hvis status skal gemmes
-          },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} tilføjet til køb.`);
-      } else {
-        await deleteDoc(purchaseDocRef);
-        console.log(`Project ${projectData.id} fjernet fra køb.`);
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af køb status:", error);
-      Alert.alert(
-        "Fejl",
-        "Der opstod en fejl under opdatering af køb status."
-      );
+  useEffect(() => {
+    if (!user) {
+      console.log("Ingen bruger logget ind.");
+      setIsLoading(false);
+      return;
     }
-  };
 
-  // Log projekt-ID for debugging
-  useEffect(() => {
-    console.log("Henter billede for projekt:", projectData.id);
-  }, [projectData.id]);
+    console.log("Fetching applications for:", user);
 
-  // Hent projektets billeder fra storage
-  useEffect(() => {
-    const fetchImages = async () => {
-      if (!projectData.userId || !projectData.id) {
-        console.error("UserId eller projectId mangler.");
-        return;
-      }
+    const fetchApplications = () => {
+      const applicationsQuery = query(
+        collectionGroup(database, "applications"),
+        where("status", "==", "pending")
+      );
 
-      const imagePaths = {
-        f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
-        f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
-        f3CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f3/f3CoverImage.jpg`,
-        f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
-        projectImage: `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
-      };
-
-      try {
-        const fetchImage = async (key: keyof typeof imagePaths, path: string) => {
+      const unsubscribe = onSnapshot(
+        applicationsQuery,
+        async (snapshot) => {
           try {
-            const refPath = ref(storage, path);
-            const url = await getDownloadURL(refPath);
-            return { [key]: `${url}?t=${Date.now()}` }; // Cache-bypass
+            const fetchedApplications: ApplicationData[] = await Promise.all(
+              snapshot.docs.map(async (docSnap) => {
+                const data = docSnap.data() as DocumentData;
+
+                // Hent projektets ID fra dokumentets sti
+                const projectRef = docSnap.ref.parent.parent!;
+                const projectId = projectRef.id;
+                const projectOwnerId = projectRef.parent.parent?.id || "Uden ejer ID";
+
+                // Hent projektets data fra Firestore
+                let projectData = {
+                  name: "Ukendt projekt",
+                  description: "Ingen beskrivelse",
+                  projectImage: null as string | null,
+                };
+
+                try {
+                  const projectDoc = await getDoc(projectRef);
+                  if (projectDoc.exists()) {
+                    const projectInfo = projectDoc.data();
+                    projectData.name = projectInfo.name || "Ukendt projekt";
+                    projectData.description = projectInfo.description || "Ingen beskrivelse";
+
+                    // Hent projektets billede fra Storage, hvis det findes
+                    if (projectInfo.projectImage) {
+                      try {
+                        const projectImageRef = ref(storage, projectInfo.projectImage);
+                        projectData.projectImage = await getDownloadURL(projectImageRef);
+                      } catch (imageError) {
+                        console.warn(`Ingen projektbillede fundet for projekt: ${projectId}`, imageError);
+                      }
+                    }
+                  } else {
+                    console.warn("Projekt dokument eksisterer ikke for ID:", projectId);
+                  }
+                } catch (projectError) {
+                  console.error("Fejl ved hentning af projektdata:", projectError);
+                }
+
+                return {
+                  id: docSnap.id,
+                  applicantId: data.applicantId,
+                  message: data.message,
+                  status: data.status,
+                  projectOwnerId: projectOwnerId,
+                  createdAt: data.createdAt,
+                  name: projectData.name,
+                  description: projectData.description,
+                  projectImage: projectData.projectImage,
+                  projectId: projectId, // Inkluder projektId
+                };
+              })
+            );
+
+            console.log("Applications found:", fetchedApplications);
+            setApplications(fetchedApplications); // Opdaterer ansøgninger
+            setApplicationCount(snapshot.size); // Opdater knappen
+            setIsLoading(false); // Stop loading
           } catch (error) {
-            console.warn(`Fejl ved hentning af ${key}:`, error);
-            return { [key]: null };
+            console.error("Fejl ved behandling af ansøgninger:", error);
+            setError("Kunne ikke behandle ansøgningerne korrekt.");
+            setIsLoading(false);
           }
-        };
+        },
+        (error) => {
+          console.error("Fejl ved hentning af ansøgninger:", error);
+          setError("Kunne ikke hente ansøgninger. Prøv igen senere.");
+          setIsLoading(false); // Stop loading ved fejl
+        }
+      );
 
-        const imagePromises = Object.entries(imagePaths).map(([key, path]) =>
-          fetchImage(key as keyof typeof imagePaths, path)
-        );
-
-        const imageResults = await Promise.all(imagePromises);
-        const updatedImages = Object.assign({}, ...imageResults);
-
-        // Opdater kun de felter, der har gyldige URL'er
-        setProjectData((prev) => ({
-          ...prev,
-          ...updatedImages,
-        }));
-      } catch (error) {
-        console.error("Fejl ved billedhentning:", error);
-      }
+      return () => unsubscribe();
     };
 
-    fetchImages();
-  }, [projectData.userId, projectData.id]);
+    fetchApplications();
+  }, [user]);
 
-  // Funktion til at åbne ansøgningsmodal
-  const handleApply = () => {
-    setModalVisible(true);
-  };
-
-  // Funktion til at indsende ansøgning
-  const submitApplication = async () => {
-    if (!userId) {
-      Alert.alert("Fejl", "Bruger ikke logget ind.");
-      return;
-    }
-
-    if (!applicationMessage.trim()) {
-      Alert.alert("Fejl", "Skriv en besked før du sender ansøgningen.");
-      return;
-    }
-
-    try {
-      const projectId = projectData.id;
-      if (!projectId) {
-        Alert.alert("Fejl", "Projekt-ID mangler.");
-        return;
-      }
-
-      const applicationRef = doc(
-        collection(database, "users", projectData.userId || "", "projects", projectId, "applications")
-      );
-
-      await setDoc(applicationRef, {
-        applicantId: userId,
-        message: applicationMessage.trim(),
-        status: "pending",
-        projectOwnerId: projectData.userId, // Tilføj projektets ejer-ID
-        createdAt: serverTimestamp(),
-      });
-
-      Alert.alert("Ansøgning sendt!", "Din ansøgning er blevet sendt.");
-      setApplicationMessage("");
-      setModalVisible(false);
-
-      console.log("Applications panel should now be visible.");
-    } catch (error) {
-      console.error("Fejl ved indsendelse af ansøgning:", error);
-      Alert.alert("Fejl", "Kunne ikke sende ansøgningen. Prøv igen.");
-    }
-  };
-
-  // State til at gemme ansøgninger (kun for projektets ejer)
-  useEffect(() => {
-    // Tjek om den aktuelle bruger er projektets ejer
-    const isProjectOwner = userId === projectData.userId;
-
-    if (!isProjectOwner) {
-      return;
-    }
-
-    console.log("Henter ansøgninger for projekt:", projectData.id);
-
-    const applicationsRef = collection(
-      database,
-      "users",
-      projectData.userId || "",
-      "projects",
-      projectData.id,
-      "applications"
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors[theme].text} />
+      </View>
     );
+  }
 
-    const q = query(applicationsRef, where("status", "==", "pending"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const fetchedApplications: ApplicationData[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          applicantId: doc.data().applicantId,
-          message: doc.data().message,
-          status: doc.data().status,
-          projectOwnerId: doc.data().projectOwnerId,
-          createdAt: doc.data().createdAt,
-        }));
-        console.log(`Fundet ${fetchedApplications.length} pending ansøgninger for projekt: ${projectData.id}`);
-        setApplications(fetchedApplications);
-      },
-      (error) => {
-        console.error("Fejl ved hentning af ansøgninger:", error);
-        Alert.alert("Fejl", "Kunne ikke hente ansøgninger.");
-      }
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={{ color: Colors[theme].text }}>{error}</Text>
+      </View>
     );
-
-    return () => unsubscribe();
-  }, [userId, projectData.id, projectData.userId]);
+  }
 
   return (
-    <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
-      {/* Tekst og kommentarer */}
-      <View style={baseStyles.textContainer}>
-        <Text
-          style={[baseStyles.nameText, { color: Colors[theme].tint }]}
-        >
-          {name}
+    <View style={styles.container}>
+      {applications.length === 0 ? (
+        <Text style={{ color: Colors[theme].text, textAlign: "center" }}>
+          Ingen ansøgninger fundet.
         </Text>
-        <Text
-          style={[baseStyles.commentText, { color: Colors[theme].text }]}
-          numberOfLines={showFullComment ? undefined : 1}
-          ellipsizeMode="tail"
-        >
-          {description}
-        </Text>
-      </View>
-
-      {/* F8 felt */}
-      <View style={baseStyles.f8Container}>
-        <Pressable style={baseStyles.F8}>
-          {userId === projectData.userId ? (
-            <View style={baseStyles.applicationsContainer}>
-              <View style={baseStyles.roundImageContainer}>
-                <Image
-                  source={require("@/assets/images/blomst.webp")}
-                  style={baseStyles.roundImage}
-                />
-              </View>
-              {applications.length > 0 ? (
-                applications.map((application) => (
-                  <View key={application.id} style={baseStyles.applicationItem}>
-                    <Text
-                      style={[baseStyles.nameText, { color: Colors[theme].tint }]}
-                    >
-                      {application.applicantId}
-                    </Text>
-                    <Text style={[baseStyles.commentText, { color: Colors[theme].text }]}>
-                      Proposal
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <Text
-                  style={[baseStyles.commentText, { color: Colors[theme].text }]}
-                >
-                  Ingen ansøgninger
-                </Text>
-              )}
-              {/* Nyt felt placeret nederst */}
-              <View style={baseStyles.bottomField}>
-                <Text style={baseStyles.bottomFieldText}>
-                  {applications.length > 0 ? applications[0].message : "Ingen tekst tilgængelig"}
-                </Text>
-              </View>
-            </View>
-          ) : (
-            f8CoverImage ? (
-              <Image
-                source={{ uri: f8CoverImage }}
-                style={baseStyles.f8CoverImage}
-                contentFit="cover"
-                transition={1000}
-              />
-            ) : (
-              <Image
-                source={require("@/assets/images/blomst.webp")}
-                style={baseStyles.f8CoverImage}
-                contentFit="cover"
-                transition={1000}
-              />
-            )
+      ) : (
+        <FlatList
+          data={applications}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <InfoPanel
+              key={item.id}
+              projectData={{
+                id: item.projectId || "Uden ID",
+                name: "Projekt: " + (item.name || "Uden navn"),
+                description: item.description || "Ingen besked",
+                status: item.status || "Ukendt status",
+                projectImage: item.projectImage, // Inkluder projektbillede
+                userId: item.projectOwnerId, // Ejerens ID
+              }}
+              config={config}
+            />
           )}
-          {/* Projektbilledet i det runde felt med onPress */}
-          <Pressable style={baseStyles.projectImageContainer}>
-            {projectImage ? (
-              <Image
-                source={{ uri: projectImage }}
-                style={baseStyles.projectImage}
-                contentFit="cover"
-                transition={2000}
-              />
-            ) : (
-              <Image
-                source={require("@/assets/images/blomst.webp")}
-                style={baseStyles.projectImage}
-                contentFit="cover"
-                transition={2000}
-              />
-            )}
-          </Pressable>
-        </Pressable>
-      </View>
-
-      {/* Nedre container */}
-      <View style={baseStyles.lowerContainer}>
-        <View style={baseStyles.leftSide}>
-          <View style={baseStyles.topSide}>
-            <View style={baseStyles.f2leftTop}>
-              <Pressable
-                style={baseStyles.F2}
-              >
-                {/* Vis billede, hvis det er tilgængeligt */}
-                {f2CoverImage ? (
-                  <Image
-                    source={{ uri: f2CoverImage }}
-                    style={baseStyles.f2CoverImage}
-                    contentFit="cover"
-                    transition={1000}
-                  />
-                ) : (
-                  <Image
-                    source={require("@/assets/images/blomst.webp")} // Standardbillede
-                    style={baseStyles.f2CoverImage}
-                    contentFit="cover"
-                    transition={1000}
-                  />
-                )}
-              </Pressable>
-            </View>
-            <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={handleFavoriteToggle} // Kalder handleFavoriteToggle
-                  accessibilityLabel="Favorite Button"
-                >
-                  <AntDesign
-                    name={isFavorite ? "heart" : "hearto"} // Dynamisk ikon baseret på favoritstatus
-                    size={24}
-                    color="#0a7ea4" // Brug Colors[theme].tint til det aktive hjerte
-                  />
-                </Pressable>
-              </View>
-              <View style={baseStyles.f1bottomHalf}>
-                <Pressable
-                  style={baseStyles.F1B}
-                  onPress={userId === projectData.userId ? handleApply : handlePurchase} // Dynamisk handling baseret på brugerens rolle
-                  accessibilityLabel={userId === projectData.userId ? "Apply Button" : "Purchase Button"}
-                >
-                  {userId === projectData.userId ? (
-                    <MaterialIcons
-                      name="send" // Vælg et ikon, der repræsenterer ansøgning
-                      size={30}
-                      color="#0a7ea4"
-                    />
-                  ) : (
-                    <MaterialIcons
-                      name={toBePurchased ? "join-right" : "join-left"}
-                      size={30}
-                      color="#0a7ea4"
-                    />
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          </View>
-          <View style={baseStyles.f3bottomSide}>
-            <Pressable
-              style={baseStyles.F3}
-            >
-              {/* Vis billede, hvis det er tilgængeligt */}
-              {f3CoverImage ? (
-                <Image
-                  source={{ uri: f3CoverImage }}
-                  style={baseStyles.f3CoverImage}
-                  contentFit="cover"
-                  transition={1000}
-                />
-              ) : (
-                <Image
-                  source={require("@/assets/images/blomst.webp")} // Standardbillede
-                  style={baseStyles.f3CoverImage}
-                  contentFit="cover"
-                  transition={1000}
-                />
-              )}
-            </Pressable>
-          </View>
-        </View>
-        <View style={baseStyles.f5Side}>
-          <Pressable
-            style={[baseStyles.F5, { right: rightMargin }]}
-          >
-            {/* Vis billede, hvis det er tilgængeligt */}
-            {f5CoverImage ? (
-              <Image
-                source={{ uri: f5CoverImage }}
-                style={baseStyles.f5CoverImage}
-                contentFit="cover"
-                transition={1000}
-              />
-            ) : (
-              <Image
-                source={require("@/assets/images/blomst.webp")} // Standardbillede
-                style={baseStyles.f5CoverImage}
-                contentFit="cover"
-                transition={1000}
-              />
-            )}
-          </Pressable>
-        </View>
-      </View>
-
-      {isLoading && (
-        <View style={baseStyles.loadingOverlay}>
-          <ActivityIndicator size="large" color="blue" />
-        </View>
+          nestedScrollEnabled={false} // Sørg for, at den ikke er aktiveret, medmindre nødvendigt
+        />
       )}
-
-      <View
-        style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]}
-      />
-    </ScrollView>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 10,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  errorContainer: {
+    padding: 10,
+    backgroundColor: "red",
+    borderRadius: 5,
+    margin: 10,
+  },
+});
 
 export default InfoPanelApplicationsInd;

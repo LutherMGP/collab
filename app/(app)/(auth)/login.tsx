@@ -33,7 +33,10 @@ export default function LoginScreen() {
   const handleAppleSignIn = async () => {
     try {
       setLoading(true);
-      await signInWithApple();
+      const { user, email } = await signInWithApple();
+
+      // Log data for debugging og fremtidig brug
+      console.log("Apple-login gennemført for bruger:", user, "med email:", email);
     } catch (error) {
       Alert.alert(
         "Apple Login Fejl",

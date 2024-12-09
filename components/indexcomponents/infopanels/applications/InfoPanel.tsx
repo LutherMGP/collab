@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
-  ScrollView,
   Modal,
   TextInput,
   TouchableOpacity,
@@ -331,7 +330,7 @@ const InfoPanel = ({
   }, [userId, projectData.id, projectData.userId]);
 
   return (
-    <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
+    <View style={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
       <View style={baseStyles.textContainer}>
         <Text
@@ -543,7 +542,7 @@ const InfoPanel = ({
       <View
         style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]}
       />
-    </ScrollView>
+    </View>
   );
 };
 

@@ -8,15 +8,17 @@ import {
   Modal,
   TextInput,
   Alert,
-  Image,
   StyleSheet,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, collection, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes,list, getDownloadURL } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { Asset } from 'expo-asset';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
@@ -33,25 +35,43 @@ const NewProject: React.FC = () => {
 
   const fetchProfileImage = async () => {
     if (!user) return;
-
+  
     try {
-      const userDocRef = doc(database, "users", user);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const imageUrl = userData?.profileImage;
-
-        const uniqueUrl = imageUrl
-          ? `${imageUrl}&t=${Date.now()}`
-          : `${Image.resolveAssetSource(defaultImage).uri}?t=${Date.now()}`;
-
-        setProfileImage(uniqueUrl);
+      // Reference til brugerens profilbillede-mappe
+      const profileImageRef = ref(storage, `users/${user}/profileimage/`);
+      
+      // List filer i mappen
+      const fileList = await list(profileImageRef);
+  
+      if (fileList.items.length > 0) {
+        // Hent URL til første billede i mappen
+        const imageUrl = await getDownloadURL(fileList.items[0]);
+        setProfileImage(`${imageUrl}&t=${Date.now()}`); // Tilføj cache-busting timestamp
       } else {
-        setProfileImage(`${Image.resolveAssetSource(defaultImage).uri}?t=${Date.now()}`);
+        console.warn("Ingen profilbilleder fundet. Brug standardbillede.");
+        const asset = Asset.fromModule(defaultImage);
+        await asset.downloadAsync();
+        setProfileImage(`${asset.localUri}?t=${Date.now()}`);
       }
     } catch (error) {
       console.error("Fejl ved hentning af profilbillede:", error);
+      const asset = Asset.fromModule(defaultImage);
+      await asset.downloadAsync();
+      setProfileImage(`${asset.localUri}?t=${Date.now()}`);
+    }
+  };
+
+  const handleImageResize = async (uri: string): Promise<string> => {
+    try {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 300, height: 300 } }], // Ændrer størrelsen til 300x300 pixels
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Komprimerer billedet med 70% kvalitet
+      );
+      return manipResult.uri;
+    } catch (error) {
+      console.error('Fejl ved ændring af billedstørrelse:', error);
+      return uri; // Returnerer original URI ved fejl
     }
   };
 
@@ -60,17 +80,17 @@ const NewProject: React.FC = () => {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
       return;
     }
-
+  
     if (!name || !description) {
       Alert.alert("Manglende oplysninger", "Udfyld både navn og beskrivelse.");
       return;
     }
-
+  
     setIsCreating(true);
-
+  
     try {
       const projectRef = doc(collection(database, "users", user, "projects"));
-
+  
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -79,18 +99,26 @@ const NewProject: React.FC = () => {
         userId: user,
         status: "Project",
       };
-
+  
       await setDoc(projectRef, projectData);
-
-      const projectProfileImageRef = ref(
-        storage,
-        `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
-      );
-
-      const response = await fetch(profileImage || Image.resolveAssetSource(defaultImage).uri);
-      const blob = await response.blob();
-      await uploadBytes(projectProfileImageRef, blob);
-
+  
+      // Brug det hentede profilbillede eller standardbillede
+      const imageUri = profileImage || (await Asset.fromModule(defaultImage).downloadAsync()).localUri;
+  
+      if (imageUri) {
+        const resizedImageUri = await handleImageResize(imageUri);
+        const projectProfileImageRef = ref(
+          storage,
+          `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
+        );
+  
+        const response = await fetch(resizedImageUri);
+        const blob = await response.blob();
+        await uploadBytes(projectProfileImageRef, blob);
+      } else {
+        console.error("Fejl: Kunne ikke hente billedets URI.");
+      }
+  
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
@@ -111,11 +139,9 @@ const NewProject: React.FC = () => {
   return (
     <View style={[styles.createStoryContainer]}>
       <Image
-        source={{
-          uri: profileImage || Image.resolveAssetSource(defaultImage).uri,
-        }}
+        source={{ uri: profileImage }}
         style={styles.profileImg}
-        resizeMode="cover"
+        contentFit="cover"
       />
 
       <TouchableOpacity
@@ -234,24 +260,28 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "white",
+    width: "80%",
     padding: 20,
     borderRadius: 10,
-    width: "85%",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 15,
+    color: Colors.light.text,
+    textAlign: "center",
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    borderColor: Colors.light.tint,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: Colors.light.text,
   },
   textArea: {
-    height: 100,
+    height: 80,
     textAlignVertical: "top",
   },
   modalButtons: {
@@ -260,18 +290,44 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   cancelButton: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     padding: 10,
     borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   saveButton: {
     backgroundColor: Colors.light.tint,
     padding: 10,
     borderRadius: 5,
+    flex: 1,
+    marginLeft: 5,
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  disabledButton: {
+    backgroundColor: "#a0a0a0",
   },
   buttonText: {
-    color: "white",
+    color: "black",
     fontWeight: "600",
+  },
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    marginBottom: 10,
   },
 });
 
