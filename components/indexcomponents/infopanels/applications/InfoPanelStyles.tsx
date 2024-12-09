@@ -509,4 +509,29 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  applicationsContainer: {
+    padding: 10,
+    backgroundColor: Colors.light.background, // Juster efter behov
+    borderRadius: 10,
+    maxHeight: 100, // Juster højden efter behov
+  },
+  applicationItem: {
+    marginBottom: 10,
+    padding: 5,
+    backgroundColor: Colors.light.tint, // Juster efter behov
+    borderRadius: 5,
+  },
+  applicationText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  applicationAuthor: {
+    fontSize: 12,
+    fontStyle: "italic",
+  },
+  noApplicationsText: {
+    fontSize: 14,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
 });

@@ -17,11 +17,11 @@ import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext"; // Importér useVisibility
-import { doc, setDoc, deleteDoc, serverTimestamp, collection } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, serverTimestamp, collection, query, where, onSnapshot } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "@/components/indexcomponents/infopanels/catalog/InfoPanelStyles";
+import { styles as baseStyles } from "@/components/indexcomponents/infopanels/applications/InfoPanelStyles";
 import { Image } from 'expo-image';
 
 type ProjectData = {
@@ -52,6 +52,15 @@ type InfoPanelProps = {
   config: InfoPanelConfig;
 };
 
+type ApplicationData = {
+  id: string;
+  applicantId: string;
+  message: string;
+  status: string;
+  projectOwnerId: string;
+  createdAt: any; // Timestamp
+};
+
 const InfoPanel = ({
   projectData: initialProjectData,
   config,
@@ -62,7 +71,7 @@ const InfoPanel = ({
   const rightMargin = width * 0.03;
 
   const { user: currentUser } = useAuth();
-  const { isInfoPanelApplicationsVisible } = useVisibility(); // Hent isInfoPanelApplicationsVisible
+  const { isInfoPanelApplicationsVisible, showPanel, hideAllPanels } = useVisibility(); // Hent isInfoPanelApplicationsVisible
   const userId = currentUser;
 
   // Definer projectData som en state-variabel
@@ -86,6 +95,9 @@ const InfoPanel = ({
   // State for ansøgningsmodal
   const [modalVisible, setModalVisible] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
+
+  // State til at gemme ansøgninger
+  const [applications, setApplications] = useState<ApplicationData[]>([]);
 
   const handleFavoriteToggle = async () => {
     if (!config.showFavorite) return;
@@ -130,16 +142,16 @@ const InfoPanel = ({
 
   const handlePurchase = async () => {
     if (!config.showPurchase) return;
-  
+
     try {
       const newToBePurchasedStatus = !toBePurchased;
       setToBePurchased(newToBePurchasedStatus);
-  
+
       if (!userId) {
         Alert.alert("Fejl", "Bruger ikke logget ind.");
         return;
       }
-  
+
       const purchaseDocRef = doc(
         database,
         "users",
@@ -147,7 +159,7 @@ const InfoPanel = ({
         "purchases",
         projectData.id
       );
-  
+
       if (newToBePurchasedStatus) {
         await setDoc(
           purchaseDocRef,
@@ -185,7 +197,7 @@ const InfoPanel = ({
         console.error("UserId eller projectId mangler.");
         return;
       }
-  
+
       const imagePaths = {
         f8CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f8/f8CoverImage.jpg`,
         f5CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f5/f5CoverImage.jpg`,
@@ -193,7 +205,7 @@ const InfoPanel = ({
         f2CoverImage: `users/${projectData.userId}/projects/${projectData.id}/data/f2/f2CoverImage.jpg`,
         projectImage: `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`,
       };
-  
+
       try {
         const fetchImage = async (key: keyof typeof imagePaths, path: string) => {
           try {
@@ -205,14 +217,14 @@ const InfoPanel = ({
             return { [key]: null };
           }
         };
-  
+
         const imagePromises = Object.entries(imagePaths).map(([key, path]) =>
           fetchImage(key as keyof typeof imagePaths, path)
         );
-  
+
         const imageResults = await Promise.all(imagePromises);
         const updatedImages = Object.assign({}, ...imageResults);
-  
+
         // Opdater kun de felter, der har gyldige URL'er
         setProjectData((prev) => ({
           ...prev,
@@ -222,7 +234,7 @@ const InfoPanel = ({
         console.error("Fejl ved billedhentning:", error);
       }
     };
-  
+
     fetchImages();
   }, [projectData.userId, projectData.id]);
 
@@ -273,6 +285,51 @@ const InfoPanel = ({
     }
   };
 
+  // State til at gemme ansøgninger (kun for projektets ejer)
+  useEffect(() => {
+    // Tjek om den aktuelle bruger er projektets ejer
+    const isProjectOwner = userId === projectData.userId;
+
+    if (!isProjectOwner) {
+      return;
+    }
+
+    console.log("Henter ansøgninger for projekt:", projectData.id);
+
+    const applicationsRef = collection(
+      database,
+      "users",
+      projectData.userId || "",
+      "projects",
+      projectData.id,
+      "applications"
+    );
+
+    const q = query(applicationsRef, where("status", "==", "pending"));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedApplications: ApplicationData[] = snapshot.docs.map(doc => ({
+          id: doc.id,
+          applicantId: doc.data().applicantId,
+          message: doc.data().message,
+          status: doc.data().status,
+          projectOwnerId: doc.data().projectOwnerId,
+          createdAt: doc.data().createdAt,
+        }));
+        console.log(`Fundet ${fetchedApplications.length} pending ansøgninger for projekt: ${projectData.id}`);
+        setApplications(fetchedApplications);
+      },
+      (error) => {
+        console.error("Fejl ved hentning af ansøgninger:", error);
+        Alert.alert("Fejl", "Kunne ikke hente ansøgninger.");
+      }
+    );
+
+    return () => unsubscribe();
+  }, [userId, projectData.id, projectData.userId]);
+
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
@@ -296,21 +353,43 @@ const InfoPanel = ({
         <Pressable
           style={baseStyles.F8}
         >
-          {/* Vis billede, hvis det er tilgængeligt */}
-          {f8CoverImage ? (
-            <Image
-              source={{ uri: f8CoverImage }}
-              style={baseStyles.f8CoverImage}
-              contentFit="cover" // Justerer billedets indhold
-              transition={1000}  // Tilføjer en overgangseffekt på 1 sekund
-            />
+          {/* Vis ansøgningstekster, hvis projektets ejer ser panelet */}
+          {userId === projectData.userId ? (
+            <View style={baseStyles.applicationsContainer}>
+              {applications.length > 0 ? (
+                applications.map((application) => (
+                  <View key={application.id} style={baseStyles.applicationItem}>
+                    <Text style={[baseStyles.applicationText, { color: Colors[theme].text }]}>
+                      {application.message}
+                    </Text>
+                    <Text style={[baseStyles.applicationAuthor, { color: Colors[theme].subtext }]}>
+                      - {application.applicantId}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[baseStyles.noApplicationsText, { color: Colors[theme].subtext }]}>
+                  Ingen ansøgninger
+                </Text>
+              )}
+            </View>
           ) : (
-            <Image
-              source={require("@/assets/images/defaultF8CoverImage.jpg")} // Standardbillede
-              style={baseStyles.f8CoverImage}
-              contentFit="cover"
-              transition={1000}
-            />
+            // Vis f8CoverImage, hvis det ikke er projektets ejer
+            f8CoverImage ? (
+              <Image
+                source={{ uri: f8CoverImage }}
+                style={baseStyles.f8CoverImage}
+                contentFit="cover" // Justerer billedets indhold
+                transition={1000}  // Tilføjer en overgangseffekt på 1 sekund
+              />
+            ) : (
+              <Image
+                source={require("@/assets/images/blomst.webp")} // Standardbillede
+                style={baseStyles.f8CoverImage}
+                contentFit="cover"
+                transition={1000}
+              />
+            )
           )}
 
           {/* Projektbilledet i det runde felt med onPress */}
@@ -327,7 +406,7 @@ const InfoPanel = ({
               />
             ) : (
               <Image
-                source={require("@/assets/images/defaultProjectImage.jpg")} // Standardbillede
+                source={require("@/assets/images/blomst.webp")} // Standardbillede
                 style={baseStyles.projectImage}
                 contentFit="cover"
                 transition={2000}
@@ -355,7 +434,7 @@ const InfoPanel = ({
                   />
                 ) : (
                   <Image
-                    source={require("@/assets/images/defaultF2CoverImage.jpg")} // Standardbillede
+                    source={require("@/assets/images/blomst.webp")} // Standardbillede
                     style={baseStyles.f2CoverImage}
                     contentFit="cover"
                     transition={1000}
@@ -380,14 +459,22 @@ const InfoPanel = ({
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handleApply} // Kalder handleApply for Designer/Admin
-                  accessibilityLabel="Apply Button"
+                  onPress={userId === projectData.userId ? handleApply : handlePurchase} // Dynamisk handling baseret på brugerens rolle
+                  accessibilityLabel={userId === projectData.userId ? "Apply Button" : "Purchase Button"}
                 >
-                  <MaterialIcons
-                    name="send" // Vælg et ikon, der repræsenterer ansøgning
-                    size={30}
-                    color="#0a7ea4"
-                  />
+                  {userId === projectData.userId ? (
+                    <MaterialIcons
+                      name="send" // Vælg et ikon, der repræsenterer ansøgning
+                      size={30}
+                      color="#0a7ea4"
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={toBePurchased ? "join-right" : "join-left"}
+                      size={30}
+                      color="#0a7ea4"
+                    />
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -406,7 +493,7 @@ const InfoPanel = ({
                 />
               ) : (
                 <Image
-                  source={require("@/assets/images/defaultF3CoverImage.jpg")} // Standardbillede
+                  source={require("@/assets/images/blomst.webp")} // Standardbillede
                   style={baseStyles.f3CoverImage}
                   contentFit="cover"
                   transition={1000}
@@ -429,7 +516,7 @@ const InfoPanel = ({
               />
             ) : (
               <Image
-                source={require("@/assets/images/defaultF5CoverImage.jpg")} // Standardbillede
+                source={require("@/assets/images/blomst.webp")} // Standardbillede
                 style={baseStyles.f5CoverImage}
                 contentFit="cover"
                 transition={1000}
