@@ -1,6 +1,6 @@
 // @/components/indexcomponents/dashboard/NewProject.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,85 +12,37 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, collection, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytes,list, getDownloadURL } from "firebase/storage";
+import { useVisibility } from "@/hooks/useVisibilityContext"; // Importer kontekst for profilbillede
+import { doc, collection, setDoc } from "firebase/firestore";
+import { ref, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Asset } from 'expo-asset';
-import * as ImageManipulator from 'expo-image-manipulator';
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
+  const { profileImage } = useVisibility(); // Hent profilbillede fra konteksten
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const defaultImage = require("@/assets/images/blomst.webp");
-
-  useEffect(() => {
-    fetchProfileImage();
-  }, [user]);
-
-  const fetchProfileImage = async () => {
-    if (!user) return;
-  
-    try {
-      // Reference til brugerens profilbillede-mappe
-      const profileImageRef = ref(storage, `users/${user}/profileimage/`);
-      
-      // List filer i mappen
-      const fileList = await list(profileImageRef);
-  
-      if (fileList.items.length > 0) {
-        // Hent URL til første billede i mappen
-        const imageUrl = await getDownloadURL(fileList.items[0]);
-        setProfileImage(`${imageUrl}&t=${Date.now()}`); // Tilføj cache-busting timestamp
-      } else {
-        console.warn("Ingen profilbilleder fundet. Brug standardbillede.");
-        const asset = Asset.fromModule(defaultImage);
-        await asset.downloadAsync();
-        setProfileImage(`${asset.localUri}?t=${Date.now()}`);
-      }
-    } catch (error) {
-      console.error("Fejl ved hentning af profilbillede:", error);
-      const asset = Asset.fromModule(defaultImage);
-      await asset.downloadAsync();
-      setProfileImage(`${asset.localUri}?t=${Date.now()}`);
-    }
-  };
-
-  const handleImageResize = async (uri: string): Promise<string> => {
-    try {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 300, height: 300 } }], // Ændrer størrelsen til 300x300 pixels
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Komprimerer billedet med 70% kvalitet
-      );
-      return manipResult.uri;
-    } catch (error) {
-      console.error('Fejl ved ændring af billedstørrelse:', error);
-      return uri; // Returnerer original URI ved fejl
-    }
-  };
 
   const handleCreateProject = async () => {
     if (!user) {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
       return;
     }
-  
+
     if (!name || !description) {
       Alert.alert("Manglende oplysninger", "Udfyld både navn og beskrivelse.");
       return;
     }
-  
+
     setIsCreating(true);
-  
+
     try {
       const projectRef = doc(collection(database, "users", user, "projects"));
-  
+
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -99,26 +51,23 @@ const NewProject: React.FC = () => {
         userId: user,
         status: "Project",
       };
-  
+
       await setDoc(projectRef, projectData);
-  
-      // Brug det hentede profilbillede eller standardbillede
-      const imageUri = profileImage || (await Asset.fromModule(defaultImage).downloadAsync()).localUri;
-  
-      if (imageUri) {
-        const resizedImageUri = await handleImageResize(imageUri);
+
+      // Brug det globale profilbillede
+      if (profileImage) {
         const projectProfileImageRef = ref(
           storage,
           `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
         );
-  
-        const response = await fetch(resizedImageUri);
+
+        const response = await fetch(profileImage);
         const blob = await response.blob();
         await uploadBytes(projectProfileImageRef, blob);
       } else {
-        console.error("Fejl: Kunne ikke hente billedets URI.");
+        console.warn("Ingen profilbillede fundet. Projekt oprettes uden billede.");
       }
-  
+
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
@@ -131,22 +80,17 @@ const NewProject: React.FC = () => {
     }
   };
 
-  const handlePlusButtonPress = async () => {
-    await fetchProfileImage();
-    setModalVisible(true);
-  };
-
   return (
     <View style={[styles.createStoryContainer]}>
       <Image
-        source={{ uri: profileImage }}
+        source={profileImage ? { uri: profileImage } : require("@/assets/images/blomst.webp")}
         style={styles.profileImg}
         contentFit="cover"
       />
 
       <TouchableOpacity
         style={styles.iconContainer}
-        onPress={handlePlusButtonPress}
+        onPress={() => setModalVisible(true)}
       >
         <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>

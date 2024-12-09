@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
   ref,
@@ -27,6 +28,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
+  const { setProfileImage } = useVisibility(); // Hent setProfileImage fra konteksten
 
   const backgroundColor = useThemeColor({}, "background");
   const borderColor = useThemeColor({}, "border");
@@ -35,7 +37,7 @@ export default function AccountScreen() {
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [location, setLocation] = useState("");
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImageState] = useState<string | null>(null);
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState("");
@@ -54,7 +56,7 @@ export default function AccountScreen() {
             setNickname(data.nickname || "");
             setName(data.name || "");
             setLocation(data.location || "");
-            setProfileImage(data.profileImage || null);
+            setProfileImageState(data.profileImage || null);
             setBirthDate(data.birthDate || "");
             setGender(data.gender || "");
             setPreferredLanguage(data.preferredLanguage || "");
@@ -113,14 +115,14 @@ export default function AccountScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-      setProfileImage(imageUri);
+      setProfileImageState(imageUri);
       await uploadImageToStorage(imageUri);
     }
   };
 
   const uploadImageToStorage = async (uri: string) => {
     if (!user) return;
-  
+
     try {
       // Resize og komprimer billedet
       const resizedImage = await ImageManipulator.manipulateAsync(
@@ -128,35 +130,36 @@ export default function AccountScreen() {
         [{ resize: { width: 300, height: 300 } }], // Resize til 300x300 px
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Komprimer til 70% kvalitet
       );
-  
+
       // Reference til profilbilledemappen
       const profileImageRef = ref(storage, `users/${user}/profileimage/profileImage.jpg`);
-  
+
       // Slet eventuelle gamle billeder (valgfrit, da vi bruger fast navn)
       const folderRef = ref(storage, `users/${user}/profileimage/`);
       const files = await listAll(folderRef);
       for (const file of files.items) {
         await deleteObject(file);
       }
-  
+
       // Upload det komprimerede billede
       const response = await fetch(resizedImage.uri);
       const blob = await response.blob();
       await uploadBytes(profileImageRef, blob);
-  
+
       // Generér download-link
       const downloadUrl = await getDownloadURL(profileImageRef);
       const uniqueUrl = `${downloadUrl}?t=${Date.now()}`; // Undgå cache-problemer
-  
+
       // Opdater Firestore med det nye download-link
       await setDoc(
         doc(database, "users", user),
         { profileImage: uniqueUrl },
         { merge: true }
       );
-  
-      // Opdater lokal state
-      setProfileImage(uniqueUrl);
+
+      // Opdater lokal state og global kontekst
+      setProfileImageState(uniqueUrl);
+      setProfileImage(uniqueUrl); // Opdater global kontekst
       console.log("Nyt profilbillede uploadet og gemt:", uniqueUrl);
     } catch (error) {
       console.error("Fejl ved upload af profilbillede:", error);
