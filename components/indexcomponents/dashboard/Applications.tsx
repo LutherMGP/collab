@@ -213,10 +213,10 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   leftButton: {
-    left: "25%", // Juster efter behov for at placere til venstre
+    left: "30%", // Juster efter behov for at placere til venstre
   },
   rightButton: {
-    right: "-10%", // Juster efter behov for at placere til højre
+    right: "-5%", // Juster efter behov for at placere til højre
   },
 });
 

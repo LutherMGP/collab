@@ -10,6 +10,8 @@ type VisibilityContextType = {
   isInfoPanelCartVisible: boolean;
   isInfoPanelApplicationsVisible: boolean;
   isInfoPanelDevelopmentVisible: boolean;
+  isInfoPanelApplicationsUdVisible: boolean;
+  isInfoPanelApplicationsIndVisible: boolean;
   showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
 };
@@ -22,6 +24,8 @@ const VisibilityContext = createContext<VisibilityContextType>({
   isInfoPanelCartVisible: false,
   isInfoPanelApplicationsVisible: false,
   isInfoPanelDevelopmentVisible: false,
+  isInfoPanelApplicationsUdVisible: false,
+  isInfoPanelApplicationsIndVisible: false,
   showPanel: () => {},
   hideAllPanels: () => {},
 });
@@ -36,6 +40,8 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
   const [isInfoPanelCartVisible, setInfoPanelCartVisible] = useState(false);
   const [isInfoPanelApplicationsVisible, setInfoPanelApplicationsVisible] = useState(false);
   const [isInfoPanelDevelopmentVisible, setInfoPanelDevelopmentVisible] = useState(false);
+  const [isInfoPanelApplicationsUdVisible, setInfoPanelApplicationsUdVisible] = useState(false);
+  const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] = useState(false);
 
   const showPanel = (panelName: string) => {
     hideAllPanels();
@@ -55,8 +61,11 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
       case "cart":
         setInfoPanelCartVisible(true);
         break;
-      case "applications":
-        setInfoPanelApplicationsVisible(true);
+      case "applicationsUd":
+        setInfoPanelApplicationsUdVisible(true);
+        break;
+      case "applicationsInd":
+        setInfoPanelApplicationsIndVisible(true);
         break;
       case "development":
         setInfoPanelDevelopmentVisible(true);
@@ -74,6 +83,8 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
     setInfoPanelCartVisible(false);
     setInfoPanelApplicationsVisible(false);
     setInfoPanelDevelopmentVisible(false);
+    setInfoPanelApplicationsUdVisible(false);
+    setInfoPanelApplicationsIndVisible(false);
   };
 
   return (
@@ -86,6 +97,8 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
         isInfoPanelCartVisible,
         isInfoPanelApplicationsVisible,
         isInfoPanelDevelopmentVisible,
+        isInfoPanelApplicationsUdVisible,
+        isInfoPanelApplicationsIndVisible,
         showPanel,
         hideAllPanels,
       }}
