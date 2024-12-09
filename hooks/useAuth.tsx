@@ -1,3 +1,5 @@
+// @/hooks/useAuth.tsx
+
 import React, {
   useState,
   useEffect,
@@ -6,14 +8,11 @@ import React, {
   ReactNode,
 } from "react";
 import { useRouter } from "expo-router";
-import { auth, database, storage } from "@/firebaseConfig";
-import { signOut as firebaseSignOut, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, database } from "@/firebaseConfig";
+import { signOut as firebaseSignOut } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
 import * as SecureStore from "expo-secure-store";
 import * as AppleAuthentication from "expo-apple-authentication";
-import * as ImageManipulator from "expo-image-manipulator";
-import { Asset } from "expo-asset";
 
 type AuthContextType = {
   user: string | null;
@@ -22,7 +21,6 @@ type AuthContextType = {
   setUserRole: React.Dispatch<React.SetStateAction<string | null>>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
-  handleEmailSignup: (email: string, password: string) => Promise<void>;
   updateUserProfile: (userId: string, profileData: any) => Promise<void>;
 };
 
@@ -33,7 +31,6 @@ const AuthContext = createContext<AuthContextType>({
   setUserRole: () => {},
   signInWithApple: async () => {},
   signOut: async () => {},
-  handleEmailSignup: async () => {},
   updateUserProfile: async () => {},
 });
 
@@ -41,31 +38,15 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Hjælpefunktion til upload af standardbillede
-const uploadDefaultProfileImage = async (userId: string) => {
-  try {
-    const defaultImage = require("@/assets/images/blomst.webp");
-    const asset = Asset.fromModule(defaultImage);
-    await asset.downloadAsync();
+// Hjælpefunktion til at håndtere brugerroller
+export const useRole = () => {
+  const { userRole } = useAuth();
 
-    const resizedImage = await ImageManipulator.manipulateAsync(
-      asset.localUri || "",
-      [{ resize: { width: 300, height: 300 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-    );
+  const isDesigner = userRole === "Designer";
+  const isAdmin = userRole === "Admin";
 
-    const profileImageRef = ref(storage, `users/${userId}/profileimage/profileImage.jpg`);
-    const response = await fetch(resizedImage.uri);
-    const blob = await response.blob();
-    await uploadBytes(profileImageRef, blob);
-
-    console.log("Standardbillede uploadet til Storage.");
-    return `users/${userId}/profileimage/profileImage.jpg`;
-  } catch (error) {
-    console.error("Fejl ved upload af standardbillede:", error);
-    throw error;
-  }
-}
+  return { isDesigner, isAdmin };
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -91,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkStoredUser();
   }, []);
 
-  const signInWithApple = async (): Promise<void> => {
+  const signInWithApple = async () => {
     try {
       const appleAuth = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -113,14 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-          const profileImagePath = await uploadDefaultProfileImage(userId);
-
           await setDoc(userDocRef, {
             email: userEmail,
             name: appleAuth.fullName?.givenName || "Bruger",
             role: "Bruger",
             createdAt: new Date().toISOString(),
-            profileImage: profileImagePath,
           });
         }
 
@@ -130,29 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Fejl ved Apple-login:", error);
-    }
-  };
-
-  const handleEmailSignup = async (email: string, password: string) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userId = userCredential.user.uid;
-
-      const profileImagePath = await uploadDefaultProfileImage(userId);
-
-      await setDoc(doc(database, "users", userId), {
-        email,
-        role: "Bruger",
-        createdAt: new Date().toISOString(),
-        profileImage: profileImagePath,
-      });
-
-      setUser(userId);
-      setUserRole("Bruger");
-      router.replace("/(app)/(tabs)");
-    } catch (error) {
-      console.error("Fejl ved oprettelse af bruger:", error);
-      throw error;
     }
   };
 
@@ -188,7 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserRole,
         signInWithApple,
         signOut,
-        handleEmailSignup,
         updateUserProfile,
       }}
     >
