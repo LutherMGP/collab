@@ -510,28 +510,88 @@ export const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   applicationsContainer: {
-    padding: 10,
-    backgroundColor: Colors.light.background, // Juster efter behov
-    borderRadius: 10,
-    maxHeight: 100, // Juster højden efter behov
+    flex: 1, // Fyld hele feltet
+    width: "100%", // Fyld hele bredden
+    height: "100%", // Fyld hele højden
+    backgroundColor: "transparent", // Juster baggrundsfarve
+    margin: 0, // Tilføj padding for at give plads til indhold
+    borderRadius: 11, // Bevar rundede hjørner
+    //borderWidth: 1, // Bevar kant
+    justifyContent: "flex-start", // Placer indholdet i toppen
+    alignItems: "center", // Centrerer indhold horisontalt
+    paddingTop: 10, // Giver lidt afstand fra toppen
   },
   applicationItem: {
-    marginBottom: 10,
-    padding: 5,
-    backgroundColor: Colors.light.tint, // Juster efter behov
-    borderRadius: 5,
-  },
-  applicationText: {
-    fontSize: 14,
-    fontWeight: "bold",
+    width: "60%", // Gør elementet bredt nok til at være centreret
+    height: 50, // Fast højde for at gøre elementerne ens
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    alignSelf: "center", // Sørger for, at elementet er centreret horisontalt på sin container
+    justifyContent: "center", // Centrerer indholdet vertikalt
+    alignItems: "center", // Centrerer indholdet horisontalt
+    padding: 10, // Tilføjer lidt afstand omkring teksten
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    marginTop: -5,
   },
   applicationAuthor: {
-    fontSize: 12,
-    fontStyle: "italic",
+    fontSize: 20,
+    //fontStyle: "italic",
+    textAlign: "center", // Centrerer den mindre tekst også
+    color: "red", // Sætter tekstfarven til rød
   },
-  noApplicationsText: {
+  roundImageContainer: {
+    position: "absolute",
+    top: 5, // Juster afstanden fra toppen
+    right: 5, // Juster afstanden fra højre
+    width: 50, // Diameteren af det runde felt
+    height: 50, // Diameteren af det runde felt
+    borderRadius: 25, // Halvdelen af bredden og højden for at gøre det rundt
+    overflow: "hidden", // Sørger for, at billedet bliver indenfor den runde container
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderWidth: 1, // Tilføj en kant (valgfri)
+    borderColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  roundImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover", // Sørger for, at billedet fylder hele containeren
+  },
+  bottomField: {
+    position: "absolute",
+    bottom: "1.4%",
+    left: "1.4%",
+    width: "97.2%",
+    height: "84.6%", // Giv fast højde, så scroll-effekten kan fungere
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    justifyContent: "flex-start", // Start tekst fra toppen
+    alignItems: "flex-start", // Sørg for, at teksten starter til venstre
+    borderRadius: 9.6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    overflow: "hidden", // Sikrer, at overskydende indhold skjules
+    padding: 10, // Giver lidt plads omkring teksten
+  },
+  bottomFieldText: {
+    color: "black",
     fontSize: 14,
-    textAlign: "center",
-    fontStyle: "italic",
+    //fontWeight: "bold",
+    textAlign: "left", // Venstrestil teksten
+    textAlignVertical: "top", // Sørg for, at teksten starter i toppen (kun relevant på Android)
+    alignSelf: "flex-start", // Sørger for, at teksten starter i toppen af containeren
+    width: "100%", // Fylder hele bredden af containeren
   },
 });

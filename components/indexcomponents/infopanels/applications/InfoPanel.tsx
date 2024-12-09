@@ -350,63 +350,71 @@ const InfoPanel = ({
 
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
-        <Pressable
-          style={baseStyles.F8}
-        >
-          {/* Vis ansøgningstekster, hvis projektets ejer ser panelet */}
+        <Pressable style={baseStyles.F8}>
           {userId === projectData.userId ? (
             <View style={baseStyles.applicationsContainer}>
+              <View style={baseStyles.roundImageContainer}>
+                <Image
+                  source={require("@/assets/images/blomst.webp")}
+                  style={baseStyles.roundImage}
+                />
+              </View>
               {applications.length > 0 ? (
                 applications.map((application) => (
                   <View key={application.id} style={baseStyles.applicationItem}>
-                    <Text style={[baseStyles.applicationText, { color: Colors[theme].text }]}>
-                      {application.message}
+                    <Text
+                      style={[baseStyles.nameText, { color: Colors[theme].tint }]}
+                    >
+                      {application.applicantId}
                     </Text>
-                    <Text style={[baseStyles.applicationAuthor, { color: Colors[theme].subtext }]}>
-                      - {application.applicantId}
+                    <Text style={[baseStyles.commentText, { color: Colors[theme].text }]}>
+                      Proposal
                     </Text>
                   </View>
                 ))
               ) : (
-                <Text style={[baseStyles.noApplicationsText, { color: Colors[theme].subtext }]}>
+                <Text
+                  style={[baseStyles.commentText, { color: Colors[theme].text }]}
+                >
                   Ingen ansøgninger
                 </Text>
               )}
+              {/* Nyt felt placeret nederst */}
+              <View style={baseStyles.bottomField}>
+                <Text style={baseStyles.bottomFieldText}>
+                  {applications.length > 0 ? applications[0].message : "Ingen tekst tilgængelig"}
+                </Text>
+              </View>
             </View>
           ) : (
-            // Vis f8CoverImage, hvis det ikke er projektets ejer
             f8CoverImage ? (
               <Image
                 source={{ uri: f8CoverImage }}
                 style={baseStyles.f8CoverImage}
-                contentFit="cover" // Justerer billedets indhold
-                transition={1000}  // Tilføjer en overgangseffekt på 1 sekund
+                contentFit="cover"
+                transition={1000}
               />
             ) : (
               <Image
-                source={require("@/assets/images/blomst.webp")} // Standardbillede
+                source={require("@/assets/images/blomst.webp")}
                 style={baseStyles.f8CoverImage}
                 contentFit="cover"
                 transition={1000}
               />
             )
           )}
-
           {/* Projektbilledet i det runde felt med onPress */}
-          <Pressable
-            style={baseStyles.projectImageContainer}
-          >
-            {/* Vis billede, hvis det er tilgængeligt */}
+          <Pressable style={baseStyles.projectImageContainer}>
             {projectImage ? (
               <Image
                 source={{ uri: projectImage }}
                 style={baseStyles.projectImage}
-                contentFit="cover" // Justerer billedets indhold
-                transition={2000}  // Tilføjer en overgangseffekt på 2 sekunder
+                contentFit="cover"
+                transition={2000}
               />
             ) : (
               <Image
-                source={require("@/assets/images/blomst.webp")} // Standardbillede
+                source={require("@/assets/images/blomst.webp")}
                 style={baseStyles.projectImage}
                 contentFit="cover"
                 transition={2000}
@@ -525,43 +533,6 @@ const InfoPanel = ({
           </Pressable>
         </View>
       </View>
-
-      {/* Ansøgningsmodal */}
-      {isInfoPanelApplicationsVisible && (
-        <Modal
-          visible={modalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={baseStyles.modalContainer}>
-            <View style={baseStyles.modalContent}>
-              <Text style={baseStyles.modalTitle}>Ansøg om projekt</Text>
-              <TextInput
-                style={baseStyles.textInput}
-                placeholder="Skriv din besked..."
-                value={applicationMessage}
-                onChangeText={setApplicationMessage}
-                multiline
-              />
-              <View style={baseStyles.modalActions}>
-                <TouchableOpacity
-                  style={baseStyles.cancelButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={baseStyles.buttonText}>Annuller</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={baseStyles.submitButton}
-                  onPress={submitApplication}
-                >
-                  <Text style={baseStyles.buttonText}>Send</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
 
       {isLoading && (
         <View style={baseStyles.loadingOverlay}>

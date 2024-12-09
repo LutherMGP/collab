@@ -118,9 +118,6 @@ const InfoPanelApplications = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={{ color: Colors[theme].text, textAlign: "center", marginBottom: 10 }}>
-        Antal ansøgninger: {applicationCount}
-      </Text>
       {applications.length === 0 ? (
         <Text style={{ color: Colors[theme].text, textAlign: "center" }}>
           Ingen ansøgninger fundet.
