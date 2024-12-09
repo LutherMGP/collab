@@ -17,6 +17,7 @@ import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage"
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
 import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
+import InfoPanelApplications from "@/components/indexcomponents/infopanels/applications/InfoPanelApplications";
 import InfoPanelApplicationsUd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsUd";
 import InfoPanelApplicationsInd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsInd";
 
@@ -44,8 +45,6 @@ const Index = () => {
     isInfoPanelCartVisible,
     isInfoPanelApplicationsVisible,
     isInfoPanelDevelopmentVisible,
-    isInfoPanelApplicationsUdVisible,
-    isInfoPanelApplicationsIndVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
@@ -56,19 +55,19 @@ const Index = () => {
     isInfoPanelPurchasedVisible ||
     isInfoPanelCartVisible ||
     isInfoPanelApplicationsVisible ||
-    isInfoPanelDevelopmentVisible ||
-    isInfoPanelApplicationsUdVisible ||
-    isInfoPanelApplicationsIndVisible
+    isInfoPanelDevelopmentVisible
   );
 
   useEffect(() => {
     const updateLastUsed = async () => {
       if (user) {
         try {
-          const userDocRef = doc(database, "users", user);
+          console.log("Current userId:", user); // Tilføj dette
+          const userDocRef = doc(database, "users", user); // Brug 'user' direkte
           await updateDoc(userDocRef, {
             lastUsed: serverTimestamp(),
           });
+          console.log("Last used timestamp updated for user:", user);
         } catch (error) {
           console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
         } finally {
@@ -141,35 +140,24 @@ const Index = () => {
         </View>
       )}
 
+      {/* Render InfoPanelApplications kun hvis synlig */}
+      {isInfoPanelApplicationsVisible && (
+        <View style={styles.infoPanelApplicationsContainer}>
+          <InfoPanelApplications />
+        </View>
+      )}
+
       {/* Render InfoPanelApplicationsUd kun hvis synlig */}
-      {isInfoPanelApplicationsUdVisible && (
-        <View style={styles.infoPanelApplicationsUdContainer}>
-          <InfoPanelApplicationsUd 
-            projectData={/* Indsæt relevant projekt data her */}
-            config={{
-              showFavorite: true,
-              showPurchase: false,
-              showProject: true,
-              checkPurchaseStatus: false,
-              checkFavoriteStatus: true,
-            }}
-          />
+      {isInfoPanelApplicationsVisibleUd && (
+        <View style={styles.infoPanelApplicationsContainerUd}>
+          <InfoPanelApplicationsUd />
         </View>
       )}
 
       {/* Render InfoPanelApplicationsInd kun hvis synlig */}
-      {isInfoPanelApplicationsIndVisible && (
-        <View style={styles.infoPanelApplicationsIndContainer}>
-          <InfoPanelApplicationsInd 
-            projectData={/* Indsæt relevant projekt data her */}
-            config={{
-              showFavorite: true,
-              showPurchase: true,
-              showProject: false,
-              checkPurchaseStatus: true,
-              checkFavoriteStatus: false,
-            }}
-          />
+      {isInfoPanelApplicationsVisibleInd && (
+        <View style={styles.infoPanelApplicationsContainerInd}>
+          <InfoPanelApplicationsInd />
         </View>
       )}
     </Animated.ScrollView>
@@ -213,13 +201,19 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelApplicationsUdContainer: {
+  infoPanelApplicationsContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelApplicationsIndContainer: {
+  infoPanelApplicationsContainerUd: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelApplicationsContainerInd: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
