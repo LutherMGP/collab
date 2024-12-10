@@ -32,7 +32,7 @@ import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Inf
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
-import { deleteFolder } from "@/utils/storageUtils"; // Import deleteFolder
+import { deleteFolderContents as deleteFolder } from "@/utils/storageUtils";
 
 type Category = "f8" | "f5" | "f3" | "f2";
 

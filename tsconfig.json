@@ -8,8 +8,8 @@
       "@/hooks/*": ["hooks/*"],
       "@/constants/*": ["constants/*"],
       "@/firebaseConfig": ["firebaseConfig.ts"],
-      "@/types/*": ["types/*"]
-      // Tilføj yderligere aliaser efter behov
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"] 
     }
   },
   "include": [
