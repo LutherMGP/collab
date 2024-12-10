@@ -89,6 +89,21 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  newButton: {
+    position: "absolute",
+    bottom: 5, // Placeret tæt på bunden
+    right: 5, // Placeret tæt på højre kant
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8, // Tilføjer lidt afstand omkring ikonet
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføjer skygge for bedre synlighed
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   priceText: {
     fontSize: 14,
     fontWeight: "bold",

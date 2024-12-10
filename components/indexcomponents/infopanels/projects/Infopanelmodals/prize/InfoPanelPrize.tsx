@@ -4,38 +4,34 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   StyleSheet,
   Alert,
 } from "react-native";
+import { AntDesign } from "@expo/vector-icons";
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 type InfoPanelPrizeProps = {
   onClose: () => void;
-  price: string;
+  selectedOption: string | null;
+  setSelectedOption: (option: string) => void;
   projectId: string;
   userId: string;
 };
 
 const InfoPanelPrize = ({
   onClose,
-  price,
+  selectedOption,
+  setSelectedOption,
   projectId,
   userId,
 }: InfoPanelPrizeProps) => {
-  const [newPrice, setNewPrice] = useState(price.replace(" kr.", "")); // Fjern "kr." ved initialisering
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    const numericPrice = parseFloat(newPrice.replace(",", ".").trim()); // Konverter til tal
-
-    if (isNaN(numericPrice) || numericPrice <= 0) {
-      Alert.alert(
-        "Ugyldig pris",
-        "Indtast en gyldig numerisk pris uden symboler."
-      );
+    if (!selectedOption) {
+      Alert.alert("Valg mangler", "Vælg en overdragelsesmetode.");
       return;
     }
 
@@ -43,13 +39,12 @@ const InfoPanelPrize = ({
 
     try {
       const projectRef = doc(database, "users", userId, "projects", projectId);
-
-      await updateDoc(projectRef, { price: numericPrice }); // Gem kun det numeriske værdi
-      Alert.alert("Pris opdateret", "Prisen er blevet gemt.");
-      onClose(); // Luk modal
+      await updateDoc(projectRef, { transferMethod: selectedOption });
+      Alert.alert("Overdragelsesmetode opdateret", "Valget er blevet gemt.");
+      onClose();
     } catch (error) {
-      console.error("Fejl ved opdatering af pris:", error);
-      Alert.alert("Fejl", "Kunne ikke opdatere prisen. Prøv igen senere.");
+      console.error("Fejl ved gemning af metode:", error);
+      Alert.alert("Fejl", "Kunne ikke gemme valget. Prøv igen senere.");
     } finally {
       setIsSaving(false);
     }
@@ -57,33 +52,43 @@ const InfoPanelPrize = ({
 
   return (
     <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Prize</Text>
-        <Text style={styles.modalText}>Current Price: {price}</Text>
-
-        {/* TextInput til redigering */}
-        <TextInput
-          style={styles.input}
-          value={newPrice}
-          onChangeText={setNewPrice}
-          placeholder="Enter new price"
-          keyboardType="numeric"
-        />
-
-        <View style={styles.buttonContainer}>
-          <Pressable
-            style={styles.saveButton}
-            onPress={handleSave}
-            disabled={isSaving}
-          >
-            <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save"}
-            </Text>
-          </Pressable>
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </Pressable>
-        </View>
+      <Text style={styles.modalTitle}>Vælg overdragelsesmetode</Text>
+      <View style={styles.iconRow}>
+        <Pressable onPress={() => setSelectedOption("Free Transfer")}>
+          <AntDesign
+            name="gift"
+            size={40}
+            color={selectedOption === "Free Transfer" ? "green" : "gray"}
+          />
+        </Pressable>
+        <Pressable onPress={() => setSelectedOption("Trade Transfer")}>
+          <AntDesign
+            name="swap"
+            size={40}
+            color={selectedOption === "Trade Transfer" ? "blue" : "gray"}
+          />
+        </Pressable>
+        <Pressable onPress={() => setSelectedOption("Collaboration Transfer")}>
+          <AntDesign
+            name="team"
+            size={40}
+            color={selectedOption === "Collaboration Transfer" ? "purple" : "gray"}
+          />
+        </Pressable>
+      </View>
+      <View style={styles.buttonContainer}>
+        <Pressable
+          style={styles.saveButton}
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          <Text style={styles.saveButtonText}>
+            {isSaving ? "Gemmer..." : "Gem"}
+          </Text>
+        </Pressable>
+        <Pressable style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.closeButtonText}>Luk</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -94,32 +99,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    // backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    padding: 20,
-    backgroundColor: "white",
-    borderRadius: 10,
-    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    width: "100%",
-    marginBottom: 10,
+  iconRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "80%",
+    marginBottom: 20,
   },
   buttonContainer: {
     flexDirection: "row",
