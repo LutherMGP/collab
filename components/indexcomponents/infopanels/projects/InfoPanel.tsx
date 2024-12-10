@@ -33,34 +33,6 @@ import InfoPanelAttachment from "@/components/indexcomponents/infopanels/project
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
 
-/**
- * Sletter en mappe og alle dens filer rekursivt fra Firebase Storage.
- * @param folderPath Stien til mappen, der skal slettes.
- */
-const deleteFolder = async (folderPath: string) => {
-  const folderRef = ref(storage, folderPath);
-
-  try {
-    // List alle filer og undermapper i mappen
-    const result = await listAll(folderRef);
-
-    // Slet alle filer i mappen
-    for (const fileRef of result.items) {
-      await deleteObject(fileRef);
-      console.log(`Slettede fil: ${fileRef.fullPath}`);
-    }
-
-    // Slet alle undermapper rekursivt
-    for (const subFolderRef of result.prefixes) {
-      await deleteFolder(subFolderRef.fullPath);
-    }
-
-    console.log(`Slettede mappe: ${folderPath}`);
-  } catch (error) {
-    console.error(`Fejl ved sletning af mappe: ${folderPath}`, error);
-  }
-};
-
 type ProjectData = {
   id: string;
   name?: string;
@@ -908,15 +880,21 @@ const InfoPanel = ({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
-              onClose={closeProjectImageModal} // Hvis du har tilføjet onClose til props
+              onClose={closeProjectImageModal} // Tilføj onClose prop
               projectId={projectData.id} // Tilføj projectId
               userId={userId || ""} // Tilføj userId
               category="f8" // Tilføj den relevante kategori
               onUploadSuccess={(downloadURLs) => {
-                // Håndter upload succes, f.eks. opdatering af state eller Firestore
+                setProjectData((prev) => ({
+                  ...prev,
+                  f8CoverImageLowRes: downloadURLs.lowRes,
+                  f8CoverImageHighRes: downloadURLs.highRes,
+                }));
+                Alert.alert("Success", "Project images uploaded successfully.");
               }}
               onUploadFailure={(error) => {
-                // Håndter upload fejl, f.eks. vise en fejlmeddelelse
+                console.error("Project Image Upload failed:", error);
+                Alert.alert("Error", "Could not upload project images.");
               }}
             />
           </View>

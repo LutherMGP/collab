@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
 
 type PdfUploaderProps = {
@@ -43,7 +43,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         type: "application/pdf",
       });
 
-      if (!result.canceled && result.type === "success" && result.uri) {
+      if (result.type === "success" && result.uri) {
         // Valider filtypen
         const mimeType = result.mimeType;
         if (mimeType !== "application/pdf") {

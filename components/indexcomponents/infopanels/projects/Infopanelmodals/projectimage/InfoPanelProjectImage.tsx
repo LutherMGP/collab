@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/ProjectImageUploader;
+import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/ProjectImageUploader"; // Tilføj det manglende anførselstegn
 import { Category } from "@/constants/ImageConfig";
 
 interface InfoPanelProjectImageProps {
