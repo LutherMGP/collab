@@ -15,31 +15,31 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
+import { UploadTaskSnapshot, UploadTask } from "firebase/storage";
+import { FirebaseError } from "@firebase/util";
+import { Category } from "@/constants/ImageConfig";
 
-type ImageUploaderProps = {
+interface ImageUploaderProps {
   userId: string;
   projectId: string;
-  initialImageUri?: string | null;
-  onUploadSuccess: (downloadURL: string) => void;
+  category: Category; // Tilføj denne linje
+  initialImageUris?: { lowRes: string; highRes: string } | null;
+  onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
   onUploadFailure?: (error: unknown) => void;
   buttonLabel?: string;
-  resizeWidth?: number;
-  resizeHeight?: number;
   compress?: number;
-};
+}
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({
+const ProjectImageUploader: React.FC<ImageUploaderProps> = ({
   userId,
   projectId,
-  initialImageUri = null,
+  initialImageUris = null,
   onUploadSuccess,
   onUploadFailure,
   buttonLabel = "Vælg billede",
-  resizeWidth = 1024,
-  resizeHeight,
   compress = 0.7,
 }) => {
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(initialImageUri);
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
@@ -48,32 +48,16 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1],
-        quality: compress, // Brug komprimeringsniveauet fra props
+        quality: compress,
       });
 
       if (!result.canceled) {
         const selectedImage = result.assets[0].uri;
-
-        // Reducer og resize billedet baseret på props
-        const manipulationActions = [];
-        if (resizeWidth || resizeHeight) {
-          manipulationActions.push({ resize: { width: resizeWidth, height: resizeHeight } });
-        }
-
-        const manipulatedImage = await ImageManipulator.manipulateAsync(
-          selectedImage,
-          manipulationActions,
-          { compress: compress, format: ImageManipulator.SaveFormat.JPEG }
-        );
-
-        setSelectedImageUri(manipulatedImage.uri);
+        setSelectedImageUri(selectedImage);
       }
     } catch (error: unknown) {
       console.error("Fejl ved valg af billede:", error);
-      Alert.alert("Fejl", "Kunne ikke vælge billede. Prøv igen.");
-
-      // Håndter eventuel fejlhåndtering
+      Alert.alert("Fejl", "Kunne ikke vælge billede.");
       if (onUploadFailure) {
         onUploadFailure(error);
       }
@@ -88,80 +72,50 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
     setIsUploading(true);
     setUploadProgress(0);
-    console.log("Start upload af nyt billede");
 
     try {
-      // Hent billed-blob
-      console.log("Henter billede URI:", selectedImageUri);
       const response = await fetch(selectedImageUri);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch image");
       const blob = await response.blob();
-      console.log("Billede hentet og konverteret til blob");
 
-      const imageRef = ref(
+      // Upload lav opløsning
+      const lowResImageRef = ref(
         storage,
-        `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`
+        `users/${userId}/projects/${projectId}/projectimage/lowResImage.jpg`
       );
-      console.log("Uploader billede til:", imageRef.fullPath);
+      const lowResUploadTask = uploadBytesResumable(lowResImageRef, blob);
+      const lowResURL = await handleUploadTask(lowResUploadTask, "low resolution");
 
-      // Start upload med resumable task
-      const uploadTask = uploadBytesResumable(imageRef, blob);
+      // Reducer til høj opløsning
+      const highResImage = await ImageManipulator.manipulateAsync(
+        selectedImageUri,
+        [{ resize: { width: 2048 } }], // Eksempel på høj opløsning
+        { compress, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      const highResBlob = await fetch(highResImage.uri).then((res) => res.blob());
 
-      // Lyt til upload-status
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-          console.log(`Upload progress: ${progress}%`);
-        },
-        (error: unknown) => {
-          // Håndter fejl
-          console.error("Fejl under upload:", error);
-          Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
-          setIsUploading(false);
-          if (onUploadFailure) {
-            onUploadFailure(error);
-          }
-        },
-        async () => {
-          // Upload completed successfully, get download URL
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log("Download URL hentet:", downloadURL);
+      const highResImageRef = ref(
+        storage,
+        `users/${userId}/projects/${projectId}/projectimage/highResImage.jpg`
+      );
+      const highResUploadTask = uploadBytesResumable(highResImageRef, highResBlob);
+      const highResURL = await handleUploadTask(highResUploadTask, "high resolution");
 
-          // Opdater Firestore med den nye URL
-          await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            { projectImage: downloadURL },
-            { merge: true }
-          );
-          console.log("Firestore opdateret med nye billed-URL");
-
-          // Afslutning af upload-processen
-          console.log("Nyt billede uploadet og Firestore opdateret");
-          Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
-          setSelectedImageUri(null);
-          setIsUploading(false);
-          onUploadSuccess(downloadURL);
-        }
+      // Opdater Firestore med begge URL'er
+      const downloadURLs = { lowRes: lowResURL, highRes: highResURL };
+      await setDoc(
+        doc(database, "users", userId, "projects", projectId),
+        { projectImages: downloadURLs },
+        { merge: true }
       );
 
-      // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
-      setTimeout(() => {
-        if (isUploading) {
-          console.log("Upload-processen tager for lang tid. Afbryder...");
-          uploadTask.cancel();
-          Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
-          setIsUploading(false);
-        }
-      }, 60000); // 60 sekunder timeout
+      Alert.alert("Succes", "Projektbilleder blev uploadet.");
+      setSelectedImageUri(null);
+      setIsUploading(false);
+      onUploadSuccess(downloadURLs);
     } catch (error: unknown) {
-      console.error("Fejl ved upload af billede:", error);
-      Alert.alert("Fejl", `Kunne ikke uploade billedet: ${getErrorMessage(error)}`);
+      console.error("Fejl ved upload:", error);
+      Alert.alert("Fejl", "Kunne ikke uploade billedet.");
       setIsUploading(false);
       if (onUploadFailure) {
         onUploadFailure(error);
@@ -169,14 +123,27 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   };
 
-  // Hjælpefunktion til at få fejlnavne
-  const getErrorMessage = (error: unknown): string => {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return String(error);
-  };
-
+  const handleUploadTask = (uploadTask: UploadTask, resolution: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      uploadTask.on(
+        "state_changed",
+        (snapshot: UploadTaskSnapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+          console.log(`Upload progress for ${resolution}: ${progress}%`);
+        },
+        (error: FirebaseError) => {
+          console.error(`Fejl ved upload (${resolution}):`, error);
+          reject(error);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log(`Download URL for ${resolution}: ${downloadURL}`);
+          resolve(downloadURL);
+        }
+      );
+    });
+  
   return (
     <View style={styles.container}>
       {selectedImageUri ? (
@@ -184,17 +151,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       ) : (
         <Text style={styles.noImageText}>Ingen billede valgt</Text>
       )}
-
+  
       <Pressable style={styles.button} onPress={handlePickImage}>
         <Text style={styles.buttonText}>{buttonLabel}</Text>
       </Pressable>
-
+  
       {selectedImageUri && !isUploading && (
         <Pressable style={styles.uploadButton} onPress={handleUploadImage}>
           <Text style={styles.uploadButtonText}>Upload billede</Text>
         </Pressable>
       )}
-
+  
       {isUploading && (
         <View style={styles.uploadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
@@ -202,7 +169,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         </View>
       )}
     </View>
-  );
+  )
 };
 
 const styles = StyleSheet.create({
@@ -254,4 +221,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ImageUploader;
+export default ProjectImageUploader;

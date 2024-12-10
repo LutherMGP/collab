@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelBase.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -12,6 +12,7 @@ import {
   Alert,
   ScrollView,
   Linking,
+  Modal, // Importér Modal
 } from "react-native";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
@@ -44,9 +45,15 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   });
 
   const [pdfURL, setPdfURL] = useState<string | null>(null);
-  const [coverImageURL, setCoverImageURL] = useState<string | null>(null);
+  const [coverImageURLs, setCoverImageURLs] = useState<{
+    lowRes: string | null;
+    highRes: string | null;
+  }>({ lowRes: null, highRes: null });
   const [comment, setComment] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // State for Modal visning af high-res billede
+  const [isImageModalVisible, setImageModalVisible] = useState<boolean>(false);
 
   // Fetch existing data from Firestore
   useEffect(() => {
@@ -66,27 +73,32 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           if (!categoryData) {
             console.warn(`Data for ${category} mangler i Firestore.`);
             setPdfURL(null);
-            setCoverImageURL(null);
+            setCoverImageURLs({ lowRes: null, highRes: null });
             setComment("");
             return;
           }
 
           setPdfURL(categoryData.pdf || null);
-          setCoverImageURL(categoryData.coverImage || null);
+          setCoverImageURLs({
+            lowRes: categoryData[`CoverImageLowRes`] || null,
+            highRes: categoryData[`CoverImageHighRes`] || null,
+          });
           setComment(categoryData.comment || "");
         } else {
           console.warn(`Projekt ${projectId} findes ikke i Firestore.`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Failed to fetch ${category} data:`, error);
+        Alert.alert("Fejl", `Kunne ikke hente ${categoryName} data.`);
       }
     };
 
     fetchData();
-  }, [userId, projectId, category]);
+  }, [userId, projectId, category, categoryName]);
 
   // Save changes to Firestore
   const handleSave = async () => {
+    setIsLoading(true);
     try {
       const docRef = doc(database, "users", userId, "projects", projectId);
       await setDoc(
@@ -94,9 +106,10 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         {
           data: {
             [category]: {
-              pdf: pdfURL,
-              coverImage: coverImageURL, // Gem den dynamiske filsti
-              comment: comment.trim(),
+              pdf: pdfURL || null,
+              CoverImageLowRes: coverImageURLs.lowRes || null,
+              CoverImageHighRes: coverImageURLs.highRes || null,
+              comment: comment.trim() || "",
               updatedAt: new Date().toISOString(),
             },
           },
@@ -105,9 +118,11 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       );
       Alert.alert("Success", `${categoryName} data saved.`);
       onClose(); // Luk modalen efter lagring
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to save ${categoryName} data:`, error);
       Alert.alert("Error", `Could not save ${categoryName} data.`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -136,11 +151,11 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           projectId={projectId}
           category={category}
           initialPdfUrl={pdfURL}
-          onUploadSuccess={(downloadURL) => {
+          onUploadSuccess={(downloadURL: string) => {
             setPdfURL(downloadURL);
             Alert.alert("Success", `${categoryName} PDF uploaded.`);
           }}
-          onUploadFailure={(error) => {
+          onUploadFailure={(error: unknown) => {
             console.error("PDF Upload failed:", error);
             Alert.alert("Error", `Could not upload ${categoryName} PDF.`);
           }}
@@ -151,8 +166,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       {/* Cover Image Sektion */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Cover Image</Text>
-        {coverImageURL ? (
-          <Image source={{ uri: coverImageURL }} style={styles.image} />
+        {coverImageURLs.lowRes ? (
+          <TouchableOpacity onPress={() => setImageModalVisible(true)}>
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: coverImageURLs.lowRes }} style={styles.image} />
+              <Text style={styles.resolutionText}>Low Resolution</Text>
+            </View>
+          </TouchableOpacity>
         ) : (
           <Text>No cover image selected.</Text>
         )}
@@ -160,18 +180,47 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           userId={userId}
           projectId={projectId}
           category={category} // Send category til CoverImageUploader
-          initialImageUri={coverImageURL}
-          onUploadSuccess={(downloadURL) => {
-            setCoverImageURL(downloadURL);
-            Alert.alert("Success", `${categoryName} cover image uploaded.`);
-            // onClose(); // Valgfrit: Luk modalen efter upload
+          initialImageUris={coverImageURLs.lowRes && coverImageURLs.highRes ? {
+            lowRes: coverImageURLs.lowRes,
+            highRes: coverImageURLs.highRes,
+          } : null}
+          onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => {
+            setCoverImageURLs({
+              lowRes: downloadURLs.lowRes,
+              highRes: downloadURLs.highRes,
+            });
+            Alert.alert("Success", `${categoryName} cover images uploaded.`);
           }}
-          onUploadFailure={(error) => {
+          onUploadFailure={(error: unknown) => {
             console.error("Cover Image Upload failed:", error);
-            Alert.alert("Error", `Could not upload ${categoryName} cover image.`);
+            Alert.alert("Error", `Could not upload ${categoryName} cover images.`);
           }}
           buttonLabel="Vælg billede"
         />
+
+        {/* Modal til high-res billede */}
+        <Modal
+          visible={isImageModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setImageModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {coverImageURLs.highRes ? (
+                <Image source={{ uri: coverImageURLs.highRes }} style={styles.fullscreenImage} />
+              ) : (
+                <Text>No high-resolution image available.</Text>
+              )}
+              <TouchableOpacity
+                style={styles.closeModalButton}
+                onPress={() => setImageModalVisible(false)}
+              >
+                <Text style={styles.closeModalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
 
       {/* Kommentar Sektion */}
@@ -229,11 +278,49 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "center",
   },
+  imageContainer: {
+    alignItems: "center",
+    marginBottom: 10,
+  },
   image: {
-    width: "100%",
+    width: 200,
     height: 200,
-    marginVertical: 10,
     borderRadius: 10,
+    marginBottom: 5,
+  },
+  resolutionText: {
+    fontSize: 12,
+    color: "grey",
+  },
+  fullscreenImage: {
+    width: "100%",
+    height: "80%",
+    resizeMode: "contain",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    height: "90%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeModalButton: {
+    marginTop: 20,
+    backgroundColor: "gray",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeModalButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
   input: {
     borderWidth: 1,

@@ -13,11 +13,12 @@ import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
+import { DocumentPickerResult } from "expo-document-picker";
 
 type PdfUploaderProps = {
   userId: string;
   projectId: string;
-  category: string; // Tilføjet for dynamisk sti
+  category: string; // Added for dynamic path
   initialPdfUrl?: string | null;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -42,15 +43,23 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
       const result = await DocumentPicker.getDocumentAsync({
         type: "application/pdf",
       });
-
-      if (!result.canceled && result.assets) {
-        const pdfUri = result.assets[0].uri;
-        setSelectedPdfUri(pdfUri);
+  
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const { uri, mimeType } = result.assets[0];
+  
+        if (mimeType !== "application/pdf") {
+          Alert.alert("Fejl", "Kun PDF-filer er tilladt.");
+          return;
+        }
+  
+        setSelectedPdfUri(uri);
+      } else {
+        console.log("PDF-valg annulleret.");
       }
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Fejl ved valg af PDF:", error);
       Alert.alert("Fejl", "Kunne ikke vælge PDF. Prøv igen.");
-
+  
       if (onUploadFailure) {
         onUploadFailure(error);
       }
@@ -68,7 +77,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
     console.log("Start upload af ny PDF");
 
     try {
-      // Hent PDF-blob
+      // Fetch PDF blob
       console.log("Henter PDF URI:", selectedPdfUri);
       const response = await fetch(selectedPdfUri);
 
@@ -85,10 +94,10 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
       );
       console.log("Uploader PDF til:", pdfRef.fullPath);
 
-      // Start upload med resumable task
+      // Start upload with resumable task
       const uploadTask = uploadBytesResumable(pdfRef, blob);
 
-      // Lyt til upload-status
+      // Listen to upload state changes
       uploadTask.on(
         "state_changed",
         (snapshot) => {
@@ -97,7 +106,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           console.log(`Upload progress: ${progress}%`);
         },
         (error: unknown) => {
-          // Håndter fejl
+          // Handle unsuccessful uploads
           console.error("Fejl under upload:", error);
           Alert.alert("Fejl", `Kunne ikke uploade PDF'en: ${getErrorMessage(error)}`);
           setIsUploading(false);
@@ -106,19 +115,19 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           }
         },
         async () => {
-          // Upload completed successfully, get download URL
+          // Handle successful uploads on complete
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("Download URL hentet:", downloadURL);
 
-          // Opdater Firestore med den nye URL
+          // Update Firestore with the new URL
           await setDoc(
             doc(database, "users", userId, "projects", projectId),
-            { [`${category}PDF`]: downloadURL }, // Dynamisk sti baseret på kategori
+            { [`${category}PDF`]: downloadURL }, // Dynamic path based on category
             { merge: true }
           );
           console.log("Firestore opdateret med nye PDF-URL");
 
-          // Afslutning af upload-processen
+          // Finish the upload process
           console.log("Ny PDF uploadet og Firestore opdateret");
           Alert.alert("Succes", "PDF'en er blevet opdateret.");
           setSelectedPdfUri(null);
@@ -127,7 +136,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         }
       );
 
-      // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
+      // Add a timeout to ensure upload doesn't hang indefinitely
       setTimeout(() => {
         if (isUploading) {
           console.log("Upload-processen tager for lang tid. Afbryder...");
@@ -135,7 +144,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
           setIsUploading(false);
         }
-      }, 60000); // 60 sekunder timeout
+      }, 60000); // 60 seconds timeout
     } catch (error: unknown) {
       console.error("Fejl ved upload af PDF:", error);
       Alert.alert("Fejl", `Kunne ikke uploade PDF'en: ${getErrorMessage(error)}`);
@@ -146,7 +155,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
     }
   };
 
-  // Hjælpefunktion til at få fejlnavne
+  // Helper function to get error messages
   const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error) {
       return error.message;

@@ -21,6 +21,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, getDownloadURL, listAll, deleteObject } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
+import { Colors } from "@/constants/Colors";
+import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
@@ -30,37 +32,9 @@ import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Inf
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
-import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
+import { deleteFolderContents as deleteFolder } from "@/utils/storageUtils";
 
-/**
- * Sletter en mappe og alle dens filer rekursivt fra Firebase Storage.
- * @param folderPath Stien til mappen, der skal slettes.
- */
-const deleteFolder = async (folderPath: string) => {
-  const folderRef = ref(storage, folderPath);
-
-  try {
-    // List alle filer og undermapper i mappen
-    const result = await listAll(folderRef);
-
-    // Slet alle filer i mappen
-    for (const fileRef of result.items) {
-      await deleteObject(fileRef);
-      console.log(`Slettede fil: ${fileRef.fullPath}`);
-    }
-
-    // Slet alle undermapper rekursivt
-    for (const subFolderRef of result.prefixes) {
-      await deleteFolder(subFolderRef.fullPath);
-    }
-
-    console.log(`Slettede mappe: ${folderPath}`);
-  } catch (error) {
-    console.error(`Fejl ved sletning af mappe: ${folderPath}`, error);
-  }
-};
-
+type Category = "f8" | "f5" | "f3" | "f2";
 
 type ProjectData = {
   id: string;
@@ -68,20 +42,13 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
-  f8CoverImage?: string | null;
-  f8PDF?: string | null;
-  f8BrandImage?: string | null;
-  f5CoverImage?: string | null;
-  f5PDF?: string | null;
-  f3CoverImage?: string | null;
-  f3PDF?: string | null;
-  f2CoverImage?: string | null;
-  f2PDF?: string | null;
   isFavorite?: boolean;
   toBePurchased?: boolean;
   guideId?: string | null;
   projectId?: string | null;
   userId?: string | null;
+} & {
+  [key in `${Category}CoverImageLowRes` | `${Category}CoverImageHighRes` | `${Category}PDF`]?: string | null;
 };
 
 type InfoPanelConfig = {
@@ -113,16 +80,16 @@ const InfoPanel = ({
   const { user: currentUser } = useAuth();
   const userId = currentUser;
 
-  // Definer projectData som en state-variabel
+  // Define projectData as a state variable
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
-  const f8CoverImage = projectData.f8CoverImage || null;
+  const f8CoverImage = projectData.f8CoverImageLowRes || null;
   const f8PDF = projectData.f8PDF || null;
-  const f5CoverImage = projectData.f5CoverImage || null;
+  const f5CoverImage = projectData.f5CoverImageLowRes || null;
   const f5PDF = projectData.f5PDF || null;
-  const f3CoverImage = projectData.f3CoverImage || null;
+  const f3CoverImage = projectData.f3CoverImageLowRes || null;
   const f3PDF = projectData.f3PDF || null;
-  const f2CoverImage = projectData.f2CoverImage || null;
+  const f2CoverImage = projectData.f2CoverImageLowRes || null;
   const f2PDF = projectData.f2PDF || null;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
@@ -135,7 +102,7 @@ const InfoPanel = ({
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // State for Edit-tilstand og modaler
+  // State for Edit mode and modals
   const [isEditEnabled, setIsEditEnabled] = useState(false);
   const [isF8ModalVisible, setIsF8ModalVisible] = useState(false);
   const [isF5ModalVisible, setIsF5ModalVisible] = useState(false);
@@ -152,19 +119,21 @@ const InfoPanel = ({
   >(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] =
     useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
+  const [refreshKey, setRefreshKey] = useState(0); // Add this line if not already defined
 
-  // Funktion til at togglere Edit-tilstand
+  const categories: Category[] = ["f8", "f5", "f3", "f2"];
+
+  // Function to toggle Edit mode
   const toggleEdit = () => {
-    setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
+    setIsEditEnabled((prev) => !prev); // Toggle the Edit state
   };
 
   const handleSaveSuccess = () => {
     console.log("Projekt blev opdateret");
-    // Hvis du har andre funktioner til at håndtere succesfulde opdateringer, kan du tilføje dem her
+    // Add other functions to handle successful updates if needed
   };
 
-  // Generisk håndtering af lang tryk
+  // Generic long press handler
   const handleLongPress = async (pdfURL: string | null, fieldName: string) => {
     if (!pdfURL) {
       Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
@@ -275,7 +244,7 @@ const InfoPanel = ({
 
   const handleDelete = () => {
     if (!config.showDelete) return;
-  
+
     Alert.alert(
       "Bekræft Sletning",
       "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
@@ -291,8 +260,8 @@ const InfoPanel = ({
                 console.log("userId:", userId, "projectData.id:", projectData.id);
                 return;
               }
-  
-              // Slet alle relaterede filer og mapper i projektet
+
+              // Delete all related files and folders in the project
               const basePath = `users/${userId}/projects/${projectData.id}`;
               const foldersToDelete = [
                 `${basePath}/projectimage/`,
@@ -304,12 +273,12 @@ const InfoPanel = ({
                 `${basePath}/data/attachments/pdf/`,
                 `${basePath}/data/attachments/videos/`,
               ];
-  
+
               for (const folderPath of foldersToDelete) {
-                await deleteFolder(folderPath);
+                await deleteFolder(folderPath); // Brug den importerede deleteFolder funktion
               }
-  
-              // Slet projektets dokument fra Firestore
+
+              // Delete the project's document from Firestore
               const projectDocRef = doc(
                 database,
                 "users",
@@ -318,7 +287,7 @@ const InfoPanel = ({
                 projectData.id
               );
               await deleteDoc(projectDocRef);
-  
+
               console.log(`Projekt ${projectData.id} slettet.`);
               Alert.alert("Succes", "Projektet og alle relaterede filer er blevet slettet.");
             } catch (error) {
@@ -337,19 +306,19 @@ const InfoPanel = ({
 
   const [projectImage, setProjectImage] = useState<string | null>(null);
 
-  // Log projekt-ID for debugging
+  // Log project ID for debugging
   useEffect(() => {
     console.log("Henter billede for projekt:", projectData.id);
   }, [projectData.id]);
 
-  // Hent projektets billede
+  // Fetch project's image
   useEffect(() => {
     const fetchProjectImage = async () => {
       if (!projectData.userId || !projectData.id) {
         console.error("Project ownerId or projectId missing");
         return;
       }
-  
+
       try {
         const projectImageRef = ref(
           storage,
@@ -363,11 +332,11 @@ const InfoPanel = ({
         setProjectImage(null);
       }
     };
-  
+
     fetchProjectImage();
   }, [projectData.userId, projectData.id]);
 
-  // Generisk handlePress funktion med conditional
+  // Generic handlePress function with conditional
   const handlePress = (button: string) => {
     if (isEditEnabled) {
       switch (button) {
@@ -400,10 +369,10 @@ const InfoPanel = ({
     }
   };
 
-  // Funktioner til at lukke modaler
+  // Functions to close modals
   const closeF8Modal = () => {
     setIsF8ModalVisible(false);
-    refreshProjectData(); // Opdater data efter lukning
+    refreshProjectData(); // Update data after closing
   };
 
   const closeF5Modal = () => {
@@ -433,8 +402,8 @@ const InfoPanel = ({
 
   const closeProjectImageModal = () => {
     setIsProjectImageModalVisible(false);
-    setRefreshKey((prevKey) => prevKey + 1); // Tving opdatering
-    refreshProjectData(); // Opdater data, inkl. billed-URL
+    setRefreshKey((prevKey) => prevKey + 1); // Force update
+    refreshProjectData(); // Update data, including image URL
   };
 
   const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
@@ -455,14 +424,14 @@ const InfoPanel = ({
     setIsAttachmentModalVisible(false);
   };
 
-  // Funktion til at opdatere projektdata efter ændringer
+  // Function to update project data after changes
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
 
     setIsLoading(true);
 
     try {
-      // Hent data fra Firestore
+      // Fetch data from Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
@@ -471,51 +440,22 @@ const InfoPanel = ({
           ...prev,
           name: data.name || "",
           description: data.description || "",
-          f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          // Fjern hentning af PDF-URL'er her
-          f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
-          f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
-          f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
           toBePurchased: data.toBePurchased || prev.toBePurchased || false,
+          ...categories.reduce((acc, category) => {
+            const keyLowRes = `f${category.slice(1)}CoverImageLowRes` as keyof ProjectData;
+            const keyHighRes = `f${category.slice(1)}CoverImageHighRes` as keyof ProjectData;
+            const keyPDF = `f${category.slice(1)}PDF` as keyof ProjectData;
+
+            acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
+            acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
+            acc[keyPDF] = data[category]?.PDF || prev[keyPDF] || null;
+            return acc;
+          }, {} as Partial<ProjectData>),
         }));
       }
-
-      // Fjern eller kommenter ud denne del, hvis PDF-URL'er allerede er i Firestore
-      /*
-      const fetchDataForCategoryFromStorage = async (
-        category: "f8" | "f5" | "f3" | "f2"
-      ) => {
-        try {
-          const coverImageRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}CoverImage.jpg`
-          );
-          const coverImageUrl = await getDownloadURL(coverImageRef);
-
-          const pdfRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`
-          );
-          const pdfUrl = await getDownloadURL(pdfRef);
-
-          setProjectData((prev) => ({
-            ...prev,
-            [`${category}CoverImage`]: coverImageUrl,
-            [`${category}PDF`]: pdfUrl,
-          }));
-        } catch (error) {
-          console.warn(`Kunne ikke hente ${category} data fra Storage:`, error);
-        }
-      };
-
-      // Kald hentning fra Storage for alle kategorier
-      ["f8", "f5", "f3", "f2"].forEach((category) => {
-        fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
-      });
-      */
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
@@ -524,7 +464,7 @@ const InfoPanel = ({
     }
   };
 
-  // Funktion til at skifte status fra og til published
+  // Function to toggle status between and to published
   const handleStatusToggle = async () => {
     try {
       if (!userId || !projectData.id) {
@@ -534,7 +474,7 @@ const InfoPanel = ({
       const isCurrentlyPublished = projectData.status === "Published";
       const newStatus = isCurrentlyPublished ? "Project" : "Published";
 
-      // Bekræftelse før statusændring
+      // Confirmation before status change
       Alert.alert(
         isCurrentlyPublished ? "Fjern Publicering" : "Bekræft Publicering",
         isCurrentlyPublished
@@ -571,7 +511,7 @@ const InfoPanel = ({
                     : "Projektet er nu tilbage som kladde."
                 );
 
-                setProjectData((prev) => ({ ...prev, status: newStatus })); // Opdater lokalt
+                setProjectData((prev) => ({ ...prev, status: newStatus })); // Update locally
               } catch (error) {
                 console.error("Fejl ved opdatering af status:", error);
                 Alert.alert(
@@ -591,7 +531,7 @@ const InfoPanel = ({
 
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
-      {/* Tekst og kommentarer */}
+      {/* Text and comments */}
       <View style={baseStyles.textContainer}>
         <Text
           style={[baseStyles.nameText, { color: Colors[theme].tint }]}
@@ -612,23 +552,24 @@ const InfoPanel = ({
         </Text>
       </View>
 
-      {/* F8 felt */}
+      {/* F8 field */}
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
-          onLongPress={handleLongPressF8} // Longpress forbliver uændret
+          onPress={() => handlePress("F8")} // Opens modal if Edit is enabled
+          onLongPress={handleLongPressF8} // Long press remains unchanged
           accessibilityLabel="F8 Button"
+          key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
-          {/* Vis billede, hvis det er tilgængeligt */}
+          {/* Show image if available */}
           {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
 
-          {/* Tekst i f8 toppen */}
+          {/* Text at the top of f8 */}
           <View style={baseStyles.textTag}>
             <Text style={baseStyles.text}>Specification</Text>
           </View>
 
-          {/* Projektbilledet i det runde felt med onPress */}
+          {/* Project image in the round field with onPress */}
           {projectImage && (
             <Pressable
               style={baseStyles.projectImageContainer}
@@ -637,12 +578,12 @@ const InfoPanel = ({
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.projectImage} // Tilpas eventuelt denne style
+                style={baseStyles.projectImage} // Adjust this style if needed
               />
             </Pressable>
           )}
 
-          {/* Prize feltet med onPress */}
+          {/* Prize field with onPress */}
           <Pressable
             style={baseStyles.priceTag}
             onPress={() => handlePress("Prize")}
@@ -651,7 +592,7 @@ const InfoPanel = ({
             <Text style={baseStyles.priceText}>{price}</Text>
           </Pressable>
 
-          {/* Delete-knap */}
+          {/* Delete button */}
           {config.showDelete && (
             <Pressable
               style={baseStyles.deleteIconContainer}
@@ -662,7 +603,7 @@ const InfoPanel = ({
             </Pressable>
           )}
 
-          {/* Comment-knap f8 */}
+          {/* Comment button f8 */}
           <Pressable
             style={baseStyles.commentButtonf8}
             onPress={() => handleOpenCommentModal("f8")}
@@ -670,7 +611,7 @@ const InfoPanel = ({
             <AntDesign name="message1" size={20} color="black" />
           </Pressable>
 
-          {/* Attachment-knap */}
+          {/* Attachment button */}
           <Pressable
             style={baseStyles.attachmentButton}
             onPress={openAttachmentModal}
@@ -680,7 +621,7 @@ const InfoPanel = ({
         </Pressable>
       </View>
 
-      {/* Nedre container */}
+      {/* Lower container */}
       <View style={baseStyles.lowerContainer}>
         <View style={baseStyles.leftSide}>
           <View style={baseStyles.topSide}>
@@ -690,19 +631,20 @@ const InfoPanel = ({
                 onPress={() => handlePress("F2")}
                 onLongPress={handleLongPressF2}
                 accessibilityLabel="F2 Button"
+                key={`f2-modal-${refreshKey}`} // Unique key for modal update
               >
-                {/* Vis billede, hvis det er tilgængeligt */}
+                {/* Show image if available */}
                 {f2CoverImage && (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
                 )}
 
-                {/* Tekst i f2 toppen */}
+                {/* Text at the top of f2 */}
                 <View style={baseStyles.textTag}>
                   <Text style={baseStyles.text}>Agreement</Text>
                 </View>
               </Pressable>
 
-              {/* Comment-knap f2 */}
+              {/* Comment button f2 */}
               <Pressable
                 style={baseStyles.commentButtonf2}
                 onPress={() => handleOpenCommentModal("f2")}
@@ -714,30 +656,30 @@ const InfoPanel = ({
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
+                  onPress={toggleEdit} // Use the existing toggleEdit function
                   accessibilityLabel="Edit Button"
                 >
                   <AntDesign
-                    name="edit" // Ikon ændret til "edit"
+                    name="edit" // Icon changed to "edit"
                     size={24}
-                    color={isEditEnabled ? "green" : "black"} // Dynamisk farve afhængigt af Edit-tilstanden
+                    color={isEditEnabled ? "green" : "black"} // Dynamic color based on Edit state
                   />
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={() => handleStatusToggle()} // Kalder funktionen for at skifte status
+                  onPress={() => handleStatusToggle()} // Calls function to toggle status
                   accessibilityLabel="Status Toggle Button"
                 >
                   <AntDesign
                     name={
                       projectData.status === "Published" ? "unlock" : "lock"
-                    } // Dynamisk ikon
+                    } // Dynamic icon
                     size={24}
                     color={
                       projectData.status === "Published" ? "green" : "red"
-                    } // Dynamisk farve
+                    } // Dynamic color
                   />
                 </Pressable>
               </View>
@@ -749,18 +691,19 @@ const InfoPanel = ({
               onPress={() => handlePress("F3")}
               onLongPress={handleLongPressF3}
               accessibilityLabel="F3 Button"
+              key={`f3-modal-${refreshKey}`} // Unique key for modal update
             >
-              {/* Vis billede, hvis det er tilgængeligt */}
+              {/* Show image if available */}
               {f3CoverImage && (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
 
-              {/* Tekst i f3 toppen */}
+              {/* Text at the top of f3 */}
               <View style={baseStyles.textTag}>
                 <Text style={baseStyles.text}>Sustainability</Text>
               </View>
 
-              {/* Comment-knap f3 */}
+              {/* Comment button f3 */}
               <Pressable
                 style={baseStyles.commentButtonf3}
                 onPress={() => handleOpenCommentModal("f3")}
@@ -776,18 +719,19 @@ const InfoPanel = ({
             onPress={() => handlePress("F5")}
             onLongPress={handleLongPressF5}
             accessibilityLabel="F5 Button"
+            key={`f5-modal-${refreshKey}`} // Unique key for modal update
           >
-            {/* Vis billede, hvis det er tilgængeligt */}
+            {/* Show image if available */}
             {f5CoverImage && (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
             )}
 
-            {/* Tekst i f5 toppen */}
+            {/* Text at the top of f5 */}
             <View style={baseStyles.textTag}>
               <Text style={baseStyles.text}>Terms & Condition</Text>
             </View>
 
-            {/* Comment-knap f5 */}
+            {/* Comment button f5 */}
             <Pressable
               style={baseStyles.commentButtonf5}
               onPress={() => handleOpenCommentModal("f5")}
@@ -810,12 +754,13 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF8Modal}
+        key={`f8-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF8
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} // Add projectId
+              userId={userId || ""} // Add userId
               onClose={closeF8Modal}
             />
           </View>
@@ -828,12 +773,13 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF5Modal}
+        key={`f5-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF5
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} // Add projectId
+              userId={userId || ""} // Add userId
               onClose={closeF5Modal}
             />
           </View>
@@ -846,12 +792,13 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF3Modal}
+        key={`f3-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF3
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} // Add projectId
+              userId={userId || ""} // Add userId
               onClose={closeF3Modal}
             />
           </View>
@@ -864,12 +811,13 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF2Modal}
+        key={`f2-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF2
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} // Add projectId
+              userId={userId || ""} // Add userId
               onClose={closeF2Modal}
             />
           </View>
@@ -882,6 +830,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeNameCommentModal}
+        key={`name-comment-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -889,8 +838,8 @@ const InfoPanel = ({
               onClose={closeNameCommentModal}
               name={name}
               comment={description}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              projectId={projectData.id} // Add projectId if needed
+              userId={userId || ""} // Add userId if needed
             />
           </View>
         </View>
@@ -902,14 +851,15 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closePrizeModal}
+        key={`prize-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
               price={price}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              projectId={projectData.id} // Add projectId if needed
+              userId={userId || ""} // Add userId if needed
             />
           </View>
         </View>
@@ -921,50 +871,60 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeProjectImageModal}
+        key={`project-image-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
-              onClose={closeProjectImageModal}
-              projectImageUri={projectImage} // Brug projectImage
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              onClose={closeProjectImageModal} // Add onClose prop
+              projectId={projectData.id} // Add projectId
+              userId={userId || ""} // Add userId
+              category="f8" // Add the relevant category
+              onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => { // Typet parameter
+                setProjectData((prev) => ({
+                  ...prev,
+                  f8CoverImageLowRes: downloadURLs.lowRes,
+                  f8CoverImageHighRes: downloadURLs.highRes,
+                }));
+                Alert.alert("Success", "Project images uploaded successfully.");
+              }}
+              onUploadFailure={(error: unknown) => { // Typet parameter
+                console.error("Project Image Upload failed:", error);
+                Alert.alert("Error", "Could not upload project images.");
+              }}
             />
           </View>
         </View>
       </Modal>
 
-      {/* Modal-komponenten for comments */}
-      {activeCategory && (
-        <Modal
-          visible={isCommentModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={handleCloseCommentModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <InfoPanelCommentModal
-                projectId={projectData.id}
-                userId={userId || ""}
-                category={activeCategory} // Dette er nu sikkert
-                categoryName={
-                  activeCategory === "f8"
-                    ? "Specification"
-                    : activeCategory === "f5"
-                    ? "Terms & Conditions"
-                    : activeCategory === "f3"
-                    ? "Sustainability Report"
-                    : "Partnership Agreement"
-                }
-                isVisible={isCommentModalVisible}
-                onClose={handleCloseCommentModal}
-                isEditable={isEditEnabled}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
+      {/* Comment Modal */}
+      <Modal
+        visible={isCommentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseCommentModal}
+      >
+        <View style={styles.modalOverlay}>
+          {activeCategory && ( // Sikrer, at category aldrig er null
+            <InfoPanelCommentModal
+              projectId={projectData.id}
+              userId={userId || ""}
+              category={activeCategory} // Denne er nu sikker
+              categoryName={
+                activeCategory === "f8"
+                  ? "Specification"
+                  : activeCategory === "f5"
+                  ? "Terms & Conditions"
+                  : activeCategory === "f3"
+                  ? "Sustainability Report"
+                  : "Partnership Agreement"
+              }
+              onClose={handleCloseCommentModal}
+              isEditable={isEditEnabled}
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* Attachment Modal */}
       <Modal
@@ -972,6 +932,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeAttachmentModal}
+        key={`attachment-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -1005,7 +966,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
-  // Fjernede toggleEditButton og toggleEditText, da de ikke længere er nødvendige
+  // Removed toggleEditButton and toggleEditText, as they are no longer needed
 });
 
 export default InfoPanel;

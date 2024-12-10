@@ -1,125 +1,165 @@
-// @/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/InfoPanelProjectImage.tsx
 
-import React from "react";
-import { View, Text, Pressable, StyleSheet, Image, Alert, PixelRatio } from "react-native";
-import ImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/ProjectImageUploader"; // Opdater stien hvis nødvendigt
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Modal,
+  Alert,
+} from "react-native";
+import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/ProjectImageUploader";
+import { Category } from "@/constants/ImageConfig";
 
-type InfoPanelProjectImageProps = {
-  onClose: () => void;
-  projectImageUri: string | null;
+interface InfoPanelProjectImageProps {
   projectId: string;
   userId: string;
-};
+  category: Category;
+  initialImageUris?: {
+    lowRes: string;
+    highRes: string;
+  } | null;
+  onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
+  onUploadFailure?: (error: unknown) => void;
+  onClose: () => void;
+}
 
-const InfoPanelProjectImage = ({
-  onClose,
-  projectImageUri,
+const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   projectId,
   userId,
-}: InfoPanelProjectImageProps) => {
-  // Dynamisk beregning af billedstørrelse for ca. 1 cm i diameter
-  const cmToDp = (cm: number): number => {
-    const inches = cm / 2.54;
-    const ppi = 400; // Juster PPI efter behov
-    const pixels = inches * ppi;
-    const dp = pixels / PixelRatio.get();
-    return dp;
-  };
+  category,
+  initialImageUris = null,
+  onUploadSuccess,
+  onUploadFailure,
+  onClose,
+}) => {
+  const [imageUris, setImageUris] = useState<{ lowRes: string; highRes: string } | null>(initialImageUris);
+  const [isImageModalVisible, setImageModalVisible] = useState<boolean>(false);
 
-  const imageSize = cmToDp(1); // 1 cm i diameter
-  console.log(`Billedstørrelse: ${imageSize} dp`);
-
-  const handleUploadSuccess = (downloadURL: string) => {
-    console.log("Upload success:", downloadURL);
-    Alert.alert("Succes", "Projektbilledet er blevet opdateret.");
-    // Opdater eventuelt parent state eller trigge en genindlæsning af data her
-  };
-
-  const handleUploadFailure = (error: unknown) => {
-    console.error("Upload failure:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Kunne ikke uploade projektbilledet. Prøv igen.";
-    Alert.alert("Fejl", errorMessage);
-  };
+  useEffect(() => {
+    setImageUris(initialImageUris);
+  }, [initialImageUris]);
 
   return (
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Projektbillede</Text>
+    <View style={styles.container}>
+      {imageUris ? (
+        <TouchableOpacity onPress={() => setImageModalVisible(true)}>
+          <View style={styles.imageContainer}>
+            <Image source={{ uri: imageUris.lowRes }} style={styles.image} />
+            <Text style={styles.resolutionText}>Low Resolution</Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <Text style={styles.noImageText}>No project image selected.</Text>
+      )}
 
-        {projectImageUri ? (
-          <Image
-            source={{ uri: projectImageUri }}
-            style={[
-              styles.projectImage,
-              { width: imageSize, height: imageSize, borderRadius: imageSize / 2 },
-            ]}
-          />
-        ) : (
-          <Text style={styles.noImageText}>Ingen projektbillede tilgængeligt</Text>
-        )}
+      <ProjectImageUploader
+        userId={userId}
+        projectId={projectId}
+        category={category}
+        initialImageUris={imageUris}
+        onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => {
+          setImageUris(downloadURLs);
+          onUploadSuccess(downloadURLs);
+          Alert.alert("Success", "Project images uploaded successfully.");
+        }}
+        onUploadFailure={(error: unknown) => {
+          console.error("Project Image Upload failed:", error);
+          Alert.alert("Error", "Could not upload project images.");
+          if (onUploadFailure) onUploadFailure(error);
+        }}
+        buttonLabel="Select Image"
+      />
 
-        {/* ImageUploader komponenten med specifikke manipulationer */}
-        <ImageUploader
-          userId={userId}
-          projectId={projectId}
-          initialImageUri={projectImageUri}
-          onUploadSuccess={handleUploadSuccess}
-          onUploadFailure={handleUploadFailure}
-          buttonLabel="Vælg nyt billede"
-          resizeWidth={800} // Specifik resize-bredde for projekter
-          compress={0.6} // Specifik komprimering for projekter
-        />
-
-        <Pressable style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeButtonText}>Luk</Text>
-        </Pressable>
-      </View>
+      {/* Modal til high-res billede */}
+      <Modal
+        visible={isImageModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setImageModalVisible(false);
+          onClose();
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {imageUris?.highRes ? (
+              <Image source={{ uri: imageUris.highRes }} style={styles.fullscreenImage} />
+            ) : (
+              <Text>No high-resolution image available.</Text>
+            )}
+            <TouchableOpacity
+              style={styles.closeModalButton}
+              onPress={() => {
+                setImageModalVisible(false);
+                onClose();
+              }}
+            >
+              <Text style={styles.closeModalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  container: {
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  imageContainer: {
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  image: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+  resolutionText: {
+    fontSize: 12,
+    color: "grey",
+  },
+  fullscreenImage: {
+    width: "100%",
+    height: "80%",
+    resizeMode: "contain",
+  },
+  modalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent baggrund
   },
   modalContent: {
-    width: "80%",
-    padding: 20,
+    width: "90%",
+    height: "90%",
     backgroundColor: "white",
     borderRadius: 10,
-    alignItems: "center", // Centrerer indholdet vandret
-    justifyContent: "center", // Centrerer indholdet lodret
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  modalTitle: {
-    fontSize: 20,
+  closeModalButton: {
+    marginTop: 20,
+    backgroundColor: "gray",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeModalButtonText: {
+    color: "white",
     fontWeight: "bold",
-    marginBottom: 15,
-  },
-  projectImage: {
-    resizeMode: "cover",
-    marginBottom: 20,
   },
   noImageText: {
     fontSize: 16,
     color: "grey",
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: "center",
-  },
-  closeButton: {
-    backgroundColor: "#f44336",
-    padding: 10,
-    borderRadius: 5,
-    width: "100%",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
   },
 });
 

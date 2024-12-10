@@ -1,10 +1,11 @@
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/comment/InfoPanelCommentModal.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   Pressable,
-  Modal,
   StyleSheet,
   Alert,
 } from "react-native";
@@ -17,7 +18,6 @@ interface InfoPanelCommentModalProps {
   userId: string;
   category: "f8" | "f5" | "f3" | "f2";
   categoryName: string;
-  isVisible: boolean;
   onClose: () => void;
   isEditable: boolean;
 }
@@ -27,13 +27,11 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
   userId,
   category,
   categoryName,
-  isVisible,
   onClose,
   isEditable,
 }) => {
   const [comment, setComment] = useState<string>("");
 
-  // Hent eksisterende kommentar fra Firestore
   useEffect(() => {
     const fetchComment = async () => {
       try {
@@ -52,12 +50,9 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
       }
     };
 
-    if (isVisible) {
-      fetchComment();
-    }
-  }, [projectId, userId, category, isVisible]);
+    fetchComment();
+  }, [projectId, userId, category]);
 
-  // Gem ændringer i Firestore
   const handleSaveComment = async () => {
     try {
       const docRef = doc(database, "users", userId, "projects", projectId);
@@ -82,56 +77,48 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
   };
 
   return (
-    <Modal
-      visible={isVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.header}>{categoryName} Kommentar</Text>
-          <TextInput
-            style={[
-              styles.input,
-              isEditable ? styles.editableInput : styles.readOnlyInput,
-            ]}
-            editable={isEditable}
-            value={comment}
-            onChangeText={setComment}
-            multiline
-          />
-          {isEditable && (
-            <Pressable style={styles.saveButton} onPress={handleSaveComment}>
-              <Text style={styles.saveButtonText}>Gem</Text>
-            </Pressable>
-          )}
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Luk</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
+    <View style={styles.modalContent}>
+      <Text style={styles.header}>{categoryName} Kommentar</Text>
+      <TextInput
+        style={[
+          styles.input,
+          isEditable ? styles.editableInput : styles.readOnlyInput,
+        ]}
+        editable={isEditable}
+        value={comment}
+        onChangeText={setComment}
+        multiline
+      />
+      {isEditable && (
+        <Pressable style={styles.saveButton} onPress={handleSaveComment}>
+          <Text style={styles.saveButtonText}>Gem</Text>
+        </Pressable>
+      )}
+      <Pressable style={styles.closeButton} onPress={onClose}>
+        <Text style={styles.closeButtonText}>Luk</Text>
+      </Pressable>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
   modalContent: {
     width: "90%",
     backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   header: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center",
   },
   input: {
     borderWidth: 1,
