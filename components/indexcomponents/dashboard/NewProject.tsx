@@ -43,24 +43,27 @@ const NewProject: React.FC = () => {
     try {
       const projectRef = doc(collection(database, "users", user, "projects"));
   
+      // Firebase-referencer
+      const sourceImageRef = ref(storage, `users/${user}/profileimage/profileImage.jpg`);
+      const projectImageRef = ref(storage, `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`);
+  
       let projectProfileImageUrl = null;
   
-      if (profileImage) {
-        const projectProfileImageRef = ref(
-          storage,
-          `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`
-        );
-  
-        const response = await fetch(profileImage);
+      try {
+        // Kopier profilbilledet fra standardplacering til projektplacering
+        const sourceUrl = await getDownloadURL(sourceImageRef);
+        const response = await fetch(sourceUrl);
         const blob = await response.blob();
-        await uploadBytes(projectProfileImageRef, blob);
   
-        // Hent download-URL for det uploadede billede
-        projectProfileImageUrl = await getDownloadURL(projectProfileImageRef);
-      } else {
-        console.warn("Ingen profilbillede fundet. Projekt oprettes uden billede.");
+        await uploadBytes(projectImageRef, blob);
+        projectProfileImageUrl = await getDownloadURL(projectImageRef);
+  
+        console.log("Projektbillede kopieret til:", projectProfileImageUrl);
+      } catch (error) {
+        console.warn("Kunne ikke kopiere profilbillede. Projekt oprettes uden billede:", error);
       }
   
+      // Projektdata
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -68,7 +71,7 @@ const NewProject: React.FC = () => {
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
-        projectImage: projectProfileImageUrl, // Tilføj URL til projektets dokument
+        projectImage: projectProfileImageUrl, // Tilføj URL til billedet, hvis det findes
       };
   
       await setDoc(projectRef, projectData);

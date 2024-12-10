@@ -47,7 +47,13 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
   const [isInfoPanelApplicationsUdVisible, setInfoPanelApplicationsUdVisible] = useState(false);
   const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] = useState(false);
 
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImageState] = useState<string | null>(null); // Skiftet navn på state-opdateringsfunktionen
+  
+  // Ny funktion til at opdatere profileImage med log
+  const setProfileImage = (url: string) => {
+    console.log("Setting profile image in VisibilityContext:", url);
+    setProfileImageState(url); // Brug den rigtige state-opdateringsfunktion
+  };
 
   const showPanel = (panelName: string) => {
     hideAllPanels();
