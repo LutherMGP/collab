@@ -8,10 +8,9 @@ import {
   StyleSheet,
   Image,
   Modal,
-  ActivityIndicator,
   Alert,
 } from "react-native";
-import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/ProjectImageUploader"; // Tilføj det manglende anførselstegn
+import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/ProjectImageUploader";
 import { Category } from "@/constants/ImageConfig";
 
 interface InfoPanelProjectImageProps {
@@ -24,6 +23,7 @@ interface InfoPanelProjectImageProps {
   } | null;
   onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
   onUploadFailure?: (error: unknown) => void;
+  onClose: () => void;
 }
 
 const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
@@ -33,6 +33,7 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   initialImageUris = null,
   onUploadSuccess,
   onUploadFailure,
+  onClose,
 }) => {
   const [imageUris, setImageUris] = useState<{ lowRes: string; highRes: string } | null>(initialImageUris);
   const [isImageModalVisible, setImageModalVisible] = useState<boolean>(false);
@@ -77,7 +78,10 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
         visible={isImageModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setImageModalVisible(false)}
+        onRequestClose={() => {
+          setImageModalVisible(false);
+          onClose();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -88,7 +92,10 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
             )}
             <TouchableOpacity
               style={styles.closeModalButton}
-              onPress={() => setImageModalVisible(false)}
+              onPress={() => {
+                setImageModalVisible(false);
+                onClose();
+              }}
             >
               <Text style={styles.closeModalButtonText}>Close</Text>
             </TouchableOpacity>

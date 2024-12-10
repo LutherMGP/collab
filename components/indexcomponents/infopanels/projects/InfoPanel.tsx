@@ -21,17 +21,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, getDownloadURL, listAll, deleteObject } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
-import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF8";
-import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF5";
-import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF3";
-import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF2";
-import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/namecomment/InfoPanelNameComment";
-import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/prize/InfoPanelPrize";
-import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/comment/InfoPanelCommentModal";
-import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
+import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
+import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
+import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
+import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF2";
+import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/namecomment/InfoPanelNameComment";
+import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize";
+import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
+import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
+import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { deleteFolder } from "@/utils/storageUtils"; // Import deleteFolder
 
 type Category = "f8" | "f5" | "f3" | "f2";
