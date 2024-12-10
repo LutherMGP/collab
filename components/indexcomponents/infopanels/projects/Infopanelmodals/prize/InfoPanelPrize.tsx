@@ -100,6 +100,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+    width: "80%", // Bredden af modalen
+    height: "60%", // Juster højden i procent af skærmen
+    borderRadius: 10, // Tilføj evt. runde hjørner
   },
   modalTitle: {
     fontSize: 20,
@@ -115,7 +118,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
   },
   saveButton: {
     backgroundColor: "#4CAF50",

@@ -338,6 +338,19 @@ const InfoPanel = ({
     fetchProjectImage();
   }, [projectData.userId, projectData.id]);
 
+  const getDescriptionForOption = (option: string | null): string => {
+    switch (option) {
+      case "Free Transfer":
+        return "Denne overdragelsesmetode betyder, at projektet overdrages gratis.";
+      case "Trade Transfer":
+        return "Denne metode indebærer en udveksling eller handel.";
+      case "Collaboration Transfer":
+        return "Denne metode er en samarbejdsoverdragelse.";
+      default:
+        return "Ingen specifik metode er valgt.";
+    }
+  };
+
   // Generic handlePress function with conditional
   const handlePress = (button: string) => {
     if (isEditEnabled) {
@@ -367,7 +380,12 @@ const InfoPanel = ({
           Alert.alert("Knappen blev trykket", `Du trykkede på: ${button}`);
       }
     } else {
-      Alert.alert("Edit-tilstand", "Edit er ikke aktiveret.");
+      if (button === "Prize") {
+        const description = getDescriptionForOption(selectedOption);
+        Alert.alert("Valgt Overdragelsesmetode", description || "Ingen metode valgt.");
+      } else {
+        Alert.alert("Edit-tilstand", "Edit er ikke aktiveret.");
+      }
     }
   };
 
@@ -600,15 +618,13 @@ const InfoPanel = ({
           )}
 
           {/* New Prize/Transfer field */}
-            <Pressable
-              style={baseStyles.newButton}
-              onPress={() => handlePress("Prize")}
-              accessibilityLabel="Transfer Method Button"
-            >
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                {getIconForOption(selectedOption)}
-              </View>
-            </Pressable>
+          <Pressable
+            style={baseStyles.newButton} // Din eksisterende styling
+            onPress={() => handlePress("Prize")} // Videresender "Prize" som knapnavn
+            accessibilityLabel="Transfer Method Button"
+          >
+            {getIconForOption(selectedOption)} {/* Dynamisk ikon */}
+          </Pressable>
 
           {/* Delete button */}
           {config.showDelete && (

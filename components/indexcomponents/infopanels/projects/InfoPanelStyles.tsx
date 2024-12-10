@@ -78,6 +78,7 @@ export const styles = StyleSheet.create({
     position: "absolute",
     bottom: 5,
     right: 5,
+    width: "90%",
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
@@ -365,6 +366,53 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent baggrund
   },
+  modalBackground: {
+    width: "80%", // Juster bredden her
+    height: "auto", // Højde justeres dynamisk baseret på indhold
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  iconRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    width: "100%",
+    marginTop: 20,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20, // Reducer bredden af knapperne
+    borderRadius: 5,
+  },
+  saveButton: {
+    backgroundColor: "#4CAF50", // Grøn farve til 'Gem'
+    marginRight: 10, // Afstand mellem knapperne
+  },
+  closeButton: {
+    backgroundColor: "#f44336", // Rød farve til 'Luk'
+  },
+  modalButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },  
   modalContent: {
     width: "80%",
     backgroundColor: "white",
@@ -381,21 +429,6 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
     textAlign: "center",
-  },
-  modalButton: {
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: "#2196F3",
-  },
-  modalButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
   },
   roundButtonF2: {
     position: "absolute",
