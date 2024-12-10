@@ -21,15 +21,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, getDownloadURL, listAll, deleteObject } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
-import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
-import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
-import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
-import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF2";
-import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/namecomment/InfoPanelNameComment";
-import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize";
-import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
-import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
+import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF8";
+import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF5";
+import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF3";
+import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelF2";
+import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/namecomment/InfoPanelNameComment";
+import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/prize/InfoPanelPrize";
+import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/InfoPanelProjectImage";
+import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/comment/InfoPanelCommentModal";
+import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
 
@@ -61,21 +61,24 @@ const deleteFolder = async (folderPath: string) => {
   }
 };
 
-
 type ProjectData = {
   id: string;
   name?: string;
   description?: string;
   status?: string;
   price?: number;
-  f8CoverImage?: string | null;
+  f8CoverImageLowRes?: string | null;
+  f8CoverImageHighRes?: string | null;
   f8PDF?: string | null;
   f8BrandImage?: string | null;
-  f5CoverImage?: string | null;
+  f5CoverImageLowRes?: string | null;
+  f5CoverImageHighRes?: string | null;
   f5PDF?: string | null;
-  f3CoverImage?: string | null;
+  f3CoverImageLowRes?: string | null;
+  f3CoverImageHighRes?: string | null;
   f3PDF?: string | null;
-  f2CoverImage?: string | null;
+  f2CoverImageLowRes?: string | null;
+  f2CoverImageHighRes?: string | null;
   f2PDF?: string | null;
   isFavorite?: boolean;
   toBePurchased?: boolean;
@@ -116,13 +119,13 @@ const InfoPanel = ({
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
-  const f8CoverImage = projectData.f8CoverImage || null;
+  const f8CoverImage = projectData.f8CoverImageLowRes || null;
   const f8PDF = projectData.f8PDF || null;
-  const f5CoverImage = projectData.f5CoverImage || null;
+  const f5CoverImage = projectData.f5CoverImageLowRes || null;
   const f5PDF = projectData.f5PDF || null;
-  const f3CoverImage = projectData.f3CoverImage || null;
+  const f3CoverImage = projectData.f3CoverImageLowRes || null;
   const f3PDF = projectData.f3PDF || null;
-  const f2CoverImage = projectData.f2CoverImage || null;
+  const f2CoverImage = projectData.f2CoverImageLowRes || null;
   const f2PDF = projectData.f2PDF || null;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
@@ -153,6 +156,8 @@ const InfoPanel = ({
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] =
     useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
+
+  const categories: ("f8" | "f5" | "f3" | "f2")[] = ["f8", "f5", "f3", "f2"];
 
   // Funktion til at togglere Edit-tilstand
   const toggleEdit = () => {
@@ -291,7 +296,7 @@ const InfoPanel = ({
                 console.log("userId:", userId, "projectData.id:", projectData.id);
                 return;
               }
-  
+
               // Slet alle relaterede filer og mapper i projektet
               const basePath = `users/${userId}/projects/${projectData.id}`;
               const foldersToDelete = [
@@ -304,11 +309,11 @@ const InfoPanel = ({
                 `${basePath}/data/attachments/pdf/`,
                 `${basePath}/data/attachments/videos/`,
               ];
-  
+
               for (const folderPath of foldersToDelete) {
                 await deleteFolder(folderPath);
               }
-  
+
               // Slet projektets dokument fra Firestore
               const projectDocRef = doc(
                 database,
@@ -318,7 +323,7 @@ const InfoPanel = ({
                 projectData.id
               );
               await deleteDoc(projectDocRef);
-  
+
               console.log(`Projekt ${projectData.id} slettet.`);
               Alert.alert("Succes", "Projektet og alle relaterede filer er blevet slettet.");
             } catch (error) {
@@ -349,7 +354,7 @@ const InfoPanel = ({
         console.error("Project ownerId or projectId missing");
         return;
       };
-  
+
       try {
         const projectImageRef = ref(
           storage,
@@ -363,7 +368,7 @@ const InfoPanel = ({
         setProjectImage(null);
       }
     };
-  
+
     fetchProjectImage();
   }, [projectData.userId, projectData.id]);
 
@@ -471,49 +476,18 @@ const InfoPanel = ({
           ...prev,
           name: data.name || "",
           description: data.description || "",
-          // Opdater både low-res og high-res CoverImage
-          [`f${category.slice(1)}CoverImageLowRes`]: data.data?.[category]?.CoverImageLowRes || prev[`f${category.slice(1)}CoverImageLowRes`] || null,
-          [`f${category.slice(1)}CoverImageHighRes`]: data.data?.[category]?.CoverImageHighRes || prev[`f${category.slice(1)}CoverImageHighRes`] || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
           toBePurchased: data.toBePurchased || prev.toBePurchased || false,
+          ...categories.reduce((acc, category) => {
+            acc[`f${category.slice(1)}CoverImageLowRes`] = data.data?.[category]?.CoverImageLowRes || prev[`f${category.slice(1)}CoverImageLowRes`] || null;
+            acc[`f${category.slice(1)}CoverImageHighRes`] = data.data?.[category]?.CoverImageHighRes || prev[`f${category.slice(1)}CoverImageHighRes`] || null;
+            acc[`f${category.slice(1)}PDF`] = data.data?.[category]?.PDF || prev[`f${category.slice(1)}PDF`] || null;
+            return acc;
+          }, {} as Partial<ProjectData>),
         }));
       }
-
-      // Fjern eller kommenter ud denne del, hvis PDF-URL'er allerede er i Firestore
-      /*
-      const fetchDataForCategoryFromStorage = async (
-        category: "f8" | "f5" | "f3" | "f2"
-      ) => {
-        try {
-          const coverImageRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}CoverImage.jpg`
-          );
-          const coverImageUrl = await getDownloadURL(coverImageRef);
-
-          const pdfRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`
-          );
-          const pdfUrl = await getDownloadURL(pdfRef);
-
-          setProjectData((prev) => ({
-            ...prev,
-            [`${category}CoverImage`]: coverImageUrl,
-            [`${category}PDF`]: pdfUrl,
-          }));
-        } catch (error) {
-          console.warn(`Kunne ikke hente ${category} data fra Storage:`, error);
-        }
-      };
-
-      // Kald hentning fra Storage for alle kategorier
-      ["f8", "f5", "f3", "f2"].forEach((category) => {
-        fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
-      });
-      */
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
@@ -934,10 +908,16 @@ const InfoPanel = ({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
-              onClose={closeProjectImageModal}
-              projectImageUri={projectImage} // Brug projectImage
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              onClose={closeProjectImageModal} // Hvis du har tilføjet onClose til props
+              projectId={projectData.id} // Tilføj projectId
+              userId={userId || ""} // Tilføj userId
+              category="f8" // Tilføj den relevante kategori
+              onUploadSuccess={(downloadURLs) => {
+                // Håndter upload succes, f.eks. opdatering af state eller Firestore
+              }}
+              onUploadFailure={(error) => {
+                // Håndter upload fejl, f.eks. vise en fejlmeddelelse
+              }}
             />
           </View>
         </View>
