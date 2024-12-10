@@ -17,10 +17,12 @@ import { doc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
 import { UploadTaskSnapshot, UploadTask } from "firebase/storage";
 import { FirebaseError } from "@firebase/util";
+import { Category } from "@/constants/ImageConfig";
 
 interface ImageUploaderProps {
   userId: string;
   projectId: string;
+  category: Category; // Tilføj denne linje
   initialImageUris?: { lowRes: string; highRes: string } | null;
   onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
   onUploadFailure?: (error: unknown) => void;
