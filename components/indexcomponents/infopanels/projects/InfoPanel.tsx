@@ -898,37 +898,33 @@ const InfoPanel = ({
       </Modal>
 
       {/* Comment Modal */}
-      {activeCategory && (
-        <Modal
-          visible={isCommentModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={handleCloseCommentModal}
-          key={`comment-modal-${activeCategory}-${refreshKey}`} // Unique key for modal update
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <InfoPanelCommentModal
-                projectId={projectData.id}
-                userId={userId || ""}
-                category={activeCategory} // Now safe
-                categoryName={
-                  activeCategory === "f8"
-                    ? "Specification"
-                    : activeCategory === "f5"
-                    ? "Terms & Conditions"
-                    : activeCategory === "f3"
-                    ? "Sustainability Report"
-                    : "Partnership Agreement"
-                }
-                isVisible={isCommentModalVisible}
-                onClose={handleCloseCommentModal}
-                isEditable={isEditEnabled}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
+      <Modal
+        visible={isCommentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseCommentModal}
+      >
+        <View style={styles.modalOverlay}>
+          {activeCategory && ( // Sikrer, at category aldrig er null
+            <InfoPanelCommentModal
+              projectId={projectData.id}
+              userId={userId || ""}
+              category={activeCategory} // Denne er nu sikker
+              categoryName={
+                activeCategory === "f8"
+                  ? "Specification"
+                  : activeCategory === "f5"
+                  ? "Terms & Conditions"
+                  : activeCategory === "f3"
+                  ? "Sustainability Report"
+                  : "Partnership Agreement"
+              }
+              onClose={handleCloseCommentModal}
+              isEditable={isEditEnabled}
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* Attachment Modal */}
       <Modal
