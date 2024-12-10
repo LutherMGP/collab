@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/ProjectImageUploader";
+import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelsmodals/projectimage/ProjectImageUploader;
 import { Category } from "@/constants/ImageConfig";
 
 interface InfoPanelProjectImageProps {
@@ -59,12 +59,12 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
         projectId={projectId}
         category={category}
         initialImageUris={imageUris}
-        onUploadSuccess={(downloadURLs) => {
+        onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => {
           setImageUris(downloadURLs);
           onUploadSuccess(downloadURLs);
           Alert.alert("Success", "Project images uploaded successfully.");
         }}
-        onUploadFailure={(error) => {
+        onUploadFailure={(error: unknown) => {
           console.error("Project Image Upload failed:", error);
           Alert.alert("Error", "Could not upload project images.");
           if (onUploadFailure) onUploadFailure(error);

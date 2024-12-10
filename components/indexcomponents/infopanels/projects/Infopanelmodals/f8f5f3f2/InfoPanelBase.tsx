@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelsmodals/f8f5f3f2/InfoPanelBase.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -18,8 +18,8 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
-import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/CoverImageUploader";
-import PdfUploader from "@/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/PdfUploader";
+import CoverImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/CoverImageUploader";
+import PdfUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/PdfUploader";
 import { Category } from "@/constants/ImageConfig";
 
 interface InfoPanelBaseProps {
@@ -87,7 +87,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         } else {
           console.warn(`Projekt ${projectId} findes ikke i Firestore.`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Failed to fetch ${category} data:`, error);
         Alert.alert("Fejl", `Kunne ikke hente ${categoryName} data.`);
       }
@@ -118,7 +118,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       );
       Alert.alert("Success", `${categoryName} data saved.`);
       onClose(); // Luk modalen efter lagring
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to save ${categoryName} data:`, error);
       Alert.alert("Error", `Could not save ${categoryName} data.`);
     } finally {
@@ -151,11 +151,11 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           projectId={projectId}
           category={category}
           initialPdfUrl={pdfURL}
-          onUploadSuccess={(downloadURL) => {
+          onUploadSuccess={(downloadURL: string) => {
             setPdfURL(downloadURL);
             Alert.alert("Success", `${categoryName} PDF uploaded.`);
           }}
-          onUploadFailure={(error) => {
+          onUploadFailure={(error: unknown) => {
             console.error("PDF Upload failed:", error);
             Alert.alert("Error", `Could not upload ${categoryName} PDF.`);
           }}
@@ -184,14 +184,14 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
             lowRes: coverImageURLs.lowRes,
             highRes: coverImageURLs.highRes,
           } : null}
-          onUploadSuccess={(downloadURLs) => {
+          onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => {
             setCoverImageURLs({
               lowRes: downloadURLs.lowRes,
               highRes: downloadURLs.highRes,
             });
             Alert.alert("Success", `${categoryName} cover images uploaded.`);
           }}
-          onUploadFailure={(error) => {
+          onUploadFailure={(error: unknown) => {
             console.error("Cover Image Upload failed:", error);
             Alert.alert("Error", `Could not upload ${categoryName} cover images.`);
           }}
