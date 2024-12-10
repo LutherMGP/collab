@@ -348,7 +348,7 @@ const InfoPanel = ({
       if (!projectData.userId || !projectData.id) {
         console.error("Project ownerId or projectId missing");
         return;
-      }
+      };
   
       try {
         const projectImageRef = ref(
@@ -471,11 +471,9 @@ const InfoPanel = ({
           ...prev,
           name: data.name || "",
           description: data.description || "",
-          f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          // Fjern hentning af PDF-URL'er her
-          f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
-          f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
-          f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
+          // Opdater både low-res og high-res CoverImage
+          [`f${category.slice(1)}CoverImageLowRes`]: data.data?.[category]?.CoverImageLowRes || prev[`f${category.slice(1)}CoverImageLowRes`] || null,
+          [`f${category.slice(1)}CoverImageHighRes`]: data.data?.[category]?.CoverImageHighRes || prev[`f${category.slice(1)}CoverImageHighRes`] || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
           isFavorite: data.isFavorite || prev.isFavorite || false,
@@ -619,6 +617,7 @@ const InfoPanel = ({
           onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
           onLongPress={handleLongPressF8} // Longpress forbliver uændret
           accessibilityLabel="F8 Button"
+          key={`f8-modal-${refreshKey}`} // Unik key for modal opdatering
         >
           {/* Vis billede, hvis det er tilgængeligt */}
           {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
@@ -690,6 +689,7 @@ const InfoPanel = ({
                 onPress={() => handlePress("F2")}
                 onLongPress={handleLongPressF2}
                 accessibilityLabel="F2 Button"
+                key={`f2-modal-${refreshKey}`} // Unik key for modal opdatering
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
                 {f2CoverImage && (
@@ -749,6 +749,7 @@ const InfoPanel = ({
               onPress={() => handlePress("F3")}
               onLongPress={handleLongPressF3}
               accessibilityLabel="F3 Button"
+              key={`f3-modal-${refreshKey}`} // Unik key for modal opdatering
             >
               {/* Vis billede, hvis det er tilgængeligt */}
               {f3CoverImage && (
@@ -776,6 +777,7 @@ const InfoPanel = ({
             onPress={() => handlePress("F5")}
             onLongPress={handleLongPressF5}
             accessibilityLabel="F5 Button"
+            key={`f5-modal-${refreshKey}`} // Unik key for modal opdatering
           >
             {/* Vis billede, hvis det er tilgængeligt */}
             {f5CoverImage && (
@@ -810,6 +812,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF8Modal}
+        key={`f8-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -828,6 +831,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF5Modal}
+        key={`f5-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -846,6 +850,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF3Modal}
+        key={`f3-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -864,6 +869,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeF2Modal}
+        key={`f2-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -882,6 +888,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeNameCommentModal}
+        key={`name-comment-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -902,6 +909,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closePrizeModal}
+        key={`prize-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -921,6 +929,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeProjectImageModal}
+        key={`project-image-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -941,6 +950,7 @@ const InfoPanel = ({
           transparent={true}
           animationType="slide"
           onRequestClose={handleCloseCommentModal}
+          key={`comment-modal-${activeCategory}-${refreshKey}`} // Unik key for modal opdatering
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -972,6 +982,7 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closeAttachmentModal}
+        key={`attachment-modal-${refreshKey}`} // Unik key for modal opdatering
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

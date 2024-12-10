@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
 
 type PdfUploaderProps = {
@@ -43,9 +43,17 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         type: "application/pdf",
       });
 
-      if (!result.canceled && result.assets) {
-        const pdfUri = result.assets[0].uri;
-        setSelectedPdfUri(pdfUri);
+      if (!result.canceled && result.type === "success" && result.uri) {
+        // Valider filtypen
+        const mimeType = result.mimeType;
+        if (mimeType !== "application/pdf") {
+          Alert.alert("Fejl", "Kun PDF-filer er tilladt.");
+          return;
+        }
+        setSelectedPdfUri(result.uri);
+      } else if (result.type === "cancel") {
+        // Bruger annullerede valget
+        console.log("PDF valg annulleret.");
       }
     } catch (error: unknown) {
       console.error("Fejl ved valg af PDF:", error);

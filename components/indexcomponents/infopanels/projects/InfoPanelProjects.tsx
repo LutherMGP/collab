@@ -1,3 +1,5 @@
+// @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
+
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { collection, query, where, onSnapshot, CollectionReference, DocumentData } from "firebase/firestore";
@@ -13,15 +15,18 @@ type ProjectData = {
   description?: string; // Opdateret til 'description'
   status?: string;
   price?: number;
-  f8CoverImage?: string; // Opdateret feltnavn
-  f8PDF?: string;
-  f8BrandImage?: string;
-  f5CoverImage?: string; // Opdateret feltnavn
-  f5PDF?: string;
-  f3CoverImage?: string; // Opdateret feltnavn
-  f3PDF?: string;
-  f2CoverImage?: string; // Opdateret feltnavn
-  f2PDF?: string;
+  f8CoverImageLowRes?: string | null;
+  f8CoverImageHighRes?: string | null;
+  f8PDF?: string | null;
+  f5CoverImageLowRes?: string | null;
+  f5CoverImageHighRes?: string | null;
+  f5PDF?: string | null;
+  f3CoverImageLowRes?: string | null;
+  f3CoverImageHighRes?: string | null;
+  f3PDF?: string | null;
+  f2CoverImageLowRes?: string | null;
+  f2CoverImageHighRes?: string | null;
+  f2PDF?: string | null;
   userId?: string | null;
 };
 
@@ -53,6 +58,13 @@ const InfoPanelProjects = () => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        if (snapshot.empty) {
+          setProjects([]);
+          setError("Ingen projekter fundet.");
+          setIsLoading(false);
+          return;
+        }
+
         // Map data fra Firestore-dokumenter til en liste af projekter
         const fetchedProjects = snapshot.docs.map((doc) => {
           const data = doc.data();
@@ -65,15 +77,18 @@ const InfoPanelProjects = () => {
             description: data.description || "Ingen kommentar", // Opdateret til 'description'
             status: data.status || "Project",
             price: data.price || null,
-            f8CoverImage: data.f8CoverImage || null, // Opdateret feltnavn
-            f8PDF: data.f8PDF || null,
-            f8BrandImage: data.f8BrandImage || null,
-            f5CoverImage: data.f5CoverImage || null, // Opdateret feltnavn
-            f5PDF: data.f5PDF || null,
-            f3CoverImage: data.f3CoverImage || null, // Opdateret feltnavn
-            f3PDF: data.f3PDF || null,
-            f2CoverImage: data.f2CoverImage || null, // Opdateret feltnavn
-            f2PDF: data.f2PDF || null,
+            f8CoverImageLowRes: data.data?.[ "f8"]?.CoverImageLowRes || null,
+            f8CoverImageHighRes: data.data?.[ "f8"]?.CoverImageHighRes || null,
+            f8PDF: data.data?.[ "f8"]?.pdf || null,
+            f5CoverImageLowRes: data.data?.[ "f5"]?.CoverImageLowRes || null,
+            f5CoverImageHighRes: data.data?.[ "f5"]?.CoverImageHighRes || null,
+            f5PDF: data.data?.[ "f5"]?.pdf || null,
+            f3CoverImageLowRes: data.data?.[ "f3"]?.CoverImageLowRes || null,
+            f3CoverImageHighRes: data.data?.[ "f3"]?.CoverImageHighRes || null,
+            f3PDF: data.data?.[ "f3"]?.pdf || null,
+            f2CoverImageLowRes: data.data?.[ "f2"]?.CoverImageLowRes || null,
+            f2CoverImageHighRes: data.data?.[ "f2"]?.CoverImageHighRes || null,
+            f2PDF: data.data?.[ "f2"]?.pdf || null,
             userId: user || null,
           };
         }) as ProjectData[];
