@@ -13,7 +13,6 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -27,11 +26,11 @@ import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopa
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF2";
-import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/namecomment/InfoPanelNameComment";
-import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize";
-import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
-import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
+import InfoPanelNameComment from "components/indexcomponents/infopanels/projects/Infopanelmodals/namecomment/InfoPanelNameComment";
+import InfoPanelPrize from "components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize";
+import InfoPanelProjectImage from "components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
+import InfoPanelCommentModal from "components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
+import InfoPanelAttachment from "components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { deleteFolderContents as deleteFolder } from "@/utils/storageUtils";
 
 type Category = "f8" | "f5" | "f3" | "f2";
@@ -44,7 +43,6 @@ type ProjectData = {
   price?: number;
   isFavorite?: boolean;
   toBePurchased?: boolean;
-  guideId?: string | null;
   projectId?: string | null;
   userId?: string | null;
 } & {
@@ -627,7 +625,7 @@ const InfoPanel = ({
           >
             {getIconForOption(selectedOption)} {/* Dynamically rendered icon */}
             {/* Add fallback text for selectedOption */}
-            {selectedOption && <Text style={baseStyles.text}>{selectedOption}</Text>}
+            <Text style={baseStyles.text}>{selectedOption || "Ingen metode valgt"}</Text>
           </Pressable>
 
           {/* Delete button */}
