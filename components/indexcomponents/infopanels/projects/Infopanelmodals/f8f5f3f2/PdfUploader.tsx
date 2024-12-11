@@ -11,9 +11,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
-import { storage, database } from "@/firebaseConfig";
-import { DocumentPickerResult } from "expo-document-picker";
+import { storage } from "@/firebaseConfig";
 
 type PdfUploaderProps = {
   userId: string;
@@ -43,15 +41,15 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
       const result = await DocumentPicker.getDocumentAsync({
         type: "application/pdf",
       });
-  
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const { uri, mimeType } = result.assets[0];
-  
+
         if (mimeType !== "application/pdf") {
           Alert.alert("Fejl", "Kun PDF-filer er tilladt.");
           return;
         }
-  
+
         setSelectedPdfUri(uri);
       } else {
         console.log("PDF-valg annulleret.");
@@ -59,7 +57,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
     } catch (error) {
       console.error("Fejl ved valg af PDF:", error);
       Alert.alert("Fejl", "Kunne ikke vælge PDF. Prøv igen.");
-  
+
       if (onUploadFailure) {
         onUploadFailure(error);
       }
@@ -119,20 +117,12 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("Download URL hentet:", downloadURL);
 
-          // Update Firestore with the new URL
-          await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            { [`${category}PDF`]: downloadURL }, // Dynamic path based on category
-            { merge: true }
-          );
-          console.log("Firestore opdateret med nye PDF-URL");
-
-          // Finish the upload process
-          console.log("Ny PDF uploadet og Firestore opdateret");
-          Alert.alert("Succes", "PDF'en er blevet opdateret.");
+          // Afslutning af upload-processen uden at gemme URL'en i Firestore
+          console.log("Ny PDF uploadet til Storage");
+          Alert.alert("Succes", "PDF'en er blevet uploadet.");
           setSelectedPdfUri(null);
           setIsUploading(false);
-          onUploadSuccess(downloadURL);
+          onUploadSuccess(`${downloadURL}?t=${Date.now()}`); // Cache-bypass
         }
       );
 
@@ -144,7 +134,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
           Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
           setIsUploading(false);
         }
-      }, 60000); // 60 seconds timeout
+      }, 60000); // 60 sekunder timeout
     } catch (error: unknown) {
       console.error("Fejl ved upload af PDF:", error);
       Alert.alert("Fejl", `Kunne ikke uploade PDF'en: ${getErrorMessage(error)}`);

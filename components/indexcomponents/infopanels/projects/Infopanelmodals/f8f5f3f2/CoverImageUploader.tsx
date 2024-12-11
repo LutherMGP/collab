@@ -13,9 +13,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
-import { storage, database } from "@/firebaseConfig";
-import { categoryImageConfig, Category } from "@/constants/ImageConfig"; 
+import { storage } from "@/firebaseConfig";
+import { categoryImageConfig, Category } from "@/constants/ImageConfig";
 
 type SelectedImageUris = {
   lowRes: string;
@@ -166,24 +165,13 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
           }
         },
         async () => {
-          // High-res upload completed successfully, get download URL
+          // High-res upload completed successfully, get download URLs
           const lowResURL = await getDownloadURL(lowResRef);
           const highResURL = await getDownloadURL(highResRef);
           console.log("Download URL'er hentet:", lowResURL, highResURL);
 
-          // Opdater Firestore med de nye URL'er
-          await setDoc(
-            doc(database, "users", userId, "projects", projectId),
-            {
-              [`${category}CoverImageLowRes`]: lowResURL,
-              [`${category}CoverImageHighRes`]: highResURL,
-            },
-            { merge: true }
-          );
-          console.log("Firestore opdateret med nye billed-URL'er");
-
-          // Afslutning af upload-processen
-          console.log("Nye billeder uploadet og Firestore opdateret");
+          // Afslutning af upload-processen uden at gemme URL'erne i Firestore
+          console.log("Nye billeder uploadet til Storage");
           Alert.alert("Succes", "Billederne er blevet uploadet.");
           setSelectedImageUris(null);
           setIsUploading(false);
