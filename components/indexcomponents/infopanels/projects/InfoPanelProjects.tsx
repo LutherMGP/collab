@@ -15,13 +15,16 @@ import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPane
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
+import { FilePaths } from "@/utils/filePaths";
+import { ref, getDownloadURL } from "firebase/storage";
+import { storage } from "@/firebaseConfig";
 
 type ProjectData = {
   id: string;
   name?: string;
   description?: string;
   status?: string;
-  price?: number; // Fjernet `null` og beholdt kun `undefined`
+  price?: number;
   f8CoverImageLowRes?: string;
   f8CoverImageHighRes?: string;
   f8PDF?: string;
@@ -53,10 +56,37 @@ const InfoPanelProjects = () => {
     showGuide: true,
   };
 
+  // Funktion til dynamisk at hente URL'er
+  const fetchProjectDataWithUrls = async (
+    userId: string,
+    projectId: string
+  ): Promise<Partial<ProjectData>> => {
+    const categories: ("f8" | "f5" | "f3" | "f2")[] = ["f8", "f5", "f3", "f2"];
+    const projectData: Partial<ProjectData> = {};
+
+    for (const category of categories) {
+      try {
+        const lowResPath = FilePaths.coverImage(userId, projectId, category, "LowRes");
+        const highResPath = FilePaths.coverImage(userId, projectId, category, "HighRes");
+        const pdfPath = FilePaths.pdf(userId, projectId, category);
+
+        const lowResRef = ref(storage, lowResPath);
+        const highResRef = ref(storage, highResPath);
+        const pdfRef = ref(storage, pdfPath);
+
+        projectData[`${category}CoverImageLowRes`] = await getDownloadURL(lowResRef);
+        projectData[`${category}CoverImageHighRes`] = await getDownloadURL(highResRef);
+        projectData[`${category}PDF`] = await getDownloadURL(pdfRef);
+      } catch (error) {
+        console.warn(`Fejl ved hentning af data for kategori ${category}:`, error);
+      }
+    }
+
+    return projectData;
+  };
+
   useEffect(() => {
     if (!user) return;
-
-    console.log("Fetching projects for user:", user);
 
     const userProjectsCollection = collection(
       database,
@@ -64,58 +94,40 @@ const InfoPanelProjects = () => {
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
+
     const q = query(userProjectsCollection, where("status", "==", "Project"));
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        if (snapshot.empty) {
-          setProjects([]);
-          setError("Ingen projekter fundet.");
-          setIsLoading(false);
-          return;
-        }
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (snapshot.empty) {
+        setProjects([]);
+        setError("Ingen projekter fundet.");
+        setIsLoading(false);
+        return;
+      }
 
-        const fetchedProjects = snapshot.docs.map((doc) => {
+      const projectsWithUrls = await Promise.all(
+        snapshot.docs.map(async (doc) => {
           const data = doc.data();
-        
-          console.log(`Project data for ${doc.id}:`, data); // Debugging
-        
+
+          // Hent dynamiske URL'er ved hjælp af FilePaths
+          const dynamicUrls = await fetchProjectDataWithUrls(user, doc.id);
+
           return {
             id: doc.id,
             name: data.name || "Uden navn",
             description: data.description || "Ingen kommentar",
             status: data.status || "Project",
-            price: data.price ?? undefined, // Konverter 'null' til 'undefined'
-            f8CoverImageLowRes: data.data?.["f8"]?.CoverImageLowRes || undefined,
-            f8CoverImageHighRes: data.data?.["f8"]?.CoverImageHighRes || undefined,
-            f8PDF: data.data?.["f8"]?.pdf || undefined,
-            f5CoverImageLowRes: data.data?.["f5"]?.CoverImageLowRes || undefined,
-            f5CoverImageHighRes: data.data?.["f5"]?.CoverImageHighRes || undefined,
-            f5PDF: data.data?.["f5"]?.pdf || undefined,
-            f3CoverImageLowRes: data.data?.["f3"]?.CoverImageLowRes || undefined,
-            f3CoverImageHighRes: data.data?.["f3"]?.CoverImageHighRes || undefined,
-            f3PDF: data.data?.["f3"]?.pdf || undefined,
-            f2CoverImageLowRes: data.data?.["f2"]?.CoverImageLowRes || undefined,
-            f2CoverImageHighRes: data.data?.["f2"]?.CoverImageHighRes || undefined,
-            f2PDF: data.data?.["f2"]?.pdf || undefined,
-            userId: user || undefined,
+            price: data.price ?? undefined,
+            ...dynamicUrls, // Tilføj dynamiske URL'er
+            userId: user,
           };
-        }) as ProjectData[];
+        })
+      );
 
-        setProjects(fetchedProjects);
-
-        console.log("Hentede projekter:", fetchedProjects);
-
-        setError(null);
-        setIsLoading(false);
-      },
-      (err) => {
-        console.error("Fejl ved hentning af projekter:", err);
-        setError("Kunne ikke hente projekter. Prøv igen senere.");
-        setIsLoading(false);
-      }
-    );
+      setProjects(projectsWithUrls as ProjectData[]);
+      setError(null);
+      setIsLoading(false);
+    });
 
     return () => unsubscribe();
   }, [user]);
