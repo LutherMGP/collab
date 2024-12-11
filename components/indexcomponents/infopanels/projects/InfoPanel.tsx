@@ -41,14 +41,12 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
-  toBePurchased?: boolean;
   userId?: string | null;
 } & {
   [key in `${Category}CoverImageLowRes` | `${Category}CoverImageHighRes` | `${Category}PDF`]?: string | null;
 };
 
 type InfoPanelConfig = {
-  showPurchase?: boolean;
   showDelete?: boolean;
   showEdit?: boolean;
   showProject?: boolean;
@@ -89,9 +87,6 @@ const InfoPanel = ({
   const description = projectData.description || "Ingen kommentar";
   const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
 
-  const [toBePurchased, setToBePurchased] = useState(
-    projectData.toBePurchased || false
-  );
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -153,49 +148,7 @@ const InfoPanel = ({
   const handleLongPressF2 = () =>
     handleLongPress(f2PDF, "Partnership Agreement (F2)");
 
-  const handlePurchase = async () => {
-    if (!config.showPurchase) return;
-
-    try {
-      const newToBePurchasedStatus = !toBePurchased;
-      setToBePurchased(newToBePurchasedStatus);
-
-      if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
-        return;
-      }
-
-      const purchaseDocRef = doc(
-        database,
-        "users",
-        userId,
-        "purchases",
-        projectData.id
-      );
-
-      if (newToBePurchasedStatus) {
-        await setDoc(
-          purchaseDocRef,
-          {
-            projectId: projectData.id,
-            projectOwnerId: projectData.userId,
-            purchased: false,
-          },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} tilføjet til køb.`);
-        Alert.alert("Success", "Projekt tilføjet til din kurv.");
-      } else {
-        await deleteDoc(purchaseDocRef);
-        console.log(`Project ${projectData.id} fjernet fra køb.`);
-        Alert.alert("Success", "Projekt fjernet fra din kurv.");
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af køb status:", error);
-      Alert.alert("Fejl", "Der opstod en fejl under opdatering af køb status.");
-    }
-  };
-
+  // Funktion til at slette et projekt
   const handleDelete = () => {
     if (!config.showDelete) return;
 
@@ -428,7 +381,6 @@ const InfoPanel = ({
           description: data.description || "",
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
-          toBePurchased: data.toBePurchased || prev.toBePurchased || false,
           ...categories.reduce((acc, category) => {
             const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
             const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
@@ -657,10 +609,10 @@ const InfoPanel = ({
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
-                {/* F1B (Purchase) button */}
+                {/* F1B (Status Toggle) button */}
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={() => handleStatusToggle()} // Calls function to toggle status
+                  onPress={handleStatusToggle} // Calls function to toggle status
                   accessibilityLabel="Status Toggle Button"
                 >
                   <AntDesign
