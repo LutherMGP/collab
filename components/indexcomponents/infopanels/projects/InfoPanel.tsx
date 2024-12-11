@@ -19,7 +19,7 @@ import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, getDownloadURL, listAll, deleteObject } from "firebase/storage";
+import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/projects/InfoPanelStyles";
@@ -338,6 +338,19 @@ const InfoPanel = ({
     fetchProjectImage();
   }, [projectData.userId, projectData.id]);
 
+  const getDescriptionForOption = (option: string | null): string => {
+    switch (option) {
+      case "Free Transfer":
+        return "Denne overdragelsesmetode betyder, at projektet overdrages gratis.";
+      case "Trade Transfer":
+        return "Denne metode indebærer en udveksling eller handel.";
+      case "Collaboration Transfer":
+        return "Denne metode er en samarbejdsoverdragelse.";
+      default:
+        return "Ingen specifik metode er valgt.";
+    }
+  };
+
   // Generic handlePress function with conditional
   const handlePress = (button: string) => {
     if (isEditEnabled) {
@@ -367,7 +380,12 @@ const InfoPanel = ({
           Alert.alert("Knappen blev trykket", `Du trykkede på: ${button}`);
       }
     } else {
-      Alert.alert("Edit-tilstand", "Edit er ikke aktiveret.");
+      if (button === "Prize") {
+        const description = getDescriptionForOption(selectedOption);
+        Alert.alert("Valgt Overdragelsesmetode", description || "Ingen metode valgt.");
+      } else {
+        Alert.alert("Edit-tilstand", "Edit er ikke aktiveret.");
+      }
     }
   };
 
@@ -461,9 +479,9 @@ const InfoPanel = ({
           isFavorite: data.isFavorite || prev.isFavorite || false,
           toBePurchased: data.toBePurchased || prev.toBePurchased || false,
           ...categories.reduce((acc, category) => {
-            const keyLowRes = `f${category.slice(1)}CoverImageLowRes` as keyof ProjectData;
-            const keyHighRes = `f${category.slice(1)}CoverImageHighRes` as keyof ProjectData;
-            const keyPDF = `f${category.slice(1)}PDF` as keyof ProjectData;
+            const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
+            const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
+            const keyPDF = `${category}PDF` as keyof ProjectData;
 
             acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
             acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
@@ -578,7 +596,9 @@ const InfoPanel = ({
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
           {/* Show image if available */}
-          {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
+          {f8CoverImage && (
+            <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
+          )}
 
           {/* Text at the top of f8 */}
           <View style={baseStyles.textTag}>
@@ -600,15 +620,15 @@ const InfoPanel = ({
           )}
 
           {/* New Prize/Transfer field */}
-            <Pressable
-              style={baseStyles.newButton}
-              onPress={() => handlePress("Prize")}
-              accessibilityLabel="Transfer Method Button"
-            >
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                {getIconForOption(selectedOption)}
-              </View>
-            </Pressable>
+          <Pressable
+            style={baseStyles.newButton} // Your existing styling
+            onPress={() => handlePress("Prize")} // Calls the "Prize" handler
+            accessibilityLabel="Transfer Method Button"
+          >
+            {getIconForOption(selectedOption)} {/* Dynamically rendered icon */}
+            {/* Add fallback text for selectedOption */}
+            {selectedOption && <Text style={baseStyles.text}>{selectedOption}</Text>}
+          </Pressable>
 
           {/* Delete button */}
           {config.showDelete && (
@@ -871,13 +891,15 @@ const InfoPanel = ({
         onRequestClose={closePrizeModal}
       >
         <View style={styles.modalOverlay}>
-          <InfoPanelPrize
-            onClose={closePrizeModal}
-            selectedOption={selectedOption}
-            setSelectedOption={setSelectedOption}
-            projectId={projectData.id}
-            userId={userId || ""}
-          />
+          <View style={styles.modalContent}>
+            <InfoPanelPrize
+              onClose={closePrizeModal}
+              selectedOption={selectedOption}
+              setSelectedOption={setSelectedOption}
+              projectId={projectData.id}
+              userId={userId || ""}
+            />
+          </View>
         </View>
       </Modal>
 
@@ -978,7 +1000,6 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "90%",
     height: "80%",
-    // backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
   },
