@@ -75,6 +75,45 @@ const InfoPanel = ({
   // Define projectData as a state variable
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
+    // Dynamisk hentning af URL'er
+    useEffect(() => {
+      const fetchURLs = async () => {
+        try {
+          const updatedData = { ...projectData };
+  
+          if (projectData.f8CoverImageLowRes) {
+            updatedData.f8CoverImageLowRes = await getDownloadURL(ref(storage, projectData.f8CoverImageLowRes));
+          }
+          if (projectData.f8PDF) {
+            updatedData.f8PDF = await getDownloadURL(ref(storage, projectData.f8PDF));
+          }
+          if (projectData.f5CoverImageLowRes) {
+            updatedData.f5CoverImageLowRes = await getDownloadURL(ref(storage, projectData.f5CoverImageLowRes));
+          }
+          if (projectData.f5PDF) {
+            updatedData.f5PDF = await getDownloadURL(ref(storage, projectData.f5PDF));
+          }
+          if (projectData.f3CoverImageLowRes) {
+            updatedData.f3CoverImageLowRes = await getDownloadURL(ref(storage, projectData.f3CoverImageLowRes));
+          }
+          if (projectData.f3PDF) {
+            updatedData.f3PDF = await getDownloadURL(ref(storage, projectData.f3PDF));
+          }
+          if (projectData.f2CoverImageLowRes) {
+            updatedData.f2CoverImageLowRes = await getDownloadURL(ref(storage, projectData.f2CoverImageLowRes));
+          }
+          if (projectData.f2PDF) {
+            updatedData.f2PDF = await getDownloadURL(ref(storage, projectData.f2PDF));
+          }  
+          setProjectData(updatedData);
+        } catch (error) {
+          console.error("Fejl ved hentning af URL'er:", error);
+        }
+      };
+  
+      fetchURLs();
+    }, [projectData]);
+
   const f8CoverImage = projectData.f8CoverImageLowRes || null;
   const f8PDF = projectData.f8PDF || null;
   const f5CoverImage = projectData.f5CoverImageLowRes || null;
@@ -499,8 +538,10 @@ const InfoPanel = ({
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
           {/* Show image if available */}
-          {f8CoverImage && (
+          {f8CoverImage ? (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
+          ) : (
+            <Text style={baseStyles.placeholderText}>Intet billede</Text>
           )}
 
           {/* Text at the top of f8 */}
@@ -509,7 +550,7 @@ const InfoPanel = ({
           </View>
 
           {/* Project image in the round field with onPress */}
-          {projectImage && (
+          {projectImage ? (
             <Pressable
               style={baseStyles.projectImageContainer}
               onPress={() => handlePress("Project Image")}
@@ -520,6 +561,8 @@ const InfoPanel = ({
                 style={baseStyles.projectImage} // Adjust this style if needed
               />
             </Pressable>
+          ) : (
+            <Text style={baseStyles.placeholderText}>Ingen projektbillede</Text>
           )}
 
           {/* New Prize/Transfer field */}
@@ -529,7 +572,6 @@ const InfoPanel = ({
             accessibilityLabel="Transfer Method Button"
           >
             {getIconForOption(selectedOption)} {/* Dynamically rendered icon */}
-            {/* Add fallback text for selectedOption */}
             <Text style={baseStyles.text}>{selectedOption || "Ingen metode valgt"}</Text>
           </Pressable>
 
