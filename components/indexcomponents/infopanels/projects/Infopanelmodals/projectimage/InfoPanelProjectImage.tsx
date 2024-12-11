@@ -32,7 +32,7 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   useEffect(() => {
     const fetchImage = async () => {
       try {
-        const imagePath = `users/${userId}/projects/${projectId}/projectImage.jpg`;
+        const imagePath = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`;
         const imageRef = ref(storage, imagePath);
         const downloadURL = await getDownloadURL(imageRef);
         setImageURL(downloadURL);
@@ -64,7 +64,7 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
         );
 
         const imageBlob = await (await fetch(resizedImage.uri)).blob();
-        const imagePath = `users/${userId}/projects/${projectId}/projectImage.jpg`;
+        const imagePath = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`;
         const imageRef = ref(storage, imagePath);
 
         await uploadBytesResumable(imageRef, imageBlob);

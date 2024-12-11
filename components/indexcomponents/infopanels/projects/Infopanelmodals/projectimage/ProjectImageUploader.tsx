@@ -61,7 +61,7 @@ const ProjectImageUploader: React.FC<ProjectImageUploaderProps> = ({
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
-      const imagePath = `users/${userId}/projects/${projectId}/projectImage.jpg`;
+      const imagePath = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`;
       const imageRef = ref(storage, imagePath);
 
       const uploadTask = uploadBytesResumable(imageRef, blob);
