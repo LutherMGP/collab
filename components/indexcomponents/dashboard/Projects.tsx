@@ -82,7 +82,7 @@ const Projects = () => {
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
-        <Text style={[styles.createStoryText, { color: Colors[theme].text }]}>
+        <Text style={[styles.createStoryText, { color: Colors[theme]?.text || "#000" }]}>
           Projects
         </Text>
       </View>
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     width: 40,
     borderWidth: 3,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    elevation: 3, // Tilføj skygge for et bedre design
+    elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

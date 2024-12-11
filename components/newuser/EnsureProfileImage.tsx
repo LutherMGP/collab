@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes } from "firebase/storage";
 import { Asset } from "expo-asset";
 import * as ImageManipulator from "expo-image-manipulator";
 import { database, storage } from "@/firebaseConfig";
@@ -20,7 +20,7 @@ const EnsureProfileImage: React.FC<EnsureProfileImageProps> = ({ userId }) => {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists() && userDoc.data().profileImage) {
-          console.log("Bruger har allerede et profilbillede:", userDoc.data().profileImage);
+          console.log("Bruger har allerede et profilbillede.");
           return;
         }
 
@@ -42,15 +42,14 @@ const EnsureProfileImage: React.FC<EnsureProfileImageProps> = ({ userId }) => {
         const blob = await response.blob();
         await uploadBytes(imageRef, blob);
 
-        // Hent download-URL og gem det i Firestore
-        const downloadUrl = await getDownloadURL(imageRef);
+        // Opdater Firestore uden URL
         await setDoc(
           userDocRef,
-          { profileImage: downloadUrl },
+          { profileImage: true }, // Indiker kun, at billedet er sat
           { merge: true }
         );
 
-        console.log("Standardbillede uploadet og gemt:", downloadUrl);
+        console.log("Standardbillede uploadet.");
       } catch (error) {
         console.error("Fejl ved håndtering af profilbillede:", error);
       }

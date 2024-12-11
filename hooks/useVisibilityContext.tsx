@@ -14,8 +14,6 @@ type VisibilityContextType = {
   isInfoPanelApplicationsIndVisible: boolean;
   showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
-  profileImage: string | null;
-  setProfileImage: (url: string) => void;
 };
 
 const VisibilityContext = createContext<VisibilityContextType>({
@@ -30,30 +28,28 @@ const VisibilityContext = createContext<VisibilityContextType>({
   isInfoPanelApplicationsIndVisible: false,
   showPanel: () => {},
   hideAllPanels: () => {},
-  profileImage: null,
-  setProfileImage: () => {},
 });
 
 export const useVisibility = () => useContext(VisibilityContext);
 
 export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
-  const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] = useState(false);
-  const [isInfoPanelPublishedVisible, setInfoPanelPublishedVisible] = useState(false);
-  const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] = useState(false);
-  const [isInfoPanelPurchasedVisible, setInfoPanelPurchasedVisible] = useState(false);
+  const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] =
+    useState(false);
+  const [isInfoPanelPublishedVisible, setInfoPanelPublishedVisible] =
+    useState(false);
+  const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] =
+    useState(false);
+  const [isInfoPanelPurchasedVisible, setInfoPanelPurchasedVisible] =
+    useState(false);
   const [isInfoPanelCartVisible, setInfoPanelCartVisible] = useState(false);
-  const [isInfoPanelApplicationsVisible, setInfoPanelApplicationsVisible] = useState(false);
-  const [isInfoPanelDevelopmentVisible, setInfoPanelDevelopmentVisible] = useState(false);
-  const [isInfoPanelApplicationsUdVisible, setInfoPanelApplicationsUdVisible] = useState(false);
-  const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] = useState(false);
-
-  const [profileImage, setProfileImageState] = useState<string | null>(null); // Skiftet navn på state-opdateringsfunktionen
-  
-  // Ny funktion til at opdatere profileImage med log
-  const setProfileImage = (url: string) => {
-    console.log("Setting profile image in VisibilityContext:", url);
-    setProfileImageState(url); // Brug den rigtige state-opdateringsfunktion
-  };
+  const [isInfoPanelApplicationsVisible, setInfoPanelApplicationsVisible] =
+    useState(false);
+  const [isInfoPanelDevelopmentVisible, setInfoPanelDevelopmentVisible] =
+    useState(false);
+  const [isInfoPanelApplicationsUdVisible, setInfoPanelApplicationsUdVisible] =
+    useState(false);
+  const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] =
+    useState(false);
 
   const showPanel = (panelName: string) => {
     hideAllPanels();
@@ -113,8 +109,6 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
         isInfoPanelApplicationsIndVisible,
         showPanel,
         hideAllPanels,
-        profileImage,
-        setProfileImage,
       }}
     >
       {children}

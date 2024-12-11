@@ -12,16 +12,16 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { useVisibility } from "@/hooks/useVisibilityContext"; // Importer kontekst for profilbillede
+import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, collection, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
-  const { profileImage } = useVisibility(); // Hent profilbillede fra konteksten
+  const { profileImage } = useVisibility();
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -32,38 +32,38 @@ const NewProject: React.FC = () => {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
       return;
     }
-  
+
     if (!name || !description) {
       Alert.alert("Manglende oplysninger", "Udfyld både navn og beskrivelse.");
       return;
     }
-  
+
     setIsCreating(true);
-  
+
     try {
       const projectRef = doc(collection(database, "users", user, "projects"));
-  
-      // Firebase-referencer
-      const sourceImageRef = ref(storage, `users/${user}/profileimage/profileImage.jpg`);
-      const projectImageRef = ref(storage, `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`);
-  
-      let projectProfileImageUrl = null;
-  
-      try {
-        // Kopier profilbilledet fra standardplacering til projektplacering
-        const sourceUrl = await getDownloadURL(sourceImageRef);
-        const response = await fetch(sourceUrl);
-        const blob = await response.blob();
-  
-        await uploadBytes(projectImageRef, blob);
-        projectProfileImageUrl = await getDownloadURL(projectImageRef);
-  
-        console.log("Projektbillede kopieret til:", projectProfileImageUrl);
-      } catch (error) {
-        console.warn("Kunne ikke kopiere profilbillede. Projekt oprettes uden billede:", error);
-      }
-  
-      // Projektdata
+      console.log("Opretter nyt projekt med ID:", projectRef.id);
+
+      // Definer stierne
+      const sourceImagePath = `users/${user}/profileimage/profileImage.jpg`;
+      const destinationImagePath = `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`;
+
+      const sourceImageRef = ref(storage, sourceImagePath);
+      const destinationImageRef = ref(storage, destinationImagePath);
+
+      // Hent download URL for source image
+      const sourceImageUrl = await getDownloadURL(sourceImageRef);
+      console.log("Henter kildebillede fra:", sourceImageUrl);
+
+      // Hent blob fra kildebillede
+      const response = await fetch(sourceImageUrl);
+      const blob = await response.blob();
+
+      // Upload blob til destination path
+      await uploadBytes(destinationImageRef, blob);
+      console.log("Projektbillede kopieret til:", destinationImagePath);
+
+      // Projektdata uden projectImage URL
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -71,11 +71,12 @@ const NewProject: React.FC = () => {
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
-        projectImage: projectProfileImageUrl, // Tilføj URL til billedet, hvis det findes
+        // projectImage feltet er udeladt for at undgå redundans
       };
-  
+
+      console.log("Gemmer projektdata i Firestore:", projectData);
       await setDoc(projectRef, projectData);
-  
+
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
@@ -89,9 +90,13 @@ const NewProject: React.FC = () => {
   };
 
   return (
-    <View style={[styles.createStoryContainer]}>
+    <View style={styles.createStoryContainer}>
       <Image
-        source={profileImage ? { uri: profileImage } : require("@/assets/images/blomst.webp")}
+        source={
+          profileImage
+            ? { uri: profileImage }
+            : require("@/assets/images/blomst.webp")
+        }
         style={styles.profileImg}
         contentFit="cover"
       />
@@ -99,6 +104,7 @@ const NewProject: React.FC = () => {
       <TouchableOpacity
         style={styles.iconContainer}
         onPress={() => setModalVisible(true)}
+        accessibilityLabel="Add New Project Button"
       >
         <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>
@@ -118,6 +124,7 @@ const NewProject: React.FC = () => {
               placeholder="Navn"
               value={name}
               onChangeText={setName}
+              placeholderTextColor={Colors.light.text}
             />
             <TextInput
               style={[styles.input, styles.textArea]}
@@ -125,11 +132,13 @@ const NewProject: React.FC = () => {
               value={description}
               onChangeText={setDescription}
               multiline
+              placeholderTextColor={Colors.light.text}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 style={styles.cancelButton}
+                accessibilityLabel="Cancel Create Project"
               >
                 <Text style={styles.buttonText}>Annuller</Text>
               </TouchableOpacity>
@@ -137,6 +146,7 @@ const NewProject: React.FC = () => {
                 onPress={handleCreateProject}
                 style={styles.saveButton}
                 disabled={isCreating}
+                accessibilityLabel="Save Project"
               >
                 <Text style={styles.buttonText}>
                   {isCreating ? "Opretter..." : "Gem"}

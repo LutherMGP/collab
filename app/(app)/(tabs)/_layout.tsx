@@ -10,7 +10,8 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth, useRole } from "@/hooks/useAuth";
 import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { ref, getDownloadURL } from "firebase/storage";
+import { database, storage } from "@/firebaseConfig";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -22,17 +23,16 @@ export default function TabLayout() {
   // Realtime opdatering af profilbillede fra Firestore
   useEffect(() => {
     if (!user) return;
-
-    const userDocRef = doc(database, "users", user);
-    const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        setProfileImage(data.profileImage || null);
-        setUserRole(data.role || null);
-      }
-    });
-
-    return () => unsubscribe();
+  
+    const imagePath = `users/${user}/profileimage/profileImage.jpg`; // Definer stien til billedet
+    const imageRef = ref(storage, imagePath); // Opret en reference til billedet
+  
+    getDownloadURL(imageRef)
+      .then((url: string) => setProfileImage(url)) // Sørg for, at url har typen string
+      .catch(() => {
+        console.log("Ingen profilbillede fundet, bruger standardbillede.");
+        setProfileImage(null); // Hvis billedet ikke findes, bruges standardbillede
+      });
   }, [user]);
 
   // Hent antallet af ubetalte projekter fra Firestore

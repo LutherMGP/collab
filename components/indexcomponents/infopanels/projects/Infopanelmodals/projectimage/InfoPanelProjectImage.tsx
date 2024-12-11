@@ -7,159 +7,144 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Modal,
   Alert,
 } from "react-native";
-import ProjectImageUploader from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/ProjectImageUploader";
-import { Category } from "@/constants/ImageConfig";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "@/firebaseConfig";
+import { FilePaths } from "@/utils/filePaths";
+import { projectImageConfig } from "@/constants/ImageConfig";
+
+const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
 
 interface InfoPanelProjectImageProps {
   projectId: string;
   userId: string;
-  category: Category;
-  initialImageUris?: {
-    lowRes: string;
-    highRes: string;
-  } | null;
-  onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
-  onUploadFailure?: (error: unknown) => void;
   onClose: () => void;
+  onUploadSuccess: (downloadURL: string) => void;
+  onUploadFailure: (error: unknown) => void;
 }
 
 const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   projectId,
   userId,
-  category,
-  initialImageUris = null,
+  onClose,
   onUploadSuccess,
   onUploadFailure,
-  onClose,
 }) => {
-  const [imageUris, setImageUris] = useState<{ lowRes: string; highRes: string } | null>(initialImageUris);
-  const [isImageModalVisible, setImageModalVisible] = useState<boolean>(false);
+  const [imageURL, setImageURL] = useState<string | null>(null);
 
   useEffect(() => {
-    setImageUris(initialImageUris);
-  }, [initialImageUris]);
+    const fetchImage = async () => {
+      try {
+        const imagePath = FilePaths.projectImage(userId, projectId);
+        const imageRef = ref(storage, imagePath);
+        const downloadURL = await getDownloadURL(imageRef);
+        setImageURL(downloadURL);
+      } catch (error) {
+        console.warn("Ingen billede fundet, bruger standardbillede.");
+        setImageURL(null);
+      }
+    };
+
+    fetchImage();
+  }, [projectId, userId]);
+
+  const handleImageUpload = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1.0,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const selectedImageUri = result.assets[0].uri;
+
+        // Brug `projectImageConfig` til resizing og komprimering
+        const resizedImage = await ImageManipulator.manipulateAsync(
+          selectedImageUri,
+          [
+            {
+              resize: {
+                width: projectImageConfig.resizeWidth,
+                height: projectImageConfig.resizeHeight,
+              },
+            },
+          ],
+          {
+            compress: projectImageConfig.compress,
+            format: ImageManipulator.SaveFormat.JPEG,
+          }
+        );
+
+        const imageBlob = await (await fetch(resizedImage.uri)).blob();
+        const imagePath = FilePaths.projectImage(userId, projectId);
+        const imageRef = ref(storage, imagePath);
+
+        await uploadBytesResumable(imageRef, imageBlob);
+
+        const downloadURL = await getDownloadURL(imageRef);
+
+        // Kald `onUploadSuccess` med downloadURL
+        onUploadSuccess(downloadURL);
+
+        setImageURL(downloadURL);
+      } else {
+        Alert.alert("Info", "Billedvalg annulleret.");
+      }
+    } catch (error) {
+      console.error("Fejl ved upload af billede:", error);
+
+      // Kald `onUploadFailure` med fejlen
+      onUploadFailure(error);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {imageUris ? (
-        <TouchableOpacity onPress={() => setImageModalVisible(true)}>
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: imageUris.lowRes }} style={styles.image} />
-            <Text style={styles.resolutionText}>Low Resolution</Text>
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <Text style={styles.noImageText}>No project image selected.</Text>
-      )}
-
-      <ProjectImageUploader
-        userId={userId}
-        projectId={projectId}
-        category={category}
-        initialImageUris={imageUris}
-        onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => {
-          setImageUris(downloadURLs);
-          onUploadSuccess(downloadURLs);
-          Alert.alert("Success", "Project images uploaded successfully.");
-        }}
-        onUploadFailure={(error: unknown) => {
-          console.error("Project Image Upload failed:", error);
-          Alert.alert("Error", "Could not upload project images.");
-          if (onUploadFailure) onUploadFailure(error);
-        }}
-        buttonLabel="Select Image"
-      />
-
-      {/* Modal til high-res billede */}
-      <Modal
-        visible={isImageModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => {
-          setImageModalVisible(false);
-          onClose();
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {imageUris?.highRes ? (
-              <Image source={{ uri: imageUris.highRes }} style={styles.fullscreenImage} />
-            ) : (
-              <Text>No high-resolution image available.</Text>
-            )}
-            <TouchableOpacity
-              style={styles.closeModalButton}
-              onPress={() => {
-                setImageModalVisible(false);
-                onClose();
-              }}
-            >
-              <Text style={styles.closeModalButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <TouchableOpacity onPress={handleImageUpload}>
+        <Image
+          source={imageURL ? { uri: imageURL } : DEFAULT_IMAGE}
+          style={styles.image}
+        />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Text style={styles.closeButtonText}>Luk</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    marginVertical: 10,
-  },
-  imageContainer: {
-    alignItems: "center",
-    marginBottom: 10,
+    padding: 20,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
   },
   image: {
-    width: 200,
-    height: 200,
+    width: 300,
+    height: 300,
     borderRadius: 10,
-    marginBottom: 5,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#ccc",
   },
-  resolutionText: {
-    fontSize: 12,
-    color: "grey",
-  },
-  fullscreenImage: {
-    width: "100%",
-    height: "80%",
-    resizeMode: "contain",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "90%",
-    height: "90%",
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeModalButton: {
+  closeButton: {
     marginTop: 20,
-    backgroundColor: "gray",
+    backgroundColor: "#007AFF",
     padding: 10,
     borderRadius: 5,
+    alignItems: "center",
   },
-  closeModalButtonText: {
+  closeButtonText: {
     color: "white",
-    fontWeight: "bold",
-  },
-  noImageText: {
     fontSize: 16,
-    color: "grey",
-    marginBottom: 10,
-    textAlign: "center",
+    fontWeight: "bold",
   },
 });
 
