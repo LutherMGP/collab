@@ -123,6 +123,8 @@ const InfoPanel = ({
 
   const categories: Category[] = ["f8", "f5", "f3", "f2"];
 
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
   // Function to toggle Edit mode
   const toggleEdit = () => {
     setIsEditEnabled((prev) => !prev); // Toggle the Edit state
@@ -369,6 +371,20 @@ const InfoPanel = ({
     }
   };
 
+  // Tilføj logikken for at vise det valgte ikon i F8, når F1A er inaktiveret:
+  const getIconForOption = (option: string | null) => {
+    switch (option) {
+      case "Free Transfer":
+        return <AntDesign name="gift" size={24} color="green" />;
+      case "Trade Transfer":
+        return <AntDesign name="swap" size={24} color="blue" />;
+      case "Collaboration Transfer":
+        return <AntDesign name="team" size={24} color="purple" />;
+      default:
+        return <AntDesign name="questioncircleo" size={24} color="gray" />;
+    }
+  };
+
   // Functions to close modals
   const closeF8Modal = () => {
     setIsF8ModalVisible(false);
@@ -583,14 +599,16 @@ const InfoPanel = ({
             </Pressable>
           )}
 
-          {/* Prize field with onPress */}
-          <Pressable
-            style={baseStyles.priceTag}
-            onPress={() => handlePress("Prize")}
-            accessibilityLabel="Prize Button"
-          >
-            <Text style={baseStyles.priceText}>{price}</Text>
-          </Pressable>
+          {/* New Prize/Transfer field */}
+            <Pressable
+              style={baseStyles.newButton}
+              onPress={() => handlePress("Prize")}
+              accessibilityLabel="Transfer Method Button"
+            >
+              <View style={{ justifyContent: "center", alignItems: "center" }}>
+                {getIconForOption(selectedOption)}
+              </View>
+            </Pressable>
 
           {/* Delete button */}
           {config.showDelete && (
@@ -851,17 +869,15 @@ const InfoPanel = ({
         animationType="slide"
         transparent={true}
         onRequestClose={closePrizeModal}
-        key={`prize-modal-${refreshKey}`} // Unique key for modal update
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelPrize
-              onClose={closePrizeModal}
-              price={price}
-              projectId={projectData.id} // Add projectId if needed
-              userId={userId || ""} // Add userId if needed
-            />
-          </View>
+          <InfoPanelPrize
+            onClose={closePrizeModal}
+            selectedOption={selectedOption}
+            setSelectedOption={setSelectedOption}
+            projectId={projectData.id}
+            userId={userId || ""}
+          />
         </View>
       </Modal>
 
@@ -962,7 +978,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "90%",
     height: "80%",
-    backgroundColor: "white",
+    // backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
   },
