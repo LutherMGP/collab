@@ -41,16 +41,13 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
-  isFavorite?: boolean;
   toBePurchased?: boolean;
-  projectId?: string | null;
   userId?: string | null;
 } & {
   [key in `${Category}CoverImageLowRes` | `${Category}CoverImageHighRes` | `${Category}PDF`]?: string | null;
 };
 
 type InfoPanelConfig = {
-  showFavorite?: boolean;
   showPurchase?: boolean;
   showDelete?: boolean;
   showEdit?: boolean;
@@ -58,7 +55,6 @@ type InfoPanelConfig = {
   showGuide?: boolean;
   longPressForPdf?: boolean;
   checkPurchaseStatus?: boolean;
-  checkFavoriteStatus?: boolean;
 };
 
 type InfoPanelProps = {
@@ -93,7 +89,6 @@ const InfoPanel = ({
   const description = projectData.description || "Ingen kommentar";
   const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
 
-  const [isFavorite, setIsFavorite] = useState(projectData.isFavorite || false);
   const [toBePurchased, setToBePurchased] = useState(
     projectData.toBePurchased || false
   );
@@ -157,47 +152,6 @@ const InfoPanel = ({
     handleLongPress(f3PDF, "Sustainability Report (F3)");
   const handleLongPressF2 = () =>
     handleLongPress(f2PDF, "Partnership Agreement (F2)");
-
-  const handleFavoriteToggle = async () => {
-    if (!config.showFavorite) return;
-
-    try {
-      const newFavoriteStatus = !isFavorite;
-      console.log("Favorite button pressed");
-      setIsFavorite(newFavoriteStatus);
-
-      if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
-        return;
-      }
-
-      const favoriteDocRef = doc(
-        database,
-        "users",
-        userId,
-        "favorites",
-        projectData.id
-      );
-
-      if (newFavoriteStatus) {
-        await setDoc(
-          favoriteDocRef,
-          { projectId: projectData.id },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} markeret som favorit.`);
-      } else {
-        await deleteDoc(favoriteDocRef);
-        console.log(`Project ${projectData.id} fjernet fra favoritter.`);
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af favoritstatus:", error);
-      Alert.alert(
-        "Fejl",
-        "Der opstod en fejl under opdatering af favoritstatus."
-      );
-    }
-  };
 
   const handlePurchase = async () => {
     if (!config.showPurchase) return;
@@ -387,7 +341,7 @@ const InfoPanel = ({
     }
   };
 
-  // Tilføj logikken for at vise det valgte ikon i F8, når F1A er inaktiveret:
+  // Tilføj logikken for at vise det valgte ikon i F8, når Edit er inaktiveret:
   const getIconForOption = (option: string | null) => {
     switch (option) {
       case "Free Transfer":
@@ -474,7 +428,6 @@ const InfoPanel = ({
           description: data.description || "",
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
-          isFavorite: data.isFavorite || prev.isFavorite || false,
           toBePurchased: data.toBePurchased || prev.toBePurchased || false,
           ...categories.reduce((acc, category) => {
             const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
@@ -690,6 +643,7 @@ const InfoPanel = ({
             </View>
             <View style={baseStyles.rightTop}>
               <View style={baseStyles.f1topHalf}>
+                {/* F1A (Edit) button */}
                 <Pressable
                   style={baseStyles.F1A}
                   onPress={toggleEdit} // Use the existing toggleEdit function
@@ -703,6 +657,7 @@ const InfoPanel = ({
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
+                {/* F1B (Purchase) button */}
                 <Pressable
                   style={baseStyles.F1B}
                   onPress={() => handleStatusToggle()} // Calls function to toggle status
@@ -916,7 +871,7 @@ const InfoPanel = ({
               projectId={projectData.id} // Add projectId
               userId={userId || ""} // Add userId
               category="f8" // Add the relevant category
-              onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => { // Typet parameter
+              onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => { // Typed parameter
                 setProjectData((prev) => ({
                   ...prev,
                   f8CoverImageLowRes: downloadURLs.lowRes,
@@ -924,7 +879,7 @@ const InfoPanel = ({
                 }));
                 Alert.alert("Success", "Project images uploaded successfully.");
               }}
-              onUploadFailure={(error: unknown) => { // Typet parameter
+              onUploadFailure={(error: unknown) => { // Typed parameter
                 console.error("Project Image Upload failed:", error);
                 Alert.alert("Error", "Could not upload project images.");
               }}
