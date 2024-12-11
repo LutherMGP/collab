@@ -596,7 +596,9 @@ const InfoPanel = ({
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
           {/* Show image if available */}
-          {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
+          {f8CoverImage && (
+            <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
+          )}
 
           {/* Text at the top of f8 */}
           <View style={baseStyles.textTag}>
@@ -619,11 +621,13 @@ const InfoPanel = ({
 
           {/* New Prize/Transfer field */}
           <Pressable
-            style={baseStyles.newButton} // Din eksisterende styling
-            onPress={() => handlePress("Prize")} // Videresender "Prize" som knapnavn
+            style={baseStyles.newButton} // Your existing styling
+            onPress={() => handlePress("Prize")} // Calls the "Prize" handler
             accessibilityLabel="Transfer Method Button"
           >
-            {getIconForOption(selectedOption)} {/* Dynamisk ikon */}
+            {getIconForOption(selectedOption)} {/* Dynamically rendered icon */}
+            {/* Add fallback text for selectedOption */}
+            {selectedOption && <Text style={baseStyles.text}>{selectedOption}</Text>}
           </Pressable>
 
           {/* Delete button */}

@@ -1,13 +1,7 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelPrize.tsx
 
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
@@ -55,25 +49,36 @@ const InfoPanelPrize = ({
       <Text style={styles.modalTitle}>Vælg overdragelsesmetode</Text>
       <View style={styles.iconRow}>
         <Pressable onPress={() => setSelectedOption("Free Transfer")}>
-          <AntDesign
-            name="gift"
-            size={40}
-            color={selectedOption === "Free Transfer" ? "green" : "gray"}
-          />
+          <View style={{ alignItems: "center" }}>
+            <AntDesign
+              name="gift"
+              size={40}
+              color={selectedOption === "Free Transfer" ? "green" : "gray"}
+            />
+            <Text style={styles.iconLabel}>Free Transfer</Text>
+          </View>
         </Pressable>
         <Pressable onPress={() => setSelectedOption("Trade Transfer")}>
-          <AntDesign
-            name="swap"
-            size={40}
-            color={selectedOption === "Trade Transfer" ? "blue" : "gray"}
-          />
+          <View style={{ alignItems: "center" }}>
+            <AntDesign
+              name="swap"
+              size={40}
+              color={selectedOption === "Trade Transfer" ? "blue" : "gray"}
+            />
+            <Text style={styles.iconLabel}>Trade Transfer</Text>
+          </View>
         </Pressable>
         <Pressable onPress={() => setSelectedOption("Collaboration Transfer")}>
-          <AntDesign
-            name="team"
-            size={40}
-            color={selectedOption === "Collaboration Transfer" ? "purple" : "gray"}
-          />
+          <View style={{ alignItems: "center" }}>
+            <AntDesign
+              name="team"
+              size={40}
+              color={
+                selectedOption === "Collaboration Transfer" ? "purple" : "gray"
+              }
+            />
+            <Text style={styles.iconLabel}>Collaboration Transfer</Text>
+          </View>
         </Pressable>
       </View>
       <View style={styles.buttonContainer}>
@@ -100,9 +105,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    width: "80%", // Bredden af modalen
-    height: "60%", // Juster højden i procent af skærmen
-    borderRadius: 10, // Tilføj evt. runde hjørner
+    width: "80%",
+    height: "60%",
+    borderRadius: 10,
   },
   modalTitle: {
     fontSize: 20,
@@ -114,6 +119,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     width: "80%",
     marginBottom: 20,
+  },
+  iconLabel: {
+    marginTop: 5,
+    fontSize: 14,
+    color: "gray",
   },
   buttonContainer: {
     flexDirection: "row",
