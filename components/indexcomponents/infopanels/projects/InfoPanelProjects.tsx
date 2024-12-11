@@ -1,171 +1,156 @@
-// @/components/indexcomponents/infopanels/projects/InfopanelsModals/projectimage/InfoPanelProjectImage.tsx
+// @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
-import { FilePaths } from "@/utils/filePaths";
-import { projectImageConfig } from "@/constants/ImageConfig";
+  collection,
+  query,
+  where,
+  onSnapshot,
+  CollectionReference,
+  DocumentData,
+} from "firebase/firestore";
+import { database } from "@/firebaseConfig";
+import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { useAuth } from "@/hooks/useAuth";
 
-const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
+type ProjectData = {
+  id: string;
+  name?: string;
+  description?: string;
+  status?: string;
+  price?: number; // Fjernet `null` og beholdt kun `undefined`
+  f8CoverImageLowRes?: string;
+  f8CoverImageHighRes?: string;
+  f8PDF?: string;
+  f5CoverImageLowRes?: string;
+  f5CoverImageHighRes?: string;
+  f5PDF?: string;
+  f3CoverImageLowRes?: string;
+  f3CoverImageHighRes?: string;
+  f3PDF?: string;
+  f2CoverImageLowRes?: string;
+  f2CoverImageHighRes?: string;
+  f2PDF?: string;
+  userId?: string;
+};
 
-interface InfoPanelProjectImageProps {
-  projectId: string;
-  userId: string;
-  onClose: () => void;
-  onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
-  onUploadFailure: (error: unknown) => void;
-}
+const InfoPanelProjects = () => {
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const theme = useColorScheme() || "light";
+  const { user } = useAuth();
 
-const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
-  projectId,
-  userId,
-  onClose,
-  onUploadSuccess,
-  onUploadFailure,
-}) => {
-  const [imageURL, setImageURL] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  useEffect(() => {
-    const fetchImage = async () => {
-      try {
-        const imagePath = FilePaths.projectImage(userId, projectId);
-        const imageRef = ref(storage, imagePath);
-        const downloadURL = await getDownloadURL(imageRef);
-        setImageURL(downloadURL);
-      } catch (error) {
-        console.warn("Ingen billede fundet, bruger standardbillede.");
-        setImageURL(null);
-      }
-    };
-
-    fetchImage();
-  }, [projectId, userId]);
-
-  const handleImageUpload = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1.0,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const selectedImageUri = result.assets[0].uri;
-
-        // Brug `projectImageConfig` til resizing og komprimering
-        const resizedImage = await ImageManipulator.manipulateAsync(
-          selectedImageUri,
-          [
-            {
-              resize: {
-                width: projectImageConfig.resizeWidth,
-                height: projectImageConfig.resizeHeight,
-              },
-            },
-          ],
-          {
-            compress: projectImageConfig.compress,
-            format: ImageManipulator.SaveFormat.JPEG,
-          }
-        );
-
-        const imageBlob = await (await fetch(resizedImage.uri)).blob();
-        const imagePath = FilePaths.projectImage(userId, projectId);
-        const imageRef = ref(storage, imagePath);
-
-        setIsUploading(true);
-
-        const uploadTask = uploadBytesResumable(imageRef, imageBlob);
-
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            // Kan tilføje upload progress her, hvis nødvendigt
-          },
-          (error) => {
-            console.error("Fejl under upload af billede:", error);
-            setIsUploading(false);
-            onUploadFailure(error);
-          },
-          async () => {
-            const downloadURL = await getDownloadURL(imageRef);
-            onUploadSuccess({ lowRes: downloadURL, highRes: downloadURL }); // Brug samme URL for begge
-            setImageURL(downloadURL);
-            setIsUploading(false);
-            Alert.alert("Success", "Project images uploaded successfully.");
-          }
-        );
-      } else {
-        Alert.alert("Info", "Billedvalg annulleret.");
-      }
-    } catch (error) {
-      console.error("Fejl ved upload af billede:", error);
-      onUploadFailure(error);
-    }
+  const config = {
+    showFavorite: false,
+    showPurchase: true,
+    showDelete: true,
+    showEdit: true,
+    showSnit: true,
+    showGuide: true,
   };
 
+  useEffect(() => {
+    if (!user) return;
+
+    console.log("Fetching projects for user:", user);
+
+    const userProjectsCollection = collection(
+      database,
+      "users",
+      user,
+      "projects"
+    ) as CollectionReference<DocumentData>;
+    const q = query(userProjectsCollection, where("status", "==", "Project"));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        if (snapshot.empty) {
+          setProjects([]);
+          setError("Ingen projekter fundet.");
+          setIsLoading(false);
+          return;
+        }
+
+        const fetchedProjects = snapshot.docs.map((doc) => {
+          const data = doc.data();
+        
+          console.log(`Project data for ${doc.id}:`, data); // Debugging
+        
+          return {
+            id: doc.id,
+            name: data.name || "Uden navn",
+            description: data.description || "Ingen kommentar",
+            status: data.status || "Project",
+            price: data.price ?? undefined, // Konverter 'null' til 'undefined'
+            f8CoverImageLowRes: data.data?.["f8"]?.CoverImageLowRes || undefined,
+            f8CoverImageHighRes: data.data?.["f8"]?.CoverImageHighRes || undefined,
+            f8PDF: data.data?.["f8"]?.pdf || undefined,
+            f5CoverImageLowRes: data.data?.["f5"]?.CoverImageLowRes || undefined,
+            f5CoverImageHighRes: data.data?.["f5"]?.CoverImageHighRes || undefined,
+            f5PDF: data.data?.["f5"]?.pdf || undefined,
+            f3CoverImageLowRes: data.data?.["f3"]?.CoverImageLowRes || undefined,
+            f3CoverImageHighRes: data.data?.["f3"]?.CoverImageHighRes || undefined,
+            f3PDF: data.data?.["f3"]?.pdf || undefined,
+            f2CoverImageLowRes: data.data?.["f2"]?.CoverImageLowRes || undefined,
+            f2CoverImageHighRes: data.data?.["f2"]?.CoverImageHighRes || undefined,
+            f2PDF: data.data?.["f2"]?.pdf || undefined,
+            userId: user || undefined,
+          };
+        }) as ProjectData[];
+
+        setProjects(fetchedProjects);
+
+        console.log("Hentede projekter:", fetchedProjects);
+
+        setError(null);
+        setIsLoading(false);
+      },
+      (err) => {
+        console.error("Fejl ved hentning af projekter:", err);
+        setError("Kunne ikke hente projekter. Prøv igen senere.");
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={Colors[theme].text} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: Colors[theme].text }}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={handleImageUpload}>
-        <Image
-          source={imageURL ? { uri: imageURL } : DEFAULT_IMAGE}
-          style={styles.image}
-        />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.closeButtonText}>Luk</Text>
-      </TouchableOpacity>
-      {isUploading && (
-        <View style={styles.uploadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text>Uploader...</Text>
-        </View>
-      )}
+    <View>
+      {projects.map((project) => (
+        <InfoPanel key={project.id} projectData={project} config={config} />
+      ))}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  image: {
-    width: 300,
-    height: 300,
-    borderRadius: 10,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: "#ccc",
-  },
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: "#007AFF",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  uploadingContainer: {
-    marginTop: 10,
+  centered: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
   },
 });
 
-export default InfoPanelProjectImage;
+export default InfoPanelProjects;
