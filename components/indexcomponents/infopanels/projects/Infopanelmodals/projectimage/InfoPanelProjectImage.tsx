@@ -13,22 +13,22 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
+import { FilePaths } from "@/utils/filePaths";
+import { projectImageConfig } from "@/constants/ImageConfig";
 
 const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
 
 interface InfoPanelProjectImageProps {
   projectId: string;
   userId: string;
-  category: string;
   onClose: () => void;
-  onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
+  onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure: (error: unknown) => void;
 }
 
 const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   projectId,
   userId,
-  category,
   onClose,
   onUploadSuccess,
   onUploadFailure,
@@ -38,7 +38,7 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   useEffect(() => {
     const fetchImage = async () => {
       try {
-        const imagePath = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`;
+        const imagePath = FilePaths.projectImage(userId, projectId);
         const imageRef = ref(storage, imagePath);
         const downloadURL = await getDownloadURL(imageRef);
         setImageURL(downloadURL);
@@ -56,32 +56,39 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.7,
+        quality: 1.0,
       });
 
       if (!result.canceled && result.assets.length > 0) {
         const selectedImageUri = result.assets[0].uri;
 
-        // Reducer og tilpas billedet
+        // Brug `projectImageConfig` til resizing og komprimering
         const resizedImage = await ImageManipulator.manipulateAsync(
           selectedImageUri,
-          [{ resize: { width: 300, height: 300 } }],
-          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+          [
+            {
+              resize: {
+                width: projectImageConfig.resizeWidth,
+                height: projectImageConfig.resizeHeight,
+              },
+            },
+          ],
+          {
+            compress: projectImageConfig.compress,
+            format: ImageManipulator.SaveFormat.JPEG,
+          }
         );
 
         const imageBlob = await (await fetch(resizedImage.uri)).blob();
-        const imagePath = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`;
+        const imagePath = FilePaths.projectImage(userId, projectId);
         const imageRef = ref(storage, imagePath);
 
         await uploadBytesResumable(imageRef, imageBlob);
 
         const downloadURL = await getDownloadURL(imageRef);
 
-        // Kald onUploadSuccess med URLs
-        onUploadSuccess({
-          lowRes: downloadURL, // Placeholder - opdater hvis lav opløsning implementeres
-          highRes: downloadURL,
-        });
+        // Kald `onUploadSuccess` med downloadURL
+        onUploadSuccess(downloadURL);
 
         setImageURL(downloadURL);
       } else {
@@ -90,7 +97,7 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
     } catch (error) {
       console.error("Fejl ved upload af billede:", error);
 
-      // Kald onUploadFailure med fejlen
+      // Kald `onUploadFailure` med fejlen
       onUploadFailure(error);
     }
   };

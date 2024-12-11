@@ -15,6 +15,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import { categoryImageConfig, Category } from "@/constants/ImageConfig";
+import { FilePaths } from "@/utils/filePaths";
 
 type SelectedImageUris = {
   lowRes: string;
@@ -24,7 +25,7 @@ type SelectedImageUris = {
 type CoverImageUploaderProps = {
   userId: string;
   projectId: string;
-  category: Category; // Brug den definerede Category type
+  category: Category;
   initialImageUris?: SelectedImageUris;
   onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -34,17 +35,19 @@ type CoverImageUploaderProps = {
 const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   userId,
   projectId,
-  category, // Modtag category som en prop
+  category,
   initialImageUris = null,
   onUploadSuccess,
   onUploadFailure,
   buttonLabel = "Vælg billede",
 }) => {
-  const [selectedImageUris, setSelectedImageUris] = useState<SelectedImageUris>(initialImageUris);
+  const [selectedImageUris, setSelectedImageUris] = useState<SelectedImageUris>(
+    initialImageUris
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  // Anmod om tilladelse til at få adgang til billedbiblioteket
+  // Anmod om tilladelse til billedbiblioteket
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -62,149 +65,99 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1], // Kvadratisk aspect ratio for alle kategorier
-        quality: 1.0, // Høj kvalitet før manipulation
+        quality: 1.0,
       });
 
-      // Håndter ImagePicker-resultatet
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedImage = result.assets[0].uri;
+      if (!result.canceled && result.assets.length > 0) {
+        const selectedImageUri = result.assets[0].uri;
 
-        // Reducer og resize billedet baseret på kategori
-        const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category];
+        const { lowRes, highRes } = categoryImageConfig[category]; // Hent konfiguration
 
-        // Generer low-res version
-        const lowResResult = await ImageManipulator.manipulateAsync(
-          selectedImage,
-          [{ resize: { width: resizeWidth, height: resizeHeight } }],
-          { compress: Math.min(compress, 0.9), format: ImageManipulator.SaveFormat.JPEG }
+        // Low-res billede
+        const lowResImage = await ImageManipulator.manipulateAsync(
+          selectedImageUri,
+          [{ resize: { width: lowRes.resizeWidth, height: lowRes.resizeHeight } }],
+          { compress: lowRes.compress, format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        // Generer high-res version (f.eks. 1024x1024)
-        const highResResult = await ImageManipulator.manipulateAsync(
-          selectedImage,
-          [{ resize: { width: 1024, height: 1024 } }],
-          { compress: 1.0, format: ImageManipulator.SaveFormat.JPEG }
+        // High-res billede
+        const highResImage = await ImageManipulator.manipulateAsync(
+          selectedImageUri,
+          [{ resize: { width: highRes?.resizeWidth, height: highRes?.resizeHeight } }],
+          { compress: highRes?.compress || 1.0, format: ImageManipulator.SaveFormat.JPEG }
         );
 
         setSelectedImageUris({
-          lowRes: lowResResult.uri,
-          highRes: highResResult.uri,
+          lowRes: lowResImage.uri,
+          highRes: highResImage.uri,
         });
+      } else {
+        Alert.alert("Info", "Billedvalg annulleret.");
       }
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Fejl ved valg af billede:", error);
       Alert.alert("Fejl", "Kunne ikke vælge billede. Prøv igen.");
-
-      // Håndter eventuel fejlhåndtering
-      if (onUploadFailure) {
-        onUploadFailure(error);
-      }
+      onUploadFailure?.(error);
     }
   };
 
-  const handleUploadImage = async () => {
-    if (!selectedImageUris) {
-      Alert.alert("Ingen billede valgt", "Vælg venligst et billede først.");
-      return;
-    }
-
+  const handleUploadImage = async (lowResUri: string, highResUri: string) => {
     setIsUploading(true);
     setUploadProgress(0);
-    console.log("Start upload af nyt billede");
 
     try {
-      const { lowRes, highRes } = selectedImageUris;
-
       // Upload low-res billede
-      const lowResBlob = await (await fetch(lowRes)).blob();
-      const lowResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+      const lowResBlob = await (await fetch(lowResUri)).blob();
+      const lowResPath = FilePaths.coverImage(userId, projectId, category, "LowRes");
       const lowResRef = ref(storage, lowResPath);
-      const lowResUploadTask = uploadBytesResumable(lowResRef, lowResBlob);
 
-      // Lyt til upload-status for low-res
+      const lowResUploadTask = uploadBytesResumable(lowResRef, lowResBlob);
       lowResUploadTask.on(
         "state_changed",
         (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress / 2); // 0-50% for low-res
-          console.log(`Low-res Upload progress: ${progress}%`);
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 50; // 0-50%
+          setUploadProgress(progress);
         },
-        (error: unknown) => {
-          // Håndter fejl
+        (error) => {
           console.error("Fejl under low-res upload:", error);
-          Alert.alert("Fejl", `Kunne ikke uploade low-res billedet: ${getErrorMessage(error)}`);
+          Alert.alert("Fejl", "Kunne ikke uploade low-res billedet.");
           setIsUploading(false);
-          if (onUploadFailure) {
-            onUploadFailure(error);
-          }
+          throw error;
         }
       );
 
       // Upload high-res billede
-      const highResBlob = await (await fetch(highRes)).blob();
-      const highResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
+      const highResBlob = await (await fetch(highResUri)).blob();
+      const highResPath = FilePaths.coverImage(userId, projectId, category, "HighRes");
       const highResRef = ref(storage, highResPath);
-      const highResUploadTask = uploadBytesResumable(highResRef, highResBlob);
 
-      // Lyt til upload-status for high-res
+      const highResUploadTask = uploadBytesResumable(highResRef, highResBlob);
       highResUploadTask.on(
         "state_changed",
         (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(50 + (progress / 2)); // 50-100% for high-res
-          console.log(`High-res Upload progress: ${progress}%`);
+          const progress = 50 + (snapshot.bytesTransferred / snapshot.totalBytes) * 50; // 50-100%
+          setUploadProgress(progress);
         },
-        (error: unknown) => {
-          // Håndter fejl
+        (error) => {
           console.error("Fejl under high-res upload:", error);
-          Alert.alert("Fejl", `Kunne ikke uploade high-res billedet: ${getErrorMessage(error)}`);
+          Alert.alert("Fejl", "Kunne ikke uploade high-res billedet.");
           setIsUploading(false);
-          if (onUploadFailure) {
-            onUploadFailure(error);
-          }
+          throw error;
         },
         async () => {
-          // High-res upload completed successfully, get download URLs
           const lowResURL = await getDownloadURL(lowResRef);
           const highResURL = await getDownloadURL(highResRef);
-          console.log("Download URL'er hentet:", lowResURL, highResURL);
-
-          // Afslutning af upload-processen uden at gemme URL'erne i Firestore
-          console.log("Nye billeder uploadet til Storage");
-          Alert.alert("Succes", "Billederne er blevet uploadet.");
-          setSelectedImageUris(null);
-          setIsUploading(false);
           onUploadSuccess({ lowRes: lowResURL, highRes: highResURL });
+          setIsUploading(false);
+          Alert.alert("Succes", "Billederne blev uploadet.");
         }
       );
-
-      // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
-      setTimeout(() => {
-        if (isUploading) {
-          console.log("Upload-processen tager for lang tid. Afbryder...");
-          lowResUploadTask.cancel();
-          highResUploadTask.cancel();
-          Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
-          setIsUploading(false);
-        }
-      }, 60000); // 60 sekunder timeout
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Fejl ved upload af billeder:", error);
-      Alert.alert("Fejl", `Kunne ikke uploade billederne: ${getErrorMessage(error)}`);
+      Alert.alert("Fejl", "Kunne ikke uploade billederne.");
+      onUploadFailure?.(error);
       setIsUploading(false);
-      if (onUploadFailure) {
-        onUploadFailure(error);
-      }
     }
-  };
-
-  // Hjælpefunktion til at få fejlnavne
-  const getErrorMessage = (error: unknown): string => {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return String(error);
   };
 
   return (
@@ -223,7 +176,12 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       </Pressable>
 
       {selectedImageUris && !isUploading && (
-        <Pressable style={styles.uploadButton} onPress={handleUploadImage}>
+        <Pressable
+          style={styles.uploadButton}
+          onPress={() =>
+            handleUploadImage(selectedImageUris.lowRes, selectedImageUris.highRes)
+          }
+        >
           <Text style={styles.uploadButtonText}>Upload billeder</Text>
         </Pressable>
       )}
