@@ -19,13 +19,19 @@ const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
 interface InfoPanelProjectImageProps {
   projectId: string;
   userId: string;
+  category: string;
   onClose: () => void;
+  onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
+  onUploadFailure: (error: unknown) => void;
 }
 
 const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   projectId,
   userId,
+  category,
   onClose,
+  onUploadSuccess,
+  onUploadFailure,
 }) => {
   const [imageURL, setImageURL] = useState<string | null>(null);
 
@@ -70,12 +76,22 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
         await uploadBytesResumable(imageRef, imageBlob);
 
         const downloadURL = await getDownloadURL(imageRef);
+
+        // Kald onUploadSuccess med URLs
+        onUploadSuccess({
+          lowRes: downloadURL, // Placeholder - opdater hvis lav opløsning implementeres
+          highRes: downloadURL,
+        });
+
         setImageURL(downloadURL);
       } else {
         Alert.alert("Info", "Billedvalg annulleret.");
       }
     } catch (error) {
       console.error("Fejl ved upload af billede:", error);
+
+      // Kald onUploadFailure med fejlen
+      onUploadFailure(error);
     }
   };
 
