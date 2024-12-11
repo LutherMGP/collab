@@ -151,9 +151,19 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     marginBottom: 20,
+    elevation: 4, // Tilføjer skygge for bedre synlighed
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   pdfContainer: {
     marginTop: 20,
+    elevation: 4, // Tilføjer skygge for bedre synlighed
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   image: {
     width: 250,
@@ -173,6 +183,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     borderRadius: 10,
     alignItems: "center",
+    elevation: 4, // Tilføjer skygge for bedre synlighed
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   closeButtonText: {
     color: "white",
