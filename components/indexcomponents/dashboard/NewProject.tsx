@@ -119,9 +119,6 @@ const NewProject: React.FC = () => {
             case "f2CoverImageHighRes.jpg":
               localAsset = require("@/assets/default/f2CoverImageHighRes.jpg");
               break;
-            case "defaultImage.jpeg":
-              localAsset = require("@/assets/default/defaultImage.jpg");
-              break;
             default:
               console.warn(`Ukendt billedfil: ${filename}`);
               continue;
