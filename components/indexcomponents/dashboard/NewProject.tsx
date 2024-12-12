@@ -18,6 +18,7 @@ import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { Asset } from "expo-asset";
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
@@ -27,6 +28,28 @@ const NewProject: React.FC = () => {
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
+  /**
+   * Funktion til at uploade en fil til Firebase Storage
+   * @param localFilePath - Den lokale URI for filen
+   * @param destinationPath - Destinationstien i Firebase Storage
+   */
+  const uploadFileToStorage = async (localFilePath: string, destinationPath: string) => {
+    try {
+      const fileResponse = await fetch(localFilePath);
+      const fileBlob = await fileResponse.blob();
+      const destinationRef = ref(storage, destinationPath);
+
+      await uploadBytes(destinationRef, fileBlob);
+      console.log(`${destinationPath} kopieret til Firebase Storage.`);
+    } catch (error) {
+      console.error(`Fejl ved upload af ${destinationPath}:`, error);
+      throw new Error(`Kunne ikke uploade filen: ${destinationPath}`);
+    }
+  };
+
+  /**
+   * Funktion til at håndtere oprettelse af et nyt projekt
+   */
   const handleCreateProject = async () => {
     if (!user) {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
@@ -44,26 +67,68 @@ const NewProject: React.FC = () => {
       const projectRef = doc(collection(database, "users", user, "projects"));
       console.log("Opretter nyt projekt med ID:", projectRef.id);
 
-      // Definer stierne
-      const sourceImagePath = `users/${user}/profileimage/profileImage.jpg`;
-      const destinationImagePath = `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`;
+      // Definer filer og deres destinationer
+      const filesToUpload = [
+        {
+          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f8/f8PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8PDF.pdf`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5PDF.pdf`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3PDF.pdf`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
+        },
+      ];
 
-      const sourceImageRef = ref(storage, sourceImagePath);
-      const destinationImageRef = ref(storage, destinationImagePath);
+      // Hent og upload hver fil
+      for (const file of filesToUpload) {
+        await file.asset.downloadAsync();
+        if (!file.asset.localUri) {
+          throw new Error(`Filen ${file.destinationPath} kunne ikke findes.`);
+        }
+        await uploadFileToStorage(file.asset.localUri, file.destinationPath);
+      }
 
-      // Hent download URL for source image
-      const sourceImageUrl = await getDownloadURL(sourceImageRef);
-      console.log("Henter kildebillede fra:", sourceImageUrl);
-
-      // Hent blob fra kildebillede
-      const response = await fetch(sourceImageUrl);
-      const blob = await response.blob();
-
-      // Upload blob til destination path
-      await uploadBytes(destinationImageRef, blob);
-      console.log("Projektbillede kopieret til:", destinationImagePath);
-
-      // Projektdata uden projectImage URL
+      // Projektdata
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -71,7 +136,6 @@ const NewProject: React.FC = () => {
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
-        // projectImage feltet er udeladt for at undgå redundans
       };
 
       console.log("Gemmer projektdata i Firestore:", projectData);
@@ -95,7 +159,7 @@ const NewProject: React.FC = () => {
         source={
           profileImage
             ? { uri: profileImage }
-            : require("@/assets/images/blomst.webp")
+            : require("@/assets/default/profileimage/profileImage.jpg")
         }
         style={styles.profileImg}
         contentFit="cover"
