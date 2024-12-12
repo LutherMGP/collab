@@ -21,23 +21,6 @@ import { Image } from "expo-image";
 import { FilePaths } from "@/utils/filePaths";
 import { Category } from "@/constants/ImageConfig";
 
-const uploadAssetToStorage = async (asset: any, storagePath: string) => {
-  try {
-    console.log(`Forsøger at uploade asset til: ${storagePath}`);
-
-    // Hent asset som Blob
-    const response = await fetch(asset);
-    const fileBlob = await response.blob();
-
-    const storageRef = ref(storage, storagePath);
-    await uploadBytes(storageRef, fileBlob);
-    console.log(`Asset uploadet til: ${storagePath}`);
-  } catch (error) {
-    console.error("Fejl ved upload af asset:", error);
-    throw new Error(`Upload fejlede for: ${storagePath}`);
-  }
-};
-
 const NewProject: React.FC = () => {
   const { user } = useAuth();
   const { profileImage } = useVisibility();
@@ -63,13 +46,24 @@ const NewProject: React.FC = () => {
       const projectRef = doc(collection(database, "users", user, "projects"));
       console.log("Opretter nyt projekt med ID:", projectRef.id);
 
+      // Funktion til at uploade filer
+      const uploadFileToStorage = async (
+        localPath: string,
+        storagePath: string
+      ) => {
+        const fileBlob = await fetch(localPath).then((res) => res.blob());
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, fileBlob);
+        console.log(`Fil uploadet til: ${storagePath}`);
+      };
+
       // Stier for standardfiler
       const defaultImagePath = require("@/assets/default/default_image.jpeg");
       const defaultPdfPath = require("@/assets/default/default_pdf.pdf");
 
       // Upload projektbillede
       const projectImagePath = FilePaths.projectImage(user, projectRef.id);
-      await uploadAssetToStorage(defaultImagePath, projectImagePath);
+      await uploadFileToStorage(defaultImagePath, projectImagePath);
 
       // Upload kategoribilleder og PDF'er
       const validCategories: Exclude<Category, "attachments">[] = ["f8", "f5", "f3", "f2"];
@@ -88,25 +82,14 @@ const NewProject: React.FC = () => {
         );
         const pdfPath = FilePaths.pdf(user, projectRef.id, category);
 
-        await uploadAssetToStorage(defaultImagePath, coverImagePathLowRes);
-        await uploadAssetToStorage(defaultImagePath, coverImagePathHighRes);
-        await uploadAssetToStorage(defaultPdfPath, pdfPath);
+        await uploadFileToStorage(defaultImagePath, coverImagePathLowRes);
+        await uploadFileToStorage(defaultImagePath, coverImagePathHighRes);
+        await uploadFileToStorage(defaultPdfPath, pdfPath);
       }
 
-      // Upload attachments
-      const attachmentsImagePath = FilePaths.attachmentsFolder(
-        user,
-        projectRef.id,
-        "images"
-      );
-      const attachmentsPdfPath = FilePaths.attachmentsFolder(
-        user,
-        projectRef.id,
-        "pdf"
-      );
-
-      await uploadAssetToStorage(defaultImagePath, `${attachmentsImagePath}defaultImage.jpeg`);
-      await uploadAssetToStorage(defaultPdfPath, `${attachmentsPdfPath}defaultpdf.pdf`);
+      // Upload attachments mappen
+      const attachmentsImagePath = FilePaths.attachmentsFolder(user, projectRef.id, "images");
+      await uploadFileToStorage(defaultImagePath, `${attachmentsImagePath}/defaultImage.jpg`);
 
       // Gem projektdata i Firestore
       const projectData = {
@@ -139,7 +122,7 @@ const NewProject: React.FC = () => {
         source={
           profileImage
             ? { uri: profileImage }
-            : require("@/assets/default/default_image.jpeg")
+            : require("@/assets/default/default_image.jpg")
         }
         style={styles.profileImg}
         contentFit="cover"
