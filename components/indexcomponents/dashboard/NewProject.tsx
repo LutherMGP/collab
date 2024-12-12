@@ -117,6 +117,18 @@ const NewProject: React.FC = () => {
           asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
           destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
         },
+        {
+          asset: Asset.fromModule(require("@/assets/default/attachment/images/attachmentImage.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/attachment/images/attachmentImage.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/attachment/pdf/attachmentPDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/attachment/pdf/attachmentPDF.pdf`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/projectimage/projectImage.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`,
+        },
       ];
 
       // Hent og upload hver fil
