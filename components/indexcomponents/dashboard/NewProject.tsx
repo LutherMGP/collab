@@ -18,6 +18,24 @@ import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { Asset } from "expo-asset";
+
+// Definér skemaet her eller importér det fra en separat fil
+interface FileSchema {
+  filename: string;
+  type: string;
+  parameters: {
+    width?: number;
+    height?: number;
+    compression?: number;
+  };
+  path: string;
+}
+
+const schema: FileSchema[] = [
+  // (Indsæt det opdaterede skema her fra ovenstående)
+  // ... [Skema som tidligere defineret]
+];
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
@@ -27,6 +45,113 @@ const NewProject: React.FC = () => {
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
+  /**
+   * Upload en fil til Firebase Storage.
+   */
+  const uploadFileToStorage = async (localAsset: any, destinationPath: string) => {
+    try {
+      // Download asset for at sikre, at den er tilgængelig lokalt
+      await Asset.fromModule(localAsset).downloadAsync();
+
+      // Få URI til den lokale fil
+      const uri = Asset.fromModule(localAsset).localUri;
+
+      if (!uri) {
+        throw new Error(`Ingen URI fundet for asset: ${destinationPath}`);
+      }
+
+      // Hent blob fra URI
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      // Reference til destination path i Firebase Storage
+      const storageRef = ref(storage, destinationPath);
+
+      // Upload blob til Firebase Storage
+      await uploadBytes(storageRef, blob);
+
+      console.log(`Fil uploadet til: ${destinationPath}`);
+    } catch (error) {
+      console.error(`Fejl ved upload af fil til ${destinationPath}:`, error);
+      throw error;
+    }
+  };
+
+  /**
+   * Upload alle filer i skemaet til Firebase Storage.
+   */
+  const uploadAllFiles = async (schema: FileSchema[], userId: string, projectId: string) => {
+    for (const file of schema) {
+      const { filename, type, path } = file;
+      const destinationPath = path.replace("{userId}", userId).replace("{projectId}", projectId) + filename;
+
+      try {
+        // Bestem kildefilen baseret på filtypen
+        let localAsset;
+
+        if (type.startsWith("Billede")) {
+          // For billeder, antag at de findes i @/assets/default/
+          switch (filename) {
+            case "projectImage.jpg":
+              // projectImage er kopieret fra profilbilledet, så vi kan springe det over
+              continue;
+            case "f8CoverImageLowRes.jpg":
+              localAsset = require("@/assets/default/f8CoverImageLowRes.jpg");
+              break;
+            case "f8CoverImageHighRes.jpg":
+              localAsset = require("@/assets/default/f8CoverImageHighRes.jpg");
+              break;
+            case "f5CoverImageLowRes.jpg":
+              localAsset = require("@/assets/default/f5CoverImageLowRes.jpg");
+              break;
+            case "f5CoverImageHighRes.jpg":
+              localAsset = require("@/assets/default/f5CoverImageHighRes.jpg");
+              break;
+            case "f3CoverImageLowRes.jpg":
+              localAsset = require("@/assets/default/f3CoverImageLowRes.jpg");
+              break;
+            case "f3CoverImageHighRes.jpg":
+              localAsset = require("@/assets/default/f3CoverImageHighRes.jpg");
+              break;
+            case "f2CoverImageLowRes.jpg":
+              localAsset = require("@/assets/default/f2CoverImageLowRes.jpg");
+              break;
+            case "f2CoverImageHighRes.jpg":
+              localAsset = require("@/assets/default/f2CoverImageHighRes.jpg");
+              break;
+            case "defaultImage.jpeg":
+              localAsset = require("@/assets/default/defaultImage.jpg");
+              break;
+            default:
+              console.warn(`Ukendt billedfil: ${filename}`);
+              continue;
+          }
+        } else if (type.startsWith("Dokument")) {
+          // For dokumenter, antag at de findes i @/assets/default/
+          switch (filename) {
+            case "defaultpdf.pdf":
+              localAsset = require("@/assets/default/defaultpdf.pdf");
+              break;
+            default:
+              console.warn(`Ukendt dokumentfil: ${filename}`);
+              continue;
+          }
+        } else {
+          console.warn(`Ukendt filtype: ${type} for fil: ${filename}`);
+          continue;
+        }
+
+        // Upload fil til destination path
+        await uploadFileToStorage(localAsset, destinationPath);
+      } catch (error) {
+        console.error(`Fejl ved upload af fil: ${filename}`, error);
+      }
+    }
+  };
+
+  /**
+   * Håndter oprettelse af nyt projekt.
+   */
   const handleCreateProject = async () => {
     if (!user) {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
@@ -77,6 +202,9 @@ const NewProject: React.FC = () => {
       console.log("Gemmer projektdata i Firestore:", projectData);
       await setDoc(projectRef, projectData);
 
+      // Upload alle øvrige filer fra skemaet
+      await uploadAllFiles(schema, user, projectRef.id);
+
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
@@ -95,7 +223,7 @@ const NewProject: React.FC = () => {
         source={
           profileImage
             ? { uri: profileImage }
-            : require("@/assets/images/blomst.webp")
+            : require("@/assets/default/defaultImage.jpg") // Sørg for, at stien er korrekt uden 'attachments/'
         }
         style={styles.profileImg}
         contentFit="cover"
