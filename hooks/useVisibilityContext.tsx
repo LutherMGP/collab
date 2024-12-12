@@ -12,6 +12,8 @@ type VisibilityContextType = {
   isInfoPanelDevelopmentVisible: boolean;
   isInfoPanelApplicationsUdVisible: boolean;
   isInfoPanelApplicationsIndVisible: boolean;
+  profileImage: string | null; // Tilføjet profileImage
+  setProfileImage: (url: string | null) => void; // Tilføjet metode til opdatering
   showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
 };
@@ -26,6 +28,8 @@ const VisibilityContext = createContext<VisibilityContextType>({
   isInfoPanelDevelopmentVisible: false,
   isInfoPanelApplicationsUdVisible: false,
   isInfoPanelApplicationsIndVisible: false,
+  profileImage: null, // Default værdi
+  setProfileImage: () => {}, // Dummy-funktion
   showPanel: () => {},
   hideAllPanels: () => {},
 });
@@ -50,6 +54,7 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
     useState(false);
   const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] =
     useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null); // Tilføjet state til profileImage
 
   const showPanel = (panelName: string) => {
     hideAllPanels();
@@ -107,6 +112,8 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
         isInfoPanelDevelopmentVisible,
         isInfoPanelApplicationsUdVisible,
         isInfoPanelApplicationsIndVisible,
+        profileImage, // Tilføjet profileImage
+        setProfileImage, // Tilføjet metode til opdatering
         showPanel,
         hideAllPanels,
       }}

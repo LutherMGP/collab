@@ -2,14 +2,15 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "baseUrl": ".", // Tilføj denne linje for at sætte baseUrl til projektets rod
+    "baseUrl": ".", // Base sti til projektets rod
     "paths": {
       "@/components/*": ["components/*"],
       "@/hooks/*": ["hooks/*"],
       "@/constants/*": ["constants/*"],
       "@/firebaseConfig": ["firebaseConfig.ts"],
       "@/types/*": ["types/*"],
-      "@/utils/*": ["utils/*"] 
+      "@/utils/*": ["utils/*"],
+      "@/assets/*": ["assets/*"] // Tilføj denne linje
     }
   },
   "include": [

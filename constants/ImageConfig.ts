@@ -4,7 +4,7 @@ import { Dimensions } from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-export type Category = "f8" | "f5" | "f3" | "f2";
+export type Category = "f8" | "f5" | "f3" | "f2" | "attachments";
 
 interface ImageConfig {
   resizeWidth: number;
@@ -70,6 +70,18 @@ export const categoryImageConfig: Record<Category, ImageConfigFull> = {
       resizeWidth: (2 / 4) * screenWidth,
       resizeHeight: (2 / 4) * screenWidth,
       compress: 0.9,
+    },
+  },
+  attachments: {
+    lowRes: {
+      resizeWidth: screenWidth / 2,
+      resizeHeight: screenWidth / 2,
+      compress: 0.5,
+    },
+    highRes: {
+      resizeWidth: screenWidth,
+      resizeHeight: screenWidth,
+      compress: 0.8,
     },
   },
 };

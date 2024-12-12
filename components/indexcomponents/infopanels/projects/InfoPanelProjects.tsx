@@ -7,6 +7,7 @@ import {
   query,
   where,
   onSnapshot,
+  getDocs,
   CollectionReference,
   DocumentData,
 } from "firebase/firestore";
@@ -86,50 +87,71 @@ const InfoPanelProjects = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
-
-    const userProjectsCollection = collection(
-      database,
-      "users",
-      user,
-      "projects"
-    ) as CollectionReference<DocumentData>;
-
-    const q = query(userProjectsCollection, where("status", "==", "Project"));
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty) {
-        setProjects([]);
-        setError("Ingen projekter fundet.");
-        setIsLoading(false);
-        return;
-      }
-
-      const projectsWithUrls = await Promise.all(
-        snapshot.docs.map(async (doc) => {
-          const data = doc.data();
-
-          // Hent dynamiske URL'er ved hjælp af FilePaths
-          const dynamicUrls = await fetchProjectDataWithUrls(user, doc.id);
-
-          return {
-            id: doc.id,
-            name: data.name || "Uden navn",
-            description: data.description || "Ingen kommentar",
-            status: data.status || "Project",
-            price: data.price ?? undefined,
-            ...dynamicUrls, // Tilføj dynamiske URL'er
-            userId: user,
-          };
-        })
-      );
-
-      setProjects(projectsWithUrls as ProjectData[]);
+    if (!user) {
+      console.warn("Ingen bruger fundet. Afbryder processen.");
+      return;
+    }
+  
+    const fetchProjects = async () => {
+      console.log("Starter med at hente projekter med status: 'Project'.");
+      setIsLoading(true);
       setError(null);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+  
+      try {
+        const userProjectsCollection = collection(
+          database,
+          "users",
+          user,
+          "projects"
+        ) as CollectionReference<DocumentData>;
+  
+        const q = query(userProjectsCollection, where("status", "==", "Project"));
+  
+        const snapshot = await getDocs(q); // Brug getDocs til én forespørgsel
+        console.log("Snapshot hentet. Antal dokumenter:", snapshot.docs.length);
+  
+        if (snapshot.empty) {
+          console.warn("Ingen projekter fundet med status: 'Project'.");
+          setProjects([]);
+          setError("Ingen projekter fundet.");
+          setIsLoading(false);
+          return;
+        }
+  
+        // Mapper basisdata for projekterne
+        const basicProjects = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          userId: user,
+        }));
+        console.log("Basisprojekter fundet:", basicProjects);
+  
+        setProjects(basicProjects); // Gem basisprojekter i state
+        setIsLoading(false);
+  
+        // Trin 2: Hent dynamiske URL'er for hvert projekt
+        console.log("Starter med at hente dynamiske URL'er for projekter.");
+        const projectsWithUrls = await Promise.all(
+          basicProjects.map(async (project) => {
+            console.log(`Henter URL'er for projekt: ${project.id}`);
+            const dynamicUrls = await fetchProjectDataWithUrls(user, project.id);
+            console.log(`URL'er hentet for projekt: ${project.id}`, dynamicUrls);
+            return { ...project, ...dynamicUrls }; // Tilføj dynamiske URL'er til projektdata
+          })
+        );
+  
+        console.log("Alle dynamiske URL'er hentet for projekter:", projectsWithUrls);
+        setProjects(projectsWithUrls); // Opdater med komplette data
+      } catch (error) {
+        console.error("Fejl under hentning af projekter:", error);
+        setError("Der opstod en fejl. Prøv igen senere.");
+      } finally {
+        setIsLoading(false);
+        console.log("Projekt-hentning afsluttet.");
+      }
+    };
+  
+    fetchProjects();
   }, [user]);
 
   if (isLoading) {

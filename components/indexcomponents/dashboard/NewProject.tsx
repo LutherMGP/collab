@@ -14,10 +14,12 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, collection, setDoc } from "firebase/firestore";
-import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { FilePaths } from "@/utils/filePaths";
+import { Category } from "@/constants/ImageConfig";
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
@@ -44,26 +46,52 @@ const NewProject: React.FC = () => {
       const projectRef = doc(collection(database, "users", user, "projects"));
       console.log("Opretter nyt projekt med ID:", projectRef.id);
 
-      // Definer stierne
-      const sourceImagePath = `users/${user}/profileimage/profileImage.jpg`;
-      const destinationImagePath = `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`;
+      // Funktion til at uploade filer
+      const uploadFileToStorage = async (
+        localPath: string,
+        storagePath: string
+      ) => {
+        const fileBlob = await fetch(localPath).then((res) => res.blob());
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, fileBlob);
+        console.log(`Fil uploadet til: ${storagePath}`);
+      };
 
-      const sourceImageRef = ref(storage, sourceImagePath);
-      const destinationImageRef = ref(storage, destinationImagePath);
+      // Stier for standardfiler
+      const defaultImagePath = require("@/assets/default/default_image.jpg");
+      const defaultPdfPath = require("@/assets/default/default_pdf.pdf");
 
-      // Hent download URL for source image
-      const sourceImageUrl = await getDownloadURL(sourceImageRef);
-      console.log("Henter kildebillede fra:", sourceImageUrl);
+      // Upload projektbillede
+      const projectImagePath = FilePaths.projectImage(user, projectRef.id);
+      await uploadFileToStorage(defaultImagePath, projectImagePath);
 
-      // Hent blob fra kildebillede
-      const response = await fetch(sourceImageUrl);
-      const blob = await response.blob();
+      // Upload kategoribilleder og PDF'er
+      const validCategories: Exclude<Category, "attachments">[] = ["f8", "f5", "f3", "f2"];
+      for (const category of validCategories) {
+        const coverImagePathLowRes = FilePaths.coverImage(
+          user,
+          projectRef.id,
+          category,
+          "LowRes"
+        );
+        const coverImagePathHighRes = FilePaths.coverImage(
+          user,
+          projectRef.id,
+          category,
+          "HighRes"
+        );
+        const pdfPath = FilePaths.pdf(user, projectRef.id, category);
 
-      // Upload blob til destination path
-      await uploadBytes(destinationImageRef, blob);
-      console.log("Projektbillede kopieret til:", destinationImagePath);
+        await uploadFileToStorage(defaultImagePath, coverImagePathLowRes);
+        await uploadFileToStorage(defaultImagePath, coverImagePathHighRes);
+        await uploadFileToStorage(defaultPdfPath, pdfPath);
+      }
 
-      // Projektdata uden projectImage URL
+      // Upload attachments mappen
+      const attachmentsImagePath = FilePaths.attachmentsFolder(user, projectRef.id, "images");
+      await uploadFileToStorage(defaultImagePath, `${attachmentsImagePath}/defaultImage.jpg`);
+
+      // Gem projektdata i Firestore
       const projectData = {
         id: projectRef.id,
         name: name.trim(),
@@ -71,7 +99,6 @@ const NewProject: React.FC = () => {
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
-        // projectImage feltet er udeladt for at undgå redundans
       };
 
       console.log("Gemmer projektdata i Firestore:", projectData);
@@ -95,7 +122,7 @@ const NewProject: React.FC = () => {
         source={
           profileImage
             ? { uri: profileImage }
-            : require("@/assets/images/blomst.webp")
+            : require("@/assets/default/default_image.jpg")
         }
         style={styles.profileImg}
         contentFit="cover"
