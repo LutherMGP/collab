@@ -81,6 +81,42 @@ const NewProject: React.FC = () => {
           asset: Asset.fromModule(require("@/assets/default/f8/f8PDF.pdf")),
           destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8PDF.pdf`,
         },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5PDF.pdf`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3PDF.pdf`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageHighRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageLowRes.jpg`,
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
+        },
       ];
 
       // Hent og upload hver fil
