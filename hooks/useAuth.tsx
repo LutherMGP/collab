@@ -38,13 +38,11 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Hjælpefunktion til at håndtere brugerroller
+// Hjælpefunktion til roller
 export const useRole = () => {
   const { userRole } = useAuth();
-
   const isDesigner = userRole === "Designer";
   const isAdmin = userRole === "Admin";
-
   return { isDesigner, isAdmin };
 };
 
@@ -54,23 +52,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkStoredUser = async () => {
-      const storedUserId = await SecureStore.getItemAsync("userId");
+    let isMounted = true; // For at undgå race conditions
 
-      if (storedUserId) {
-        setUser(storedUserId);
-        const userDoc = await getDoc(doc(database, "users", storedUserId));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
-          router.replace("/(app)/(tabs)");
+    const checkStoredUser = async () => {
+      try {
+        const storedUserId = await SecureStore.getItemAsync("userId");
+
+        if (storedUserId && isMounted) {
+          setUser(storedUserId);
+
+          const userDoc = await getDoc(doc(database, "users", storedUserId));
+          if (userDoc.exists()) {
+            setUserRole(userDoc.data().role || "Bruger");
+            router.replace("/(app)/(tabs)");
+          }
+        } else {
+          router.replace("/(app)/(auth)/login");
         }
-      } else {
-        router.replace("/(app)/(auth)/login");
+      } catch (error) {
+        console.error("Fejl ved kontrol af gemt bruger:", error);
       }
     };
 
     checkStoredUser();
-  }, []);
+
+    return () => {
+      isMounted = false; // Forhindrer opdatering, hvis komponenten unmountes
+    };
+  }, [router]);
 
   const signInWithApple = async () => {
     try {
@@ -125,9 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserProfile = async (userId: string, profileData: any) => {
     try {
-      await setDoc(doc(database, "users", userId), profileData, {
-        merge: true,
-      });
+      await setDoc(doc(database, "users", userId), profileData, { merge: true });
       console.log("Brugeroplysninger opdateret!");
     } catch (error) {
       console.error("Fejl ved opdatering af brugeroplysninger:", error);

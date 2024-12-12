@@ -1,6 +1,6 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import {
   collection,
@@ -37,6 +37,7 @@ type ProjectData = {
   f2CoverImageLowRes?: string;
   f2CoverImageHighRes?: string;
   f2PDF?: string;
+  projectImage?: string;
   userId?: string;
 };
 
@@ -47,46 +48,27 @@ const InfoPanelProjects = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  const config = {
-    showFavorite: false,
-    showPurchase: true,
-    showDelete: true,
-    showEdit: true,
-    showSnit: true,
-    showGuide: true,
-  };
+  const fetchedProjects = useRef(new Set<string>()); // Track allerede hentede projekter
 
-  // Funktion til dynamisk at hente URL'er
-  const fetchProjectDataWithUrls = async (
-    userId: string,
-    projectId: string
-  ): Promise<Partial<ProjectData>> => {
-    const categories: ("f8" | "f5" | "f3" | "f2")[] = ["f8", "f5", "f3", "f2"];
-    const projectData: Partial<ProjectData> = {};
-
-    for (const category of categories) {
-      try {
-        const lowResPath = FilePaths.coverImage(userId, projectId, category, "LowRes");
-        const highResPath = FilePaths.coverImage(userId, projectId, category, "HighRes");
-        const pdfPath = FilePaths.pdf(userId, projectId, category);
-
-        const lowResRef = ref(storage, lowResPath);
-        const highResRef = ref(storage, highResPath);
-        const pdfRef = ref(storage, pdfPath);
-
-        projectData[`${category}CoverImageLowRes`] = await getDownloadURL(lowResRef);
-        projectData[`${category}CoverImageHighRes`] = await getDownloadURL(highResRef);
-        projectData[`${category}PDF`] = await getDownloadURL(pdfRef);
-      } catch (error) {
-        console.warn(`Fejl ved hentning af data for kategori ${category}:`, error);
-      }
-    }
-
-    return projectData;
-  };
+  const config = useMemo(
+    () => ({
+      showFavorite: false,
+      showPurchase: true,
+      showDelete: true,
+      showEdit: true,
+      showSnit: true,
+      showGuide: true,
+    }),
+    []
+  );
 
   useEffect(() => {
-    if (!user) return;
+    console.log("useEffect kører for InfoPanelProjects", { user, projects });
+
+    if (!user) {
+      console.warn("Ingen bruger fundet.");
+      return;
+    }
 
     const userProjectsCollection = collection(
       database,
@@ -98,39 +80,42 @@ const InfoPanelProjects = () => {
     const q = query(userProjectsCollection, where("status", "==", "Project"));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty) {
-        setProjects([]);
-        setError("Ingen projekter fundet.");
-        setIsLoading(false);
-        return;
-      }
+      console.log("Snapshot modtaget:", snapshot.docs.length);
 
-      const projectsWithUrls = await Promise.all(
-        snapshot.docs.map(async (doc) => {
+      const newProjects: ProjectData[] = [];
+      for (const doc of snapshot.docs) {
+        if (!fetchedProjects.current.has(doc.id)) {
+          console.log("Henter projekt med ID:", doc.id);
+          fetchedProjects.current.add(doc.id);
+
           const data = doc.data();
-
-          // Hent dynamiske URL'er ved hjælp af FilePaths
-          const dynamicUrls = await fetchProjectDataWithUrls(user, doc.id);
-
-          return {
+          newProjects.push({
             id: doc.id,
             name: data.name || "Uden navn",
             description: data.description || "Ingen kommentar",
             status: data.status || "Project",
             price: data.price ?? undefined,
-            ...dynamicUrls, // Tilføj dynamiske URL'er
-            userId: user,
-          };
-        })
-      );
+          });
+        }
+      }
 
-      setProjects(projectsWithUrls as ProjectData[]);
+      if (newProjects.length > 0) {
+        setProjects((prevProjects) => {
+          const updatedProjects = [...prevProjects, ...newProjects];
+          console.log("Opdaterer projekter:", updatedProjects.length);
+          return updatedProjects;
+        });
+      }
+
       setError(null);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => {
+      console.log("useEffect bliver ryddet op");
+      unsubscribe();
+    };
+  }, [user]); // Sørg for kun at inkludere nødvendige afhængigheder
 
   if (isLoading) {
     return (
@@ -143,7 +128,11 @@ const InfoPanelProjects = () => {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: Colors[theme].text }}>{error}</Text>
+        <Text style={{ color: Colors[theme].danger }}>
+          {error === "Ingen projekter fundet."
+            ? "Der er ingen projekter at vise."
+            : "Noget gik galt. Prøv igen senere."}
+        </Text>
       </View>
     );
   }

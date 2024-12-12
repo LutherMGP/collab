@@ -402,34 +402,23 @@ const InfoPanel = ({
     setIsAttachmentModalVisible(false);
   };
 
-  // Function to update project data after changes
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
-
+  
     setIsLoading(true);
-
+  
     try {
-      // Fetch data from Firestore
+      // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
         const data = snapshot.data();
         setProjectData((prev) => ({
           ...prev,
-          name: data.name || "",
-          description: data.description || "",
+          name: data.name || prev.name || "",
+          description: data.description || prev.description || "",
           status: data.status || prev.status || "",
-          price: data.price || prev.price || 0,
-          ...categories.reduce((acc, category) => {
-            const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
-            const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
-            const keyPDF = `${category}PDF` as keyof ProjectData;
-
-            acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
-            acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
-            acc[keyPDF] = data[category]?.PDF || prev[keyPDF] || null;
-            return acc;
-          }, {} as Partial<ProjectData>),
+          price: data.price ?? prev.price, // Behold eksisterende pris, hvis den ikke ændres
         }));
       }
     } catch (error) {
