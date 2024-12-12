@@ -1,17 +1,18 @@
-// @/components/newuser/EnsureProfileImage.tsx
-
 import { useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Asset } from "expo-asset";
 import * as ImageManipulator from "expo-image-manipulator";
 import { database, storage } from "@/firebaseConfig";
+import { useVisibility } from "@/hooks/useVisibilityContext";
 
 type EnsureProfileImageProps = {
   userId: string;
 };
 
 const EnsureProfileImage: React.FC<EnsureProfileImageProps> = ({ userId }) => {
+  const { setProfileImage } = useVisibility(); // Hent context-metoden
+
   useEffect(() => {
     const handleProfileImage = async () => {
       try {
@@ -19,8 +20,10 @@ const EnsureProfileImage: React.FC<EnsureProfileImageProps> = ({ userId }) => {
         const userDocRef = doc(database, "users", userId);
         const userDoc = await getDoc(userDocRef);
 
-        if (userDoc.exists() && userDoc.data().profileImage) {
-          console.log("Bruger har allerede et profilbillede.");
+        if (userDoc.exists() && userDoc.data().profileImageUrl) {
+          const existingUrl = userDoc.data().profileImageUrl;
+          console.log("Profilbillede findes allerede:", existingUrl);
+          setProfileImage(existingUrl); // Opdater context
           return;
         }
 
@@ -37,28 +40,34 @@ const EnsureProfileImage: React.FC<EnsureProfileImageProps> = ({ userId }) => {
         );
 
         // Upload billedet til Firebase Storage
-        const imageRef = ref(storage, `users/${userId}/profileimage/profileImage.jpg`);
+        const imageRef = ref(storage, `users/${userId}/profileimage/profileImage.jpeg`);
         const response = await fetch(manipResult.uri);
         const blob = await response.blob();
         await uploadBytes(imageRef, blob);
 
-        // Opdater Firestore uden URL
+        // Hent download-URL
+        const downloadUrl = await getDownloadURL(imageRef);
+
+        // Opdater Firestore med URL'en
         await setDoc(
           userDocRef,
-          { profileImage: true }, // Indiker kun, at billedet er sat
+          { profileImageUrl: downloadUrl }, // Gem URL
           { merge: true }
         );
 
-        console.log("Standardbillede uploadet.");
+        // Opdater context
+        setProfileImage(downloadUrl);
+
+        console.log("Standardbillede uploadet og URL opdateret:", downloadUrl);
       } catch (error) {
         console.error("Fejl ved håndtering af profilbillede:", error);
       }
     };
 
     handleProfileImage();
-  }, [userId]);
+  }, [userId, setProfileImage]);
 
-  return null; // Denne komponent behøver ikke at returnere noget
+  return null; // Komponent returnerer stadig intet
 };
 
 export default EnsureProfileImage;

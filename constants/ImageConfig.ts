@@ -18,7 +18,7 @@ interface ImageConfigFull {
 }
 
 export const projectImageConfig: ImageConfig = {
-  resizeWidth: 300, // Fast størrelse for projectImage.jpg
+  resizeWidth: 300, // Fast størrelse for projectImage.jpeg
   resizeHeight: 300,
   compress: 0.7, // Komprimering for projectImage
 };
@@ -31,8 +31,8 @@ export const categoryImageConfig: Record<Category, ImageConfigFull> = {
       compress: 0.6,
     },
     highRes: {
-      resizeWidth: 2 * screenWidth,
-      resizeHeight: 2 * screenWidth,
+      resizeWidth: screenWidth,
+      resizeHeight: screenWidth,
       compress: 0.9,
     },
   },
