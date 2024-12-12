@@ -89,7 +89,7 @@ const NewProject: React.FC = () => {
 
       // Upload attachments mappen
       const attachmentsImagePath = FilePaths.attachmentsFolder(user, projectRef.id, "images");
-      await uploadFileToStorage(defaultImagePath, `${attachmentsImagePath}/defaultImage.jpg`);
+      await uploadFileToStorage(defaultImagePath, `${attachmentsImagePath}/defaultImage.jpeg`);
 
       // Gem projektdata i Firestore
       const projectData = {
@@ -122,7 +122,7 @@ const NewProject: React.FC = () => {
         source={
           profileImage
             ? { uri: profileImage }
-            : require("@/assets/default/default_image.jpg")
+            : require("@/assets/default/default_image.jpeg")
         }
         style={styles.profileImg}
         contentFit="cover"
