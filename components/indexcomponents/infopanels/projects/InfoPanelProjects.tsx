@@ -94,7 +94,7 @@ const InfoPanelProjects = () => {
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
-    const q = query(userProjectsCollection, where("status", "==", "Project"));
+    const q = query(userProjectsCollection, where("status", "==", "Project")); // Her på status!!!!
 
     const unsubscribe = onSnapshot(
       q,
