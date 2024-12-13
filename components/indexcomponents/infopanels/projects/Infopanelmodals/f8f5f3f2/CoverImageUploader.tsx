@@ -24,7 +24,7 @@ type SelectedImageUris = {
 type CoverImageUploaderProps = {
   userId: string;
   projectId: string;
-  category: Category; // Brug den definerede Category type
+  category: Category;
   initialImageUris?: SelectedImageUris;
   onUploadSuccess: (downloadURLs: { lowRes: string; highRes: string }) => void;
   onUploadFailure?: (error: unknown) => void;
@@ -34,7 +34,7 @@ type CoverImageUploaderProps = {
 const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   userId,
   projectId,
-  category, // Modtag category som en prop
+  category,
   initialImageUris = null,
   onUploadSuccess,
   onUploadFailure,
@@ -44,7 +44,6 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  // Anmod om tilladelse til at få adgang til billedbiblioteket
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -62,25 +61,20 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1], // Kvadratisk aspect ratio for alle kategorier
-        quality: 1.0, // Høj kvalitet før manipulation
+        quality: 1.0,
       });
 
-      // Håndter ImagePicker-resultatet
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0].uri;
 
-        // Reducer og resize billedet baseret på kategori
         const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category];
 
-        // Generer low-res version
         const lowResResult = await ImageManipulator.manipulateAsync(
           selectedImage,
           [{ resize: { width: resizeWidth, height: resizeHeight } }],
           { compress: Math.min(compress, 0.9), format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        // Generer high-res version (f.eks. 1024x1024)
         const highResResult = await ImageManipulator.manipulateAsync(
           selectedImage,
           [{ resize: { width: 1024, height: 1024 } }],
@@ -92,11 +86,8 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
           highRes: highResResult.uri,
         });
       }
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Fejl ved valg af billede:", error);
-      Alert.alert("Fejl", "Kunne ikke vælge billede. Prøv igen.");
-
-      // Håndter eventuel fejlhåndtering
       if (onUploadFailure) {
         onUploadFailure(error);
       }
@@ -111,87 +102,36 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
 
     setIsUploading(true);
     setUploadProgress(0);
-    console.log("Start upload af nyt billede");
 
     try {
       const { lowRes, highRes } = selectedImageUris;
 
-      // Upload low-res billede
-      const lowResBlob = await (await fetch(lowRes)).blob();
+      const uploadWithProgress = async (uri: string, path: string, progressBase: number) => {
+        const blob = await (await fetch(uri)).blob();
+        const fileRef = ref(storage, path);
+        const uploadTask = uploadBytesResumable(fileRef, blob);
+
+        uploadTask.on("state_changed", (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 50 + progressBase;
+          setUploadProgress(progress);
+        });
+
+        await uploadTask;
+        return getDownloadURL(fileRef);
+      };
+
       const lowResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
-      const lowResRef = ref(storage, lowResPath);
-      const lowResUploadTask = uploadBytesResumable(lowResRef, lowResBlob);
-
-      // Lyt til upload-status for low-res
-      lowResUploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress / 2); // 0-50% for low-res
-          console.log(`Low-res Upload progress: ${progress}%`);
-        },
-        (error: unknown) => {
-          // Håndter fejl
-          console.error("Fejl under low-res upload:", error);
-          Alert.alert("Fejl", `Kunne ikke uploade low-res billedet: ${getErrorMessage(error)}`);
-          setIsUploading(false);
-          if (onUploadFailure) {
-            onUploadFailure(error);
-          }
-        }
-      );
-
-      // Upload high-res billede
-      const highResBlob = await (await fetch(highRes)).blob();
       const highResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
-      const highResRef = ref(storage, highResPath);
-      const highResUploadTask = uploadBytesResumable(highResRef, highResBlob);
 
-      // Lyt til upload-status for high-res
-      highResUploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(50 + (progress / 2)); // 50-100% for high-res
-          console.log(`High-res Upload progress: ${progress}%`);
-        },
-        (error: unknown) => {
-          // Håndter fejl
-          console.error("Fejl under high-res upload:", error);
-          Alert.alert("Fejl", `Kunne ikke uploade high-res billedet: ${getErrorMessage(error)}`);
-          setIsUploading(false);
-          if (onUploadFailure) {
-            onUploadFailure(error);
-          }
-        },
-        async () => {
-          // High-res upload completed successfully, get download URLs
-          const lowResURL = await getDownloadURL(lowResRef);
-          const highResURL = await getDownloadURL(highResRef);
-          console.log("Download URL'er hentet:", lowResURL, highResURL);
+      const lowResURL = await uploadWithProgress(lowRes, lowResPath, 0);
+      const highResURL = await uploadWithProgress(highRes, highResPath, 50);
 
-          // Afslutning af upload-processen uden at gemme URL'erne i Firestore
-          console.log("Nye billeder uploadet til Storage");
-          Alert.alert("Succes", "Billederne er blevet uploadet.");
-          setSelectedImageUris(null);
-          setIsUploading(false);
-          onUploadSuccess({ lowRes: lowResURL, highRes: highResURL });
-        }
-      );
-
-      // Tilføj en timeout for at sikre, at upload ikke hænger uendeligt
-      setTimeout(() => {
-        if (isUploading) {
-          console.log("Upload-processen tager for lang tid. Afbryder...");
-          lowResUploadTask.cancel();
-          highResUploadTask.cancel();
-          Alert.alert("Timeout", "Upload-processen tog for lang tid og blev afbrudt.");
-          setIsUploading(false);
-        }
-      }, 60000); // 60 sekunder timeout
-    } catch (error: unknown) {
-      console.error("Fejl ved upload af billeder:", error);
-      Alert.alert("Fejl", `Kunne ikke uploade billederne: ${getErrorMessage(error)}`);
+      setSelectedImageUris(null);
+      setIsUploading(false);
+      onUploadSuccess({ lowRes: lowResURL, highRes: highResURL });
+    } catch (error) {
+      console.error("Fejl ved upload:", error);
+      Alert.alert("Fejl", "Kunne ikke uploade billederne.");
       setIsUploading(false);
       if (onUploadFailure) {
         onUploadFailure(error);
@@ -199,20 +139,11 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
     }
   };
 
-  // Hjælpefunktion til at få fejlnavne
-  const getErrorMessage = (error: unknown): string => {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return String(error);
-  };
-
   return (
     <View style={styles.container}>
       {selectedImageUris ? (
         <View style={styles.imageContainer}>
           <Image source={{ uri: selectedImageUris.lowRes }} style={styles.image} />
-          <Text style={styles.resolutionText}>Low Resolution</Text>
         </View>
       ) : (
         <Text style={styles.noImageText}>Ingen billede valgt</Text>
@@ -252,10 +183,6 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 10,
     marginBottom: 5,
-  },
-  resolutionText: {
-    fontSize: 12,
-    color: "grey",
   },
   noImageText: {
     fontSize: 16,
