@@ -48,7 +48,7 @@ type ProjectData = {
   projectId?: string | null;
   userId?: string | null;
 } & {
-  [key in `${Category}CoverImageLowRes` | `${Category}CoverImageHighRes` | `${Category}PDF`]?: string | null;
+  [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string | null;
 };
 
 type InfoPanelConfig = {
@@ -81,7 +81,17 @@ const InfoPanel = ({
   const userId = currentUser;
 
   // Define projectData as a state variable
-  const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
+  const [projectData, setProjectData] = useState<ProjectData>({
+    ...initialProjectData,
+    f8CoverImageLowRes: initialProjectData.f8CoverImageLowRes || null,
+    f8PDF: initialProjectData.f8PDF || null,
+    f5CoverImageLowRes: initialProjectData.f5CoverImageLowRes || null,
+    f5PDF: initialProjectData.f5PDF || null,
+    f3CoverImageLowRes: initialProjectData.f3CoverImageLowRes || null,
+    f3PDF: initialProjectData.f3PDF || null,
+    f2CoverImageLowRes: initialProjectData.f2CoverImageLowRes || null,
+    f2PDF: initialProjectData.f2PDF || null,
+  });
 
   const f8CoverImage = projectData.f8CoverImageLowRes || null;
   const f8PDF = projectData.f8PDF || null;
@@ -306,6 +316,26 @@ const InfoPanel = ({
     );
   };
 
+  const ensureProjectFields = async () => {
+    if (!userId || !projectData.id) return;
+  
+    const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
+  
+    try {
+      await setDoc(
+        projectDocRef,
+        {
+          f8CoverImageLowRes: projectData.f8CoverImageLowRes || null,
+          f8PDF: projectData.f8PDF || null,
+        },
+        { merge: true }
+      );
+      console.log("Project fields ensured in Firestore.");
+    } catch (error) {
+      console.error("Failed to ensure project fields:", error);
+    }
+  };
+
   const [projectImage, setProjectImage] = useState<string | null>(null);
 
   // Log project ID for debugging
@@ -483,9 +513,9 @@ const InfoPanel = ({
             const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
             const keyPDF = `${category}PDF` as keyof ProjectData;
 
-            acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
-            acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
-            acc[keyPDF] = data[category]?.PDF || prev[keyPDF] || null;
+            acc[keyLowRes] = data[category]?.CoverImageLowRes || null; 
+            acc[keyHighRes] = data[category]?.CoverImageHighRes || null; 
+            acc[keyPDF] = data[category]?.PDF || null;
             return acc;
           }, {} as Partial<ProjectData>),
         }));

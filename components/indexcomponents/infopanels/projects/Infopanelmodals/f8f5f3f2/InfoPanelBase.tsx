@@ -38,25 +38,31 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    console.log("Forsøger at hente data for kategori:", category);
+  
     const fetchData = async () => {
       try {
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
-
+  
         const [fetchedImageURL, fetchedPdfURL] = await Promise.all([
           getDownloadURL(ref(storage, imagePath)).catch(() => null),
           getDownloadURL(ref(storage, pdfPath)).catch(() => null),
         ]);
 
+        // Log URL for billedet og PDF
+        console.log(`Hentet ${category} Billed URL:`, fetchedImageURL);
+        console.log(`Hentet ${category} PDF URL:`, fetchedPdfURL);
+
         setImageURL(fetchedImageURL);
         setPdfURL(fetchedPdfURL);
       } catch (error) {
-        console.error("Fejl ved hentning af data:", error);
+        console.error(`Fejl ved hentning af data for ${category}:`, error);
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     fetchData();
   }, [userId, projectId, category]);
 
