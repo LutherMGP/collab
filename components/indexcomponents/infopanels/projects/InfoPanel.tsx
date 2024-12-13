@@ -43,7 +43,7 @@ type ProjectData = {
   price?: number;
   userId?: string | null;
 } & {
-  [key in `${Category}CoverImageLowRes` | `${Category}CoverImageHighRes` | `${Category}PDF`]?: string | null;
+  [key in "f8CoverImageLowRes" | "f5CoverImageLowRes" | "f3CoverImageLowRes" | "f2CoverImageLowRes"]?: string | null;
 };
 
 type InfoPanelConfig = {
@@ -76,13 +76,9 @@ const InfoPanel = ({
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
   const f8CoverImage = projectData.f8CoverImageLowRes || null;
-  const f8PDF = projectData.f8PDF || null;
   const f5CoverImage = projectData.f5CoverImageLowRes || null;
-  const f5PDF = projectData.f5PDF || null;
   const f3CoverImage = projectData.f3CoverImageLowRes || null;
-  const f3PDF = projectData.f3PDF || null;
   const f2CoverImage = projectData.f2CoverImageLowRes || null;
-  const f2PDF = projectData.f2PDF || null;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
   const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
@@ -123,30 +119,24 @@ const InfoPanel = ({
     // Add other functions to handle successful updates if needed
   };
 
-  // Generic long press handler
-  const handleLongPress = async (pdfURL: string | null, fieldName: string) => {
-    if (!pdfURL) {
-      Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
-      return;
-    }
+  // Function to handle long press and fetch PDF
+  const handleLongPress = async (category: Category) => {
+    const pdfPath = `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`;
+
     try {
-      await Linking.openURL(pdfURL);
+      const pdfRef = ref(storage, pdfPath);
+      const pdfURL = await getDownloadURL(pdfRef);
+      await Linking.openURL(pdfURL); // Åbn PDF'en
     } catch (error) {
-      console.error(`Fejl ved åbning af ${fieldName} PDF:`, error);
-      Alert.alert(
-        "Fejl",
-        `Der opstod en fejl under åbning af ${fieldName} PDF.`
-      );
+      console.error(`Fejl ved hentning af ${category} PDF:`, error);
+      Alert.alert("Fejl", `Kunne ikke hente PDF for ${category}.`);
     }
   };
 
-  const handleLongPressF8 = () => handleLongPress(f8PDF, "Specification (F8)");
-  const handleLongPressF5 = () =>
-    handleLongPress(f5PDF, "Terms & Conditions (F5)");
-  const handleLongPressF3 = () =>
-    handleLongPress(f3PDF, "Sustainability Report (F3)");
-  const handleLongPressF2 = () =>
-    handleLongPress(f2PDF, "Partnership Agreement (F2)");
+  const handleLongPressF8 = () => handleLongPress("f8");
+  const handleLongPressF5 = () => handleLongPress("f5");
+  const handleLongPressF3 = () => handleLongPress("f3");
+  const handleLongPressF2 = () => handleLongPress("f2");
 
   // Funktion til at slette et projekt
   const handleDelete = () => {
@@ -218,21 +208,24 @@ const InfoPanel = ({
     console.log("Henter billede for projekt:", projectData.id);
   }, [projectData.id]);
 
-  // Fetch project's image
+  // Fetch project's low-res image
   useEffect(() => {
     const fetchProjectImage = async () => {
-      if (!projectData.userId || !projectData.id) {
-        console.error("Project ownerId or projectId missing");
+      if (!userId || !projectData.id) {
+        console.error("Bruger-ID eller projekt-ID mangler.");
         return;
       }
 
       try {
         const projectImageRef = ref(
           storage,
-          `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
+          `users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
         );
         const projectImageUrl = await getDownloadURL(projectImageRef);
-        setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
+        setProjectData((prev) => ({
+          ...prev,
+          f8CoverImageLowRes: projectImageUrl,
+        }));
         console.log("Projektbillede hentet:", projectImageUrl);
       } catch (error) {
         console.error("Fejl ved hentning af projektbillede:", error);
@@ -241,7 +234,7 @@ const InfoPanel = ({
     };
 
     fetchProjectImage();
-  }, [projectData.userId, projectData.id]);
+  }, [userId, projectData.id]);
 
   const getDescriptionForOption = (option: string | null): string => {
     switch (option) {
@@ -345,7 +338,7 @@ const InfoPanel = ({
     refreshProjectData(); // Update data, including image URL
   };
 
-  const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
+  const handleOpenCommentModal = (category: Category) => {
     setActiveCategory(category);
     setIsCommentModalVisible(true);
   };
@@ -381,16 +374,10 @@ const InfoPanel = ({
           description: data.description || "",
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
-          ...categories.reduce((acc, category) => {
-            const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
-            const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
-            const keyPDF = `${category}PDF` as keyof ProjectData;
-
-            acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
-            acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
-            acc[keyPDF] = data[category]?.PDF || prev[keyPDF] || null;
-            return acc;
-          }, {} as Partial<ProjectData>),
+          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
+          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
+          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
+          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
         }));
       }
     } catch (error) {
@@ -494,11 +481,11 @@ const InfoPanel = ({
         <Pressable
           style={baseStyles.F8}
           onPress={() => handlePress("F8")} // Opens modal if Edit is enabled
-          onLongPress={handleLongPressF8} // Long press remains unchanged
+          onLongPress={handleLongPressF8} // Long press fetches and opens PDF
           accessibilityLabel="F8 Button"
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
-          {/* Show image if available */}
+          {/* Show low-res image if available */}
           {f8CoverImage && (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
           )}
@@ -507,20 +494,6 @@ const InfoPanel = ({
           <View style={baseStyles.textTag}>
             <Text style={baseStyles.text}>Specification</Text>
           </View>
-
-          {/* Project image in the round field with onPress */}
-          {projectImage && (
-            <Pressable
-              style={baseStyles.projectImageContainer}
-              onPress={() => handlePress("Project Image")}
-              accessibilityLabel="Project Image Button"
-            >
-              <Image
-                source={{ uri: projectImage }}
-                style={baseStyles.projectImage} // Adjust this style if needed
-              />
-            </Pressable>
-          )}
 
           {/* New Prize/Transfer field */}
           <Pressable
@@ -574,7 +547,7 @@ const InfoPanel = ({
                 accessibilityLabel="F2 Button"
                 key={`f2-modal-${refreshKey}`} // Unique key for modal update
               >
-                {/* Show image if available */}
+                {/* Show low-res image if available */}
                 {f2CoverImage && (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
                 )}
@@ -636,7 +609,7 @@ const InfoPanel = ({
               accessibilityLabel="F3 Button"
               key={`f3-modal-${refreshKey}`} // Unique key for modal update
             >
-              {/* Show image if available */}
+              {/* Show low-res image if available */}
               {f3CoverImage && (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
@@ -664,7 +637,7 @@ const InfoPanel = ({
             accessibilityLabel="F5 Button"
             key={`f5-modal-${refreshKey}`} // Unique key for modal update
           >
-            {/* Show image if available */}
+            {/* Show low-res image if available */}
             {f5CoverImage && (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
             )}
@@ -827,7 +800,6 @@ const InfoPanel = ({
                 setProjectData((prev) => ({
                   ...prev,
                   f8CoverImageLowRes: downloadURLs.lowRes,
-                  f8CoverImageHighRes: downloadURLs.highRes,
                 }));
                 Alert.alert("Success", "Project images uploaded successfully.");
               }}
