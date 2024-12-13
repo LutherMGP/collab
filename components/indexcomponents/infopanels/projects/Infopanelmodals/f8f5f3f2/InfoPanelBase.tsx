@@ -11,7 +11,8 @@ import {
   Alert,
 } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
+import { storage, database } from "@/firebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 
@@ -69,16 +70,51 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedImageUri = result.assets[0].uri; // Korrekt adgang til URI
+        const selectedImageUri = result.assets[0].uri;
         const imageBlob = await (await fetch(selectedImageUri)).blob();
 
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const imageRef = ref(storage, imagePath);
 
-        await uploadBytesResumable(imageRef, imageBlob);
-        const downloadURL = await getDownloadURL(imageRef);
+        const uploadTask = uploadBytesResumable(imageRef, imageBlob);
 
-        setImageURL(downloadURL); // Opdater UI med ny URL
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            // Du kan tilføje upload-progress her, hvis ønsket
+          },
+          (error) => {
+            console.error("Fejl ved upload af billede:", error);
+            Alert.alert("Fejl", "Kunne ikke uploade billede.");
+          },
+          async () => {
+            try {
+              const downloadURL = await getDownloadURL(imageRef);
+              setImageURL(downloadURL);
+
+              // Gem downloadURL i Firestore
+              const projectDocRef = doc(
+                database,
+                "users",
+                userId,
+                "projects",
+                projectId
+              );
+              await setDoc(
+                projectDocRef,
+                {
+                  [`data.${category}.CoverImageLowRes`]: downloadURL,
+                },
+                { merge: true }
+              );
+
+              Alert.alert("Success", "Billede uploadet og gemt.");
+            } catch (error) {
+              console.error("Fejl ved hentning af download URL:", error);
+              Alert.alert("Fejl", "Kunne ikke hente billedets URL.");
+            }
+          }
+        );
       } else {
         console.log("Billedvalg annulleret eller ingen gyldig fil valgt.");
       }
@@ -101,10 +137,45 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
         const pdfRef = ref(storage, pdfPath);
 
-        await uploadBytesResumable(pdfRef, pdfBlob);
-        const downloadURL = await getDownloadURL(pdfRef);
+        const uploadTask = uploadBytesResumable(pdfRef, pdfBlob);
 
-        setPdfURL(downloadURL); // Opdater UI med ny URL
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            // Du kan tilføje upload-progress her, hvis ønsket
+          },
+          (error) => {
+            console.error("Fejl ved upload af PDF:", error);
+            Alert.alert("Fejl", "Kunne ikke uploade PDF.");
+          },
+          async () => {
+            try {
+              const downloadURL = await getDownloadURL(pdfRef);
+              setPdfURL(downloadURL);
+
+              // Gem downloadURL i Firestore
+              const projectDocRef = doc(
+                database,
+                "users",
+                userId,
+                "projects",
+                projectId
+              );
+              await setDoc(
+                projectDocRef,
+                {
+                  [`data.${category}.PDF`]: downloadURL,
+                },
+                { merge: true }
+              );
+
+              Alert.alert("Success", "PDF uploadet og gemt.");
+            } catch (error) {
+              console.error("Fejl ved hentning af download URL:", error);
+              Alert.alert("Fejl", "Kunne ikke hente PDF'ens URL.");
+            }
+          }
+        );
       } else {
         console.log("PDF-valg annulleret eller ingen gyldig fil valgt.");
       }

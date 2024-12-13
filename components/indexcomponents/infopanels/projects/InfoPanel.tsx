@@ -483,9 +483,9 @@ const InfoPanel = ({
             const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
             const keyPDF = `${category}PDF` as keyof ProjectData;
 
-            acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
-            acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
-            acc[keyPDF] = data[category]?.PDF || prev[keyPDF] || null;
+            acc[keyLowRes] = data.data?.[category]?.CoverImageLowRes || prev[keyLowRes] || null;
+            acc[keyHighRes] = data.data?.[category]?.CoverImageHighRes || prev[keyHighRes] || null;
+            acc[keyPDF] = data.data?.[category]?.PDF || prev[keyPDF] || null;
             return acc;
           }, {} as Partial<ProjectData>),
         }));
@@ -595,9 +595,15 @@ const InfoPanel = ({
           accessibilityLabel="F8 Button"
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
-          {/* Show image if available */}
-          {f8CoverImage && (
+          {/* Show image if available, else log the absence */}
+          {f8CoverImage ? (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
+          ) : (
+            <>
+              <Image source={require("@/assets/default/profileimage/profileImage.jpg")} style={baseStyles.f8CoverImage} />
+              <Text style={baseStyles.errorText}>Billede ikke tilgængeligt</Text>
+              {console.log("f8CoverImage is null or undefined")}
+            </>
           )}
 
           {/* Text at the top of f8 */}
@@ -627,7 +633,11 @@ const InfoPanel = ({
           >
             {getIconForOption(selectedOption)} {/* Dynamically rendered icon */}
             {/* Add fallback text for selectedOption */}
-            {selectedOption && <Text style={baseStyles.text}>{selectedOption}</Text>}
+            {selectedOption ? (
+              <Text style={baseStyles.text}>{selectedOption}</Text>
+            ) : (
+              <Text style={baseStyles.text}>Ingen metode valgt</Text>
+            )}
           </Pressable>
 
           {/* Delete button */}
@@ -672,8 +682,14 @@ const InfoPanel = ({
                 key={`f2-modal-${refreshKey}`} // Unique key for modal update
               >
                 {/* Show image if available */}
-                {f2CoverImage && (
+                {f2CoverImage ? (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
+                ) : (
+                  <>
+                    <Image source={require("@/assets/default/profileimage/profileImage.jpg")} style={baseStyles.f2CoverImage} />
+                    <Text style={baseStyles.errorText}>Billede ikke tilgængeligt</Text>
+                    {console.log("f2CoverImage is null or undefined")}
+                  </>
                 )}
 
                 {/* Text at the top of f2 */}
@@ -732,8 +748,14 @@ const InfoPanel = ({
               key={`f3-modal-${refreshKey}`} // Unique key for modal update
             >
               {/* Show image if available */}
-              {f3CoverImage && (
+              {f3CoverImage ? (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
+              ) : (
+                <>
+                  <Image source={require("@/assets/default/profileimage/profileImage.jpg")} style={baseStyles.f3CoverImage} />
+                  <Text style={baseStyles.errorText}>Billede ikke tilgængeligt</Text>
+                  {console.log("f3CoverImage is null or undefined")}
+                </>
               )}
 
               {/* Text at the top of f3 */}
@@ -760,8 +782,14 @@ const InfoPanel = ({
             key={`f5-modal-${refreshKey}`} // Unique key for modal update
           >
             {/* Show image if available */}
-            {f5CoverImage && (
+            {f5CoverImage ? (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
+            ) : (
+              <>
+                <Image source={require("@/assets/default/profileimage/profileImage.jpg")} style={baseStyles.f5CoverImage} />
+                <Text style={baseStyles.errorText}>Billede ikke tilgængeligt</Text>
+                {console.log("f5CoverImage is null or undefined")}
+              </>
             )}
 
             {/* Text at the top of f5 */}
@@ -1002,6 +1030,11 @@ const styles = StyleSheet.create({
     height: "80%",
     borderRadius: 10,
     padding: 10,
+  },
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    marginTop: 10,
   },
   // Removed toggleEditButton and toggleEditText, as they are no longer needed
 });

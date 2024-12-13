@@ -21,7 +21,7 @@ type ProjectData = {
   name?: string;
   description?: string;
   status?: string;
-  price?: number; // Fjernet `null` og beholdt kun `undefined`
+  price?: number;
   f8CoverImageLowRes?: string;
   f8CoverImageHighRes?: string;
   f8PDF?: string;
@@ -78,27 +78,27 @@ const InfoPanelProjects = () => {
 
         const fetchedProjects = snapshot.docs.map((doc) => {
           const data = doc.data();
-        
+
           console.log(`Project data for ${doc.id}:`, data); // Debugging
-        
+
           return {
             id: doc.id,
             name: data.name || "Uden navn",
             description: data.description || "Ingen kommentar",
             status: data.status || "Project",
-            price: data.price ?? undefined, // Konverter 'null' til 'undefined'
+            price: data.price ?? undefined,
             f8CoverImageLowRes: data.data?.["f8"]?.CoverImageLowRes || undefined,
             f8CoverImageHighRes: data.data?.["f8"]?.CoverImageHighRes || undefined,
-            f8PDF: data.data?.["f8"]?.pdf || undefined,
+            f8PDF: data.data?.["f8"]?.PDF || undefined, // Sørg for at bruge korrekte feltnavne
             f5CoverImageLowRes: data.data?.["f5"]?.CoverImageLowRes || undefined,
             f5CoverImageHighRes: data.data?.["f5"]?.CoverImageHighRes || undefined,
-            f5PDF: data.data?.["f5"]?.pdf || undefined,
+            f5PDF: data.data?.["f5"]?.PDF || undefined, // Sørg for at bruge korrekte feltnavne
             f3CoverImageLowRes: data.data?.["f3"]?.CoverImageLowRes || undefined,
             f3CoverImageHighRes: data.data?.["f3"]?.CoverImageHighRes || undefined,
-            f3PDF: data.data?.["f3"]?.pdf || undefined,
+            f3PDF: data.data?.["f3"]?.PDF || undefined, // Sørg for at bruge korrekte feltnavne
             f2CoverImageLowRes: data.data?.["f2"]?.CoverImageLowRes || undefined,
             f2CoverImageHighRes: data.data?.["f2"]?.CoverImageHighRes || undefined,
-            f2PDF: data.data?.["f2"]?.pdf || undefined,
+            f2PDF: data.data?.["f2"]?.PDF || undefined, // Sørg for at bruge korrekte feltnavne
             userId: user || undefined,
           };
         }) as ProjectData[];
