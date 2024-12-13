@@ -14,7 +14,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 
-const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
+const DEFAULT_IMAGE = require("@/assets/default/profileimage/profileImage.jpg");
 
 interface InfoPanelProjectImageProps {
   projectId: string;
