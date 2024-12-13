@@ -28,7 +28,7 @@ type ProjectData = {
   price?: number;
   userId?: string;
 } & {
-  [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string;
+  [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string | null;
 };
 
 const InfoPanelProjects = () => {
@@ -52,33 +52,34 @@ const InfoPanelProjects = () => {
     projectId: string
   ): Promise<Partial<ProjectData>> => {
     const storageData: Partial<ProjectData> = {};
-
+  
     try {
       for (const category of categories) {
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
-
-        // Hent billeder og PDF'er
+  
         const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
-          () => undefined
+          (err) => {
+            console.warn(`Ingen billede fundet for ${category}:`, err);
+            return null; // Brug null ved fejl
+          }
         );
         const pdfUrl = await getDownloadURL(ref(storage, pdfPath)).catch(
-          () => undefined
+          (err) => {
+            console.warn(`Ingen PDF fundet for ${category}:`, err);
+            return null; // Brug null ved fejl
+          }
         );
-
-        if (imageUrl !== undefined) {
-          storageData[
-            `${category}CoverImageLowRes` as keyof ProjectData
-          ] = imageUrl;
-        }
-        if (pdfUrl !== undefined) {
-          storageData[`${category}PDF` as keyof ProjectData] = pdfUrl;
-        }
+  
+        storageData[
+          `${category}CoverImageLowRes` as keyof ProjectData
+        ] = imageUrl;
+        storageData[`${category}PDF` as keyof ProjectData] = pdfUrl;
       }
     } catch (error) {
       console.error("Fejl ved hentning af data fra Firebase Storage:", error);
     }
-
+  
     return storageData;
   };
 
@@ -104,13 +105,13 @@ const InfoPanelProjects = () => {
           setIsLoading(false);
           return;
         }
-
+    
         try {
           const fetchedProjects = await Promise.all(
             snapshot.docs.map(async (doc) => {
               const data = doc.data();
               const storageData = await fetchProjectStorageData(user, doc.id);
-
+    
               return {
                 id: doc.id,
                 name: data.name || "Uden navn",
@@ -118,11 +119,11 @@ const InfoPanelProjects = () => {
                 status: data.status || "Project",
                 price: data.price ?? undefined,
                 userId: user,
-                ...storageData,
+                ...storageData, // Storage data er allerede null-sikret
               };
             })
           );
-
+    
           setProjects(fetchedProjects);
           console.log("Hentede projekter:", fetchedProjects);
           setError(null);
@@ -151,10 +152,20 @@ const InfoPanelProjects = () => {
     );
   }
 
+  if (!user) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: Colors[theme].text }}>Bruger ikke logget ind.</Text>
+      </View>
+    );
+  }
+
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: Colors[theme].text }}>{error}</Text>
+        <Text style={{ color: Colors[theme].text }}>
+          {error || "En ukendt fejl opstod. Prøv igen senere."}
+        </Text>
       </View>
     );
   }
