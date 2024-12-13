@@ -74,11 +74,17 @@ type InfoPanelProps = {
   config: InfoPanelConfig;
 };
 
+const fieldNameMap: { [key in Category]: string } = {
+  f8: "Specification",
+  f5: "Terms & Conditions",
+  f3: "Sustainability",
+  f2: "Agreement",
+};
+
 const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
-  const rightMargin = width * 0.03;
 
   const { user: currentUser } = useAuth();
   const userId = currentUser;
@@ -104,14 +110,19 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   // Functions to toggle modals
-  const openModal = (modal: Category | "nameComment" | "prize" | "projectImage" | "comment" | "attachment", category?: Category) => {
+  const openModal = (
+    modal: Category | "nameComment" | "prize" | "projectImage" | "comment" | "attachment",
+    category?: Category
+  ) => {
     setModalStates((prev) => ({ ...prev, [modal]: true }));
     if (modal === "comment" && category) {
       setActiveCategory(category);
     }
   };
 
-  const closeModal = (modal: Category | "nameComment" | "prize" | "projectImage" | "comment" | "attachment") => {
+  const closeModal = (
+    modal: Category | "nameComment" | "prize" | "projectImage" | "comment" | "attachment"
+  ) => {
     setModalStates((prev) => ({ ...prev, [modal]: false }));
     if (modal === "comment") {
       setActiveCategory(null);
@@ -515,14 +526,14 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
   };
 
   const handleLongPressCategory = (category: Category) => {
-    const fieldNameMap: { [key in Category]: string } = {
-      f8: "Specification (F8)",
-      f5: "Terms & Conditions (F5)",
-      f3: "Sustainability Report (F3)",
-      f2: "Partnership Agreement (F2)",
-    };
-    handleLongPress(projectData[`${category}PDF`] || null, fieldNameMap[category]);
+    const fieldName = fieldNameMap[category];
+    handleLongPress(projectData[`${category}PDF`] || null, fieldName);
   };
+
+  // Fetch project data on component mount and when refreshKey changes
+  useEffect(() => {
+    refreshProjectData();
+  }, [userId, projectData.id, refreshKey]);
 
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
@@ -550,12 +561,6 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
       {/* Render each category field */}
       {categories.map((category) => {
         const coverImage = projectData[`${category}CoverImageLowRes`] || null;
-        const fieldNameMap: { [key in Category]: string } = {
-          f8: "Specification",
-          f5: "Terms & Conditions",
-          f3: "Sustainability",
-          f2: "Agreement",
-        };
         return (
           <View key={category} style={baseStyles[`${category}Container`]}>
             <Pressable
@@ -585,7 +590,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
                 <Text style={baseStyles.text}>{fieldNameMap[category]}</Text>
               </View>
 
-              {/* Project Image (common for all categories) */}
+              {/* Project Image (only for f8) */}
               {category === "f8" && projectImage && (
                 <Pressable
                   style={baseStyles.projectImageContainer}
@@ -599,7 +604,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
                 </Pressable>
               )}
 
-              {/* Prize/Transfer button for F8 */}
+              {/* Prize/Transfer button (only for f8) */}
               {category === "f8" && (
                 <Pressable
                   style={baseStyles.newButton}
@@ -615,7 +620,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
                 </Pressable>
               )}
 
-              {/* Delete button (only for F8) */}
+              {/* Delete button (only for f8) */}
               {category === "f8" && config.showDelete && (
                 <Pressable
                   style={baseStyles.deleteIconContainer}
@@ -634,7 +639,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
                 <AntDesign name="message1" size={20} color="black" />
               </Pressable>
 
-              {/* Attachment button (only for F8) */}
+              {/* Attachment button (only for f8) */}
               {category === "f8" && (
                 <Pressable
                   style={baseStyles.attachmentButton}
@@ -696,7 +701,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
       )}
 
       {/* Modals */}
-      {/* Generic Modal Component */}
+      {/* Generic Modal for Categories */}
       {categories.map((category) => (
         <Modal
           key={`${category}-modal-${refreshKey}`}
@@ -707,14 +712,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
         >
           <View style={modalStyles.modalOverlay}>
             <View style={modalStyles.modalContent}>
-              {/* Category Specific Content */}
-              <Text style={modalStyles.modalTitle}>{`Indstillinger for ${category.toUpperCase()}`}</Text>
-              <TouchableOpacity
-                onPress={() => closeModal(category)}
-                style={modalStyles.modalButton}
-              >
-                <Text style={modalStyles.modalButtonText}>Luk</Text>
-              </TouchableOpacity>
+              <Text style={modalStyles.modalTitle}>{`Indstillinger for ${fieldNameMap[category]}`}</Text>
               {/* Buttons to upload image and PDF */}
               <Pressable
                 style={localStyles.uploadButton}
@@ -728,6 +726,12 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
               >
                 <Text style={localStyles.uploadButtonText}>Upload/Skift PDF</Text>
               </Pressable>
+              <TouchableOpacity
+                onPress={() => closeModal(category)}
+                style={modalStyles.modalButton}
+              >
+                <Text style={modalStyles.modalButtonText}>Luk</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -821,15 +825,7 @@ const InfoPanel = ({ projectData: initialProjectData, config }: InfoPanelProps) 
               projectId={projectData.id}
               userId={userId || ""}
               category={activeCategory}
-              categoryName={
-                activeCategory === "f8"
-                  ? "Specification"
-                  : activeCategory === "f5"
-                  ? "Terms & Conditions"
-                  : activeCategory === "f3"
-                  ? "Sustainability Report"
-                  : "Partnership Agreement"
-              }
+              categoryName={fieldNameMap[activeCategory]}
               onClose={() => closeModal("comment")}
               isEditable={isEditEnabled}
             />
@@ -879,6 +875,22 @@ const modalStyles = StyleSheet.create({
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
+  },
+  modalButton: {
+    marginTop: 20,
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: "#2196F3",
+  },
+  modalButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
 });
 
