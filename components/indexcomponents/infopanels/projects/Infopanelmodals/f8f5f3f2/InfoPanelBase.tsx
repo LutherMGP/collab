@@ -1,5 +1,7 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
 
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -37,34 +39,35 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   const [pdfURL, setPdfURL] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Fetch initial data
   useEffect(() => {
-    console.log("Forsøger at hente data for kategori:", category);
-  
-    const fetchData = async () => {
-      try {
-        const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
-        const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
-  
-        const [fetchedImageURL, fetchedPdfURL] = await Promise.all([
-          getDownloadURL(ref(storage, imagePath)).catch(() => null),
-          getDownloadURL(ref(storage, pdfPath)).catch(() => null),
-        ]);
-
-        // Log URL for billedet og PDF
-        console.log(`Hentet ${category} Billed URL:`, fetchedImageURL);
-        console.log(`Hentet ${category} PDF URL:`, fetchedPdfURL);
-
-        setImageURL(fetchedImageURL);
-        setPdfURL(fetchedPdfURL);
-      } catch (error) {
-        console.error(`Fejl ved hentning af data for ${category}:`, error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-  
-    fetchData();
+    refreshData();
   }, [userId, projectId, category]);
+
+  const refreshData = async () => {
+    try {
+      const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+      const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
+
+      const [updatedImageURL, updatedPdfURL] = await Promise.all([
+        getDownloadURL(ref(storage, imagePath)).catch(() => null),
+        getDownloadURL(ref(storage, pdfPath)).catch(() => null),
+      ]);
+
+      setImageURL(updatedImageURL);
+      setPdfURL(updatedPdfURL);
+    } catch (error) {
+      console.error("Fejl ved opdatering af data:", error);
+      Alert.alert("Fejl", "Kunne ikke opdatere data. Prøv igen senere.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUploadSuccess = async () => {
+    await refreshData(); // Sikrer opdatering efter upload
+    Alert.alert("Succes", "Upload gennemført.");
+  };
 
   const handleImageUpload = async () => {
     try {
@@ -75,7 +78,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedImageUri = result.assets[0].uri; // Korrekt adgang til URI
+        const selectedImageUri = result.assets[0].uri;
         const imageBlob = await (await fetch(selectedImageUri)).blob();
 
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
@@ -84,9 +87,8 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         await uploadBytesResumable(imageRef, imageBlob);
         const downloadURL = await getDownloadURL(imageRef);
 
-        setImageURL(downloadURL); // Opdater UI med ny URL
-      } else {
-        console.log("Billedvalg annulleret eller ingen gyldig fil valgt.");
+        setImageURL(downloadURL);
+        handleUploadSuccess();
       }
     } catch (error) {
       console.error("Fejl ved upload af billede:", error);
@@ -110,14 +112,18 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         await uploadBytesResumable(pdfRef, pdfBlob);
         const downloadURL = await getDownloadURL(pdfRef);
 
-        setPdfURL(downloadURL); // Opdater UI med ny URL
-      } else {
-        console.log("PDF-valg annulleret eller ingen gyldig fil valgt.");
+        setPdfURL(downloadURL);
+        handleUploadSuccess();
       }
     } catch (error) {
       console.error("Fejl ved upload af PDF:", error);
       Alert.alert("Fejl", "Kunne ikke uploade PDF.");
     }
+  };
+
+  const handleCloseModal = async () => {
+    await refreshData(); // Hent ny data før modal lukkes
+    onClose();
   };
 
   return (
@@ -137,7 +143,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           </TouchableOpacity>
 
           {/* Luk Modal */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <TouchableOpacity style={styles.closeButton} onPress={handleCloseModal}>
             <Text style={styles.closeButtonText}>Luk</Text>
           </TouchableOpacity>
         </>
@@ -157,7 +163,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     marginBottom: 20,
-    elevation: 4, // Tilføjer skygge for bedre synlighed
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -165,7 +171,7 @@ const styles = StyleSheet.create({
   },
   pdfContainer: {
     marginTop: 20,
-    elevation: 4, // Tilføjer skygge for bedre synlighed
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -189,7 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     borderRadius: 10,
     alignItems: "center",
-    elevation: 4, // Tilføjer skygge for bedre synlighed
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
