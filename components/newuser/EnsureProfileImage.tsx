@@ -25,7 +25,7 @@ const EnsureProfileImage: React.FC<EnsureProfileImageProps> = ({ userId }) => {
         }
 
         // Standardbillede
-        const defaultImage = require("@/assets/images/blomst.webp");
+        const defaultImage = require("assets/default/profileimage/profileImage.jpg");
         const asset = Asset.fromModule(defaultImage);
         await asset.downloadAsync();
 
