@@ -13,6 +13,7 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -26,11 +27,11 @@ import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopa
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF2";
-import InfoPanelNameComment from "components/indexcomponents/infopanels/projects/Infopanelmodals/namecomment/InfoPanelNameComment";
-import InfoPanelPrize from "components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize";
-import InfoPanelProjectImage from "components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCommentModal from "components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
-import InfoPanelAttachment from "components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
+import InfoPanelNameComment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/namecomment/InfoPanelNameComment";
+import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/prize/InfoPanelPrize";
+import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
+import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
+import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { deleteFolderContents as deleteFolder } from "@/utils/storageUtils";
 
 type Category = "f8" | "f5" | "f3" | "f2";
@@ -41,18 +42,25 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
+  isFavorite?: boolean;
+  toBePurchased?: boolean;
+  guideId?: string | null;
+  projectId?: string | null;
   userId?: string | null;
 } & {
-  [key in "f8CoverImageLowRes" | "f5CoverImageLowRes" | "f3CoverImageLowRes" | "f2CoverImageLowRes"]?: string | null;
+  [key in `${Category}CoverImageLowRes` | `${Category}CoverImageHighRes` | `${Category}PDF`]?: string | null;
 };
 
 type InfoPanelConfig = {
+  showFavorite?: boolean;
+  showPurchase?: boolean;
   showDelete?: boolean;
   showEdit?: boolean;
   showProject?: boolean;
   showGuide?: boolean;
   longPressForPdf?: boolean;
   checkPurchaseStatus?: boolean;
+  checkFavoriteStatus?: boolean;
 };
 
 type InfoPanelProps = {
@@ -76,13 +84,21 @@ const InfoPanel = ({
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
 
   const f8CoverImage = projectData.f8CoverImageLowRes || null;
+  const f8PDF = projectData.f8PDF || null;
   const f5CoverImage = projectData.f5CoverImageLowRes || null;
+  const f5PDF = projectData.f5PDF || null;
   const f3CoverImage = projectData.f3CoverImageLowRes || null;
+  const f3PDF = projectData.f3PDF || null;
   const f2CoverImage = projectData.f2CoverImageLowRes || null;
+  const f2PDF = projectData.f2PDF || null;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
   const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
 
+  const [isFavorite, setIsFavorite] = useState(projectData.isFavorite || false);
+  const [toBePurchased, setToBePurchased] = useState(
+    projectData.toBePurchased || false
+  );
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -119,26 +135,115 @@ const InfoPanel = ({
     // Add other functions to handle successful updates if needed
   };
 
-  // Function to handle long press and fetch PDF
-  const handleLongPress = async (category: Category) => {
-    const pdfPath = `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`;
-
+  // Generic long press handler
+  const handleLongPress = async (pdfURL: string | null, fieldName: string) => {
+    if (!pdfURL) {
+      Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
+      return;
+    }
     try {
-      const pdfRef = ref(storage, pdfPath);
-      const pdfURL = await getDownloadURL(pdfRef);
-      await Linking.openURL(pdfURL); // Åbn PDF'en
+      await Linking.openURL(pdfURL);
     } catch (error) {
-      console.error(`Fejl ved hentning af ${category} PDF:`, error);
-      Alert.alert("Fejl", `Kunne ikke hente PDF for ${category}.`);
+      console.error(`Fejl ved åbning af ${fieldName} PDF:`, error);
+      Alert.alert(
+        "Fejl",
+        `Der opstod en fejl under åbning af ${fieldName} PDF.`
+      );
     }
   };
 
-  const handleLongPressF8 = () => handleLongPress("f8");
-  const handleLongPressF5 = () => handleLongPress("f5");
-  const handleLongPressF3 = () => handleLongPress("f3");
-  const handleLongPressF2 = () => handleLongPress("f2");
+  const handleLongPressF8 = () => handleLongPress(f8PDF, "Specification (F8)");
+  const handleLongPressF5 = () =>
+    handleLongPress(f5PDF, "Terms & Conditions (F5)");
+  const handleLongPressF3 = () =>
+    handleLongPress(f3PDF, "Sustainability Report (F3)");
+  const handleLongPressF2 = () =>
+    handleLongPress(f2PDF, "Partnership Agreement (F2)");
 
-  // Funktion til at slette et projekt
+  const handleFavoriteToggle = async () => {
+    if (!config.showFavorite) return;
+
+    try {
+      const newFavoriteStatus = !isFavorite;
+      console.log("Favorite button pressed");
+      setIsFavorite(newFavoriteStatus);
+
+      if (!userId) {
+        Alert.alert("Fejl", "Bruger ikke logget ind.");
+        return;
+      }
+
+      const favoriteDocRef = doc(
+        database,
+        "users",
+        userId,
+        "favorites",
+        projectData.id
+      );
+
+      if (newFavoriteStatus) {
+        await setDoc(
+          favoriteDocRef,
+          { projectId: projectData.id },
+          { merge: true }
+        );
+        console.log(`Project ${projectData.id} markeret som favorit.`);
+      } else {
+        await deleteDoc(favoriteDocRef);
+        console.log(`Project ${projectData.id} fjernet fra favoritter.`);
+      }
+    } catch (error) {
+      console.error("Fejl ved opdatering af favoritstatus:", error);
+      Alert.alert(
+        "Fejl",
+        "Der opstod en fejl under opdatering af favoritstatus."
+      );
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (!config.showPurchase) return;
+
+    try {
+      const newToBePurchasedStatus = !toBePurchased;
+      setToBePurchased(newToBePurchasedStatus);
+
+      if (!userId) {
+        Alert.alert("Fejl", "Bruger ikke logget ind.");
+        return;
+      }
+
+      const purchaseDocRef = doc(
+        database,
+        "users",
+        userId,
+        "purchases",
+        projectData.id
+      );
+
+      if (newToBePurchasedStatus) {
+        await setDoc(
+          purchaseDocRef,
+          {
+            projectId: projectData.id,
+            projectOwnerId: projectData.userId,
+            purchased: false,
+          },
+          { merge: true }
+        );
+        console.log(`Project ${projectData.id} tilføjet til køb.`);
+        Alert.alert("Success", "Projekt tilføjet til din kurv.");
+      } else {
+        await deleteDoc(purchaseDocRef);
+        console.log(`Project ${projectData.id} fjernet fra køb.`);
+        Alert.alert("Success", "Projekt fjernet fra din kurv.");
+      }
+    } catch (error) {
+      console.error("Fejl ved opdatering af køb status:", error);
+      Alert.alert("Fejl", "Der opstod en fejl under opdatering af køb status.");
+    }
+  };
+
   const handleDelete = () => {
     if (!config.showDelete) return;
 
@@ -208,24 +313,21 @@ const InfoPanel = ({
     console.log("Henter billede for projekt:", projectData.id);
   }, [projectData.id]);
 
-  // Fetch project's low-res image
+  // Fetch project's image
   useEffect(() => {
     const fetchProjectImage = async () => {
-      if (!userId || !projectData.id) {
-        console.error("Bruger-ID eller projekt-ID mangler.");
+      if (!projectData.userId || !projectData.id) {
+        console.error("Project ownerId or projectId missing");
         return;
       }
 
       try {
         const projectImageRef = ref(
           storage,
-          `users/${userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
+          `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
         );
         const projectImageUrl = await getDownloadURL(projectImageRef);
-        setProjectData((prev) => ({
-          ...prev,
-          f8CoverImageLowRes: projectImageUrl,
-        }));
+        setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
         console.log("Projektbillede hentet:", projectImageUrl);
       } catch (error) {
         console.error("Fejl ved hentning af projektbillede:", error);
@@ -234,7 +336,7 @@ const InfoPanel = ({
     };
 
     fetchProjectImage();
-  }, [userId, projectData.id]);
+  }, [projectData.userId, projectData.id]);
 
   const getDescriptionForOption = (option: string | null): string => {
     switch (option) {
@@ -287,7 +389,7 @@ const InfoPanel = ({
     }
   };
 
-  // Tilføj logikken for at vise det valgte ikon i F8, når Edit er inaktiveret:
+  // Tilføj logikken for at vise det valgte ikon i F8, når F1A er inaktiveret:
   const getIconForOption = (option: string | null) => {
     switch (option) {
       case "Free Transfer":
@@ -338,7 +440,7 @@ const InfoPanel = ({
     refreshProjectData(); // Update data, including image URL
   };
 
-  const handleOpenCommentModal = (category: Category) => {
+  const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
     setActiveCategory(category);
     setIsCommentModalVisible(true);
   };
@@ -374,10 +476,18 @@ const InfoPanel = ({
           description: data.description || "",
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
-          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
-          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
-          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
-          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
+          isFavorite: data.isFavorite || prev.isFavorite || false,
+          toBePurchased: data.toBePurchased || prev.toBePurchased || false,
+          ...categories.reduce((acc, category) => {
+            const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
+            const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
+            const keyPDF = `${category}PDF` as keyof ProjectData;
+
+            acc[keyLowRes] = data[category]?.CoverImageLowRes || prev[keyLowRes] || null;
+            acc[keyHighRes] = data[category]?.CoverImageHighRes || prev[keyHighRes] || null;
+            acc[keyPDF] = data[category]?.PDF || prev[keyPDF] || null;
+            return acc;
+          }, {} as Partial<ProjectData>),
         }));
       }
     } catch (error) {
@@ -481,11 +591,11 @@ const InfoPanel = ({
         <Pressable
           style={baseStyles.F8}
           onPress={() => handlePress("F8")} // Opens modal if Edit is enabled
-          onLongPress={handleLongPressF8} // Long press fetches and opens PDF
+          onLongPress={handleLongPressF8} // Long press remains unchanged
           accessibilityLabel="F8 Button"
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
-          {/* Show low-res image if available */}
+          {/* Show image if available */}
           {f8CoverImage && (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
           )}
@@ -495,6 +605,20 @@ const InfoPanel = ({
             <Text style={baseStyles.text}>Specification</Text>
           </View>
 
+          {/* Project image in the round field with onPress */}
+          {projectImage && (
+            <Pressable
+              style={baseStyles.projectImageContainer}
+              onPress={() => handlePress("Project Image")}
+              accessibilityLabel="Project Image Button"
+            >
+              <Image
+                source={{ uri: projectImage }}
+                style={baseStyles.projectImage} // Adjust this style if needed
+              />
+            </Pressable>
+          )}
+
           {/* New Prize/Transfer field */}
           <Pressable
             style={baseStyles.newButton} // Your existing styling
@@ -503,7 +627,7 @@ const InfoPanel = ({
           >
             {getIconForOption(selectedOption)} {/* Dynamically rendered icon */}
             {/* Add fallback text for selectedOption */}
-            <Text style={baseStyles.text}>{selectedOption || "Ingen metode valgt"}</Text>
+            {selectedOption && <Text style={baseStyles.text}>{selectedOption}</Text>}
           </Pressable>
 
           {/* Delete button */}
@@ -547,7 +671,7 @@ const InfoPanel = ({
                 accessibilityLabel="F2 Button"
                 key={`f2-modal-${refreshKey}`} // Unique key for modal update
               >
-                {/* Show low-res image if available */}
+                {/* Show image if available */}
                 {f2CoverImage && (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
                 )}
@@ -568,7 +692,6 @@ const InfoPanel = ({
             </View>
             <View style={baseStyles.rightTop}>
               <View style={baseStyles.f1topHalf}>
-                {/* F1A (Edit) button */}
                 <Pressable
                   style={baseStyles.F1A}
                   onPress={toggleEdit} // Use the existing toggleEdit function
@@ -582,10 +705,9 @@ const InfoPanel = ({
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
-                {/* F1B (Status Toggle) button */}
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Calls function to toggle status
+                  onPress={() => handleStatusToggle()} // Calls function to toggle status
                   accessibilityLabel="Status Toggle Button"
                 >
                   <AntDesign
@@ -609,7 +731,7 @@ const InfoPanel = ({
               accessibilityLabel="F3 Button"
               key={`f3-modal-${refreshKey}`} // Unique key for modal update
             >
-              {/* Show low-res image if available */}
+              {/* Show image if available */}
               {f3CoverImage && (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
@@ -637,7 +759,7 @@ const InfoPanel = ({
             accessibilityLabel="F5 Button"
             key={`f5-modal-${refreshKey}`} // Unique key for modal update
           >
-            {/* Show low-res image if available */}
+            {/* Show image if available */}
             {f5CoverImage && (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
             )}
@@ -796,14 +918,15 @@ const InfoPanel = ({
               projectId={projectData.id} // Add projectId
               userId={userId || ""} // Add userId
               category="f8" // Add the relevant category
-              onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => { // Typed parameter
+              onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => { // Typet parameter
                 setProjectData((prev) => ({
                   ...prev,
                   f8CoverImageLowRes: downloadURLs.lowRes,
+                  f8CoverImageHighRes: downloadURLs.highRes,
                 }));
                 Alert.alert("Success", "Project images uploaded successfully.");
               }}
-              onUploadFailure={(error: unknown) => { // Typed parameter
+              onUploadFailure={(error: unknown) => { // Typet parameter
                 console.error("Project Image Upload failed:", error);
                 Alert.alert("Error", "Could not upload project images.");
               }}
