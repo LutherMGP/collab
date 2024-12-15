@@ -18,13 +18,14 @@ import { projectImageConfig } from "@/constants/ImageConfig";
 
 const DEFAULT_IMAGE = require("@/assets/default/profileimage/profileImage.jpg");
 
-interface InfoPanelProjectImageProps {
+type InfoPanelProjectImageProps = {
+  onClose: () => void;
   projectId: string;
   userId: string;
-  onClose: () => void;
+  category: string;
   onUploadSuccess: (downloadURL: string) => void;
   onUploadFailure: (error: unknown) => void;
-}
+};
 
 const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   projectId,

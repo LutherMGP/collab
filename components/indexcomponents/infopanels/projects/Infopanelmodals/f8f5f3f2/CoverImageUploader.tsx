@@ -67,7 +67,7 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0].uri;
 
-        const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category];
+        const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category].lowRes;
 
         const lowResResult = await ImageManipulator.manipulateAsync(
           selectedImage,

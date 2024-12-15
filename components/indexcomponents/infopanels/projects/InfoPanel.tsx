@@ -943,24 +943,23 @@ const InfoPanel = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <InfoPanelProjectImage
-              onClose={closeProjectImageModal} // Add onClose prop
-              projectId={projectData.id} // Add projectId
-              userId={userId || ""} // Add userId
-              category="f8" // Add the relevant category
-              onUploadSuccess={(downloadURLs: { lowRes: string; highRes: string }) => { // Typet parameter
-                setProjectData((prev) => ({
-                  ...prev,
-                  f8CoverImageLowRes: downloadURLs.lowRes,
-                  f8CoverImageHighRes: downloadURLs.highRes,
-                }));
-                Alert.alert("Success", "Project images uploaded successfully.");
-              }}
-              onUploadFailure={(error: unknown) => { // Typet parameter
-                console.error("Project Image Upload failed:", error);
-                Alert.alert("Error", "Could not upload project images.");
-              }}
-            />
+          <InfoPanelProjectImage
+            onClose={closeProjectImageModal}
+            projectId={projectData.id}
+            userId={userId || ""}
+            category="f8"
+            onUploadSuccess={(downloadURL: string) => {
+              setProjectData((prev) => ({
+                ...prev,
+                f8CoverImageLowRes: downloadURL, // Brug downloadURL direkte
+              }));
+              Alert.alert("Success", "Billedet blev uploadet med succes.");
+            }}
+            onUploadFailure={(error: unknown) => {
+              console.error("Billedet kunne ikke uploades:", error);
+              Alert.alert("Fejl", "Der opstod en fejl under upload.");
+            }}
+          />
           </View>
         </View>
       </Modal>
