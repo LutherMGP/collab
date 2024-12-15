@@ -1,3 +1,5 @@
+// @/types/ProjectData.ts
+
 export type Category = "f8" | "f5" | "f3" | "f2";
 
 export type ProjectData = {
