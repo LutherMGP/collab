@@ -16,20 +16,7 @@ import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPane
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-
-const categories = ["f8", "f5", "f3", "f2"] as const;
-type Category = typeof categories[number];
-
-type ProjectData = {
-  id: string;
-  name?: string;
-  description?: string;
-  status?: string;
-  price?: number;
-  userId?: string;
-} & {
-  [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string | null;
-};
+import { ProjectData, Category } from "@/types/ProjectData";
 
 type InfoPanelProjectsProps = {
   statusFilter: "Project" | "Published"; // Modtag statusFilter som prop
@@ -50,21 +37,20 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
     const storageData: Partial<ProjectData> = {};
 
     try {
+      const categories: Category[] = ["f8", "f5", "f3", "f2"];
       for (const category of categories) {
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
 
         const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
-          () => null
+          () => undefined
         );
         const pdfUrl = await getDownloadURL(ref(storage, pdfPath)).catch(
-          () => null
+          () => undefined
         );
 
-        storageData[
-          `${category}CoverImageLowRes` as keyof ProjectData
-        ] = imageUrl;
-        storageData[`${category}PDF` as keyof ProjectData] = pdfUrl;
+        storageData[`${category}CoverImageLowRes`] = imageUrl;
+        storageData[`${category}PDF`] = pdfUrl;
       }
     } catch (error) {
       console.error("Fejl ved hentning af data fra Firebase Storage:", error);
@@ -76,15 +62,14 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
   useEffect(() => {
     if (!user) return;
 
-    console.log("Henter projekter for bruger:", user, "med status:", statusFilter);
-
     const userProjectsCollection = collection(
       database,
       "users",
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
-    const q = query(userProjectsCollection, where("status", "==", statusFilter)); // Brug statusFilter
+
+    const q = query(userProjectsCollection, where("status", "==", statusFilter));
 
     const unsubscribe = onSnapshot(
       q,
@@ -109,7 +94,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
                 price: data.price ?? undefined,
                 userId: user,
                 ...storageData,
-              };
+              } as ProjectData;
             })
           );
 
@@ -140,40 +125,18 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
     );
   }
 
-  if (!user) {
-    return (
-      <View style={styles.centered}>
-        <Text style={{ color: Colors[theme].text }}>Bruger ikke logget ind.</Text>
-      </View>
-    );
-  }
-
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: Colors[theme].text }}>
-          {error || "En ukendt fejl opstod. Prøv igen senere."}
-        </Text>
+        <Text style={{ color: Colors[theme].text }}>{error}</Text>
       </View>
     );
   }
-
-  const config = {
-    showFavorite: true,
-    showPurchase: true,
-    showDelete: true,
-    showEdit: true,
-    showSnit: true,
-    showGuide: true,
-    longPressForPdf: true,
-    checkPurchaseStatus: true,
-    checkFavoriteStatus: true,
-  };
 
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={config} />
+        <InfoPanel key={project.id} projectData={project} config={{}} />
       ))}
     </View>
   );

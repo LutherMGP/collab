@@ -33,23 +33,9 @@ import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/proje
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { deleteFolderContents as deleteFolder } from "@/utils/storageUtils";
+import { ProjectData } from "@/types/ProjectData";
 
 type Category = "f8" | "f5" | "f3" | "f2";
-
-type ProjectData = {
-  id: string;
-  name?: string;
-  description?: string;
-  status?: string;
-  price?: number;
-  isFavorite?: boolean;
-  toBePurchased?: boolean;
-  guideId?: string | null;
-  projectId?: string | null;
-  userId?: string | null;
-} & {
-  [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string | null;
-};
 
 type InfoPanelConfig = {
   showFavorite?: boolean;
