@@ -31,46 +31,35 @@ type ProjectData = {
   [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string | null;
 };
 
-const InfoPanelProjects = () => {
+type InfoPanelProjectsProps = {
+  statusFilter: "Project" | "Published"; // Modtag statusFilter som prop
+};
+
+const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter }) => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  const config = {
-    showFavorite: false,
-    showPurchase: true,
-    showDelete: true,
-    showEdit: true,
-    showSnit: true,
-    showGuide: true,
-  };
-
   const fetchProjectStorageData = async (
     userId: string,
     projectId: string
   ): Promise<Partial<ProjectData>> => {
     const storageData: Partial<ProjectData> = {};
-  
+
     try {
       for (const category of categories) {
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
-  
+
         const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
-          (err) => {
-            console.warn(`Ingen billede fundet for ${category}:`, err);
-            return null; // Brug null ved fejl
-          }
+          () => null
         );
         const pdfUrl = await getDownloadURL(ref(storage, pdfPath)).catch(
-          (err) => {
-            console.warn(`Ingen PDF fundet for ${category}:`, err);
-            return null; // Brug null ved fejl
-          }
+          () => null
         );
-  
+
         storageData[
           `${category}CoverImageLowRes` as keyof ProjectData
         ] = imageUrl;
@@ -79,14 +68,14 @@ const InfoPanelProjects = () => {
     } catch (error) {
       console.error("Fejl ved hentning af data fra Firebase Storage:", error);
     }
-  
+
     return storageData;
   };
 
   useEffect(() => {
     if (!user) return;
 
-    console.log("Henter projekter for bruger:", user);
+    console.log("Henter projekter for bruger:", user, "med status:", statusFilter);
 
     const userProjectsCollection = collection(
       database,
@@ -94,7 +83,7 @@ const InfoPanelProjects = () => {
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
-    const q = query(userProjectsCollection, where("status", "==", "Project")); // Her på status!!!!
+    const q = query(userProjectsCollection, where("status", "==", statusFilter)); // Brug statusFilter
 
     const unsubscribe = onSnapshot(
       q,
@@ -105,13 +94,13 @@ const InfoPanelProjects = () => {
           setIsLoading(false);
           return;
         }
-    
+
         try {
           const fetchedProjects = await Promise.all(
             snapshot.docs.map(async (doc) => {
               const data = doc.data();
               const storageData = await fetchProjectStorageData(user, doc.id);
-    
+
               return {
                 id: doc.id,
                 name: data.name || "Uden navn",
@@ -119,13 +108,12 @@ const InfoPanelProjects = () => {
                 status: data.status || "Project",
                 price: data.price ?? undefined,
                 userId: user,
-                ...storageData, // Storage data er allerede null-sikret
+                ...storageData,
               };
             })
           );
-    
+
           setProjects(fetchedProjects);
-          console.log("Hentede projekter:", fetchedProjects);
           setError(null);
         } catch (fetchError) {
           console.error("Fejl ved hentning af projekter:", fetchError);
@@ -142,7 +130,7 @@ const InfoPanelProjects = () => {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, statusFilter]);
 
   if (isLoading) {
     return (
@@ -173,7 +161,7 @@ const InfoPanelProjects = () => {
   return (
     <View>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={config} />
+        <InfoPanel key={project.id} projectData={project} config={{}} />
       ))}
     </View>
   );

@@ -21,51 +21,65 @@ const Projects = () => {
   const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
     useVisibility();
   const [draftCount, setDraftCount] = useState(0);
-  const [isRightButtonActive, setIsRightButtonActive] = useState(false); // Til højre knap
+  const [publishedCount, setPublishedCount] = useState(0);
+  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
+    null
+  ); // Holder styr på aktiv knap
 
   useEffect(() => {
-    if (!user) return; // Brug user direkte som uid, da det er en streng
+    if (!user) return;
 
     const projectCollection = collection(
       database,
       "users",
-      user, // Brug user som uid
+      user,
       "projects"
     ) as CollectionReference<DocumentData>;
 
-    const q = query(projectCollection, where("status", "==", "Project"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const projects = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setDraftCount(projects.length); // Opdater draftCount
-      },
-      (error) => {
-        console.error("Firestore error:", error); // Log fejl
-      }
+    // Lyt efter projekter med status "Project"
+    const draftQuery = query(
+      projectCollection,
+      where("status", "==", "Project")
     );
+    const draftUnsubscribe = onSnapshot(draftQuery, (querySnapshot) => {
+      setDraftCount(querySnapshot.size);
+    });
 
-    return () => unsubscribe(); // Ryd op efter lytteren
+    // Lyt efter projekter med status "Published"
+    const publishedQuery = query(
+      projectCollection,
+      where("status", "==", "Published")
+    );
+    const publishedUnsubscribe = onSnapshot(publishedQuery, (querySnapshot) => {
+      setPublishedCount(querySnapshot.size);
+    });
+
+    return () => {
+      draftUnsubscribe();
+      publishedUnsubscribe();
+    };
   }, [user]);
 
   const handlePressLeft = () => {
-    if (isInfoPanelProjectsVisible) {
+    if (activeButton === "left") {
+      // Hvis venstre knap allerede er aktiv, deaktiver alt
+      setActiveButton(null);
       hideAllPanels();
     } else {
-      showPanel("projects");
+      setActiveButton("left");
+      showPanel("projects"); // Aktiver "projects"-panelet
     }
-    console.log(
-      `Draft count button pressed. InfoPanelProjects visibility set to ${!isInfoPanelProjectsVisible}.`
-    );
   };
 
   const handlePressRight = () => {
-    setIsRightButtonActive((prev) => !prev); // Skifter visuel tilstand
-    console.log("Højre knap blev trykket.");
+    if (activeButton === "right") {
+      // Hvis højre knap allerede er aktiv, deaktiver alt
+      setActiveButton(null);
+      hideAllPanels();
+    } else {
+      setActiveButton("right");
+      showPanel("projects"); // Aktiver "projects"-panelet
+    }
   };
 
   return (
@@ -80,29 +94,30 @@ const Projects = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelProjectsVisible ? styles.iconPressed : null,
+          activeButton === "left" ? styles.iconPressed : null,
           styles.leftButton,
         ]}
         onPress={handlePressLeft}
       >
         <Text style={styles.draftCountText}>{draftCount || 0}</Text>
-        {/* Brug fallback */}
       </TouchableOpacity>
 
       {/* Højre knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isRightButtonActive ? styles.iconPressed : null, // Viser aktiv tilstand
+          activeButton === "right" ? styles.iconPressed : null,
           styles.rightButton,
         ]}
         onPress={handlePressRight}
       >
-        <Text style={styles.draftCountText}>+</Text> {/* Placeholder tekst */}
+        <Text style={styles.draftCountText}>{publishedCount || 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
-        <Text style={[styles.createStoryText, { color: Colors[theme]?.text || "#000" }]}>
+        <Text
+          style={[styles.createStoryText, { color: Colors[theme]?.text || "#000" }]}
+        >
           Projects
         </Text>
       </View>
@@ -172,11 +187,11 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   leftButton: {
-    left: "29%", // Placering til venstre
+    left: "29%",
     transform: [{ translateX: -20 }],
   },
   rightButton: {
-    right: "29%", // Placering til højre
+    right: "29%",
     transform: [{ translateX: 20 }],
   },
 });
