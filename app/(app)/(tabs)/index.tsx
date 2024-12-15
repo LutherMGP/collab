@@ -47,6 +47,7 @@ const Index = () => {
     isInfoPanelApplicationsUdVisible,
     isInfoPanelApplicationsIndVisible,
     isInfoPanelDevelopmentVisible,
+    statusFilter, // Tilføj denne linje
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
@@ -129,16 +130,18 @@ const Index = () => {
       {/* Render InfoPanelProjects kun hvis synlig */}
       {isInfoPanelProjectsVisible && (
         <View style={styles.infoPanelProjectsContainer}>
-          <InfoPanelProjects />
+          <InfoPanelProjects statusFilter={statusFilter} /> {/* Passer statusFilter */}
         </View>
       )}
 
-      {/* Render InfoPanelPublished kun hvis synlig */}
+      {/*
+      Render InfoPanelPublished kun hvis synlig 
       {isInfoPanelPublishedVisible && (
         <View style={styles.infoPanelPublishedContainer}>
           <InfoPanelPublished />
         </View>
-      )}
+      )} 
+       */}
 
       {/* Render InfoPanelCatalog kun hvis synlig */}
       {isInfoPanelCatalogVisible && (

@@ -31,7 +31,11 @@ type ProjectData = {
   [key in `${Category}CoverImageLowRes` | `${Category}PDF`]?: string | null;
 };
 
-const InfoPanelProjects = () => {
+type InfoPanelProjectsProps = {
+  statusFilter: "Project" | "Published"; // Tilføj denne linje
+};
+
+const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter }) => { // Opdaterer komponenten til at modtage props
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,12 +56,12 @@ const InfoPanelProjects = () => {
     projectId: string
   ): Promise<Partial<ProjectData>> => {
     const storageData: Partial<ProjectData> = {};
-  
+
     try {
       for (const category of categories) {
         const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
-  
+
         const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
           (err) => {
             console.warn(`Ingen billede fundet for ${category}:`, err);
@@ -70,7 +74,7 @@ const InfoPanelProjects = () => {
             return null; // Brug null ved fejl
           }
         );
-  
+
         storageData[
           `${category}CoverImageLowRes` as keyof ProjectData
         ] = imageUrl;
@@ -79,7 +83,7 @@ const InfoPanelProjects = () => {
     } catch (error) {
       console.error("Fejl ved hentning af data fra Firebase Storage:", error);
     }
-  
+
     return storageData;
   };
 
@@ -94,7 +98,7 @@ const InfoPanelProjects = () => {
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
-    const q = query(userProjectsCollection, where("status", "==", "Project")); // Her på status!!!!
+    const q = query(userProjectsCollection, where("status", "==", statusFilter)); // Brug statusFilter
 
     const unsubscribe = onSnapshot(
       q,
@@ -105,13 +109,13 @@ const InfoPanelProjects = () => {
           setIsLoading(false);
           return;
         }
-    
+
         try {
           const fetchedProjects = await Promise.all(
             snapshot.docs.map(async (doc) => {
               const data = doc.data();
               const storageData = await fetchProjectStorageData(user, doc.id);
-    
+
               return {
                 id: doc.id,
                 name: data.name || "Uden navn",
@@ -123,7 +127,7 @@ const InfoPanelProjects = () => {
               };
             })
           );
-    
+
           setProjects(fetchedProjects);
           console.log("Hentede projekter:", fetchedProjects);
           setError(null);
@@ -142,7 +146,7 @@ const InfoPanelProjects = () => {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, statusFilter]); // Tilføj statusFilter som afhængighed
 
   if (isLoading) {
     return (

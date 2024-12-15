@@ -18,7 +18,7 @@ import { database } from "@/firebaseConfig";
 const Projects = () => {
   const theme = "light";
   const { user } = useAuth();
-  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
+  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels, statusFilter, setStatusFilter } =
     useVisibility();
   const [draftCount, setDraftCount] = useState(0);
   const [isRightButtonActive, setIsRightButtonActive] = useState(false); // Til højre knap
@@ -33,7 +33,7 @@ const Projects = () => {
       "projects"
     ) as CollectionReference<DocumentData>;
 
-    const q = query(projectCollection, where("status", "==", "Project"));
+    const q = query(projectCollection, where("status", "==", statusFilter));
 
     const unsubscribe = onSnapshot(
       q,
@@ -50,9 +50,11 @@ const Projects = () => {
     );
 
     return () => unsubscribe(); // Ryd op efter lytteren
-  }, [user]);
+  }, [user, statusFilter]); // Tilføj statusFilter som afhængighed
 
   const handlePressLeft = () => {
+    setStatusFilter("Project"); // Skift til "Project"
+    setIsRightButtonActive(false); // Sikrer at højre knap ikke er aktiv
     if (isInfoPanelProjectsVisible) {
       hideAllPanels();
     } else {
@@ -64,8 +66,9 @@ const Projects = () => {
   };
 
   const handlePressRight = () => {
+    setStatusFilter("Published"); // Skift til "Published"
     setIsRightButtonActive((prev) => !prev); // Skifter visuel tilstand
-    console.log("Højre knap blev trykket.");
+    console.log("Højre knap blev trykket. Skifter til 'Published'.");
   };
 
   return (

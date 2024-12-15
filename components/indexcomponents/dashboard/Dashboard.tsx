@@ -20,7 +20,7 @@ const Dashboard = () => {
   // Opret en liste af komponenter baseret på brugerens rolle
   const components = [
     ...(userRole === "Designer" || userRole === "Admin"
-      ? [<NewProject key="NewProject" />, <Projects key="Projects" />, <CircShare key="CircShare" />, <Published key="Published" />, <Applications key="Applications" />, <Purchased key="Purchased" />]
+      ? [<NewProject key="NewProject" />, <Projects key="Projects" />, <CircShare key="CircShare" />, <Applications key="Applications" />, <Purchased key="Purchased" />]
       : []),
     <Catalog key="Catalog" />,
   ];

@@ -9,13 +9,15 @@ type VisibilityContextType = {
   isInfoPanelPurchasedVisible: boolean;
   isInfoPanelCartVisible: boolean;
   isInfoPanelApplicationsVisible: boolean;
-  isInfoPanelDevelopmentVisible: boolean;
   isInfoPanelApplicationsUdVisible: boolean;
   isInfoPanelApplicationsIndVisible: boolean;
+  isInfoPanelDevelopmentVisible: boolean;
   showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
-  profileImage: string | null; // Tilføj dette
-  setProfileImage: (imageUri: string) => void; // Og dette
+  profileImage: string | null;
+  setProfileImage: (imageUri: string) => void;
+  statusFilter: "Project" | "Published"; // Tilføj denne linje
+  setStatusFilter: (status: "Project" | "Published") => void; // Og denne linje
 };
 
 const VisibilityContext = createContext<VisibilityContextType>({
@@ -25,13 +27,15 @@ const VisibilityContext = createContext<VisibilityContextType>({
   isInfoPanelPurchasedVisible: false,
   isInfoPanelCartVisible: false,
   isInfoPanelApplicationsVisible: false,
-  isInfoPanelDevelopmentVisible: false,
   isInfoPanelApplicationsUdVisible: false,
   isInfoPanelApplicationsIndVisible: false,
+  isInfoPanelDevelopmentVisible: false,
   showPanel: () => {},
   hideAllPanels: () => {},
   profileImage: null,
   setProfileImage: () => {},
+  statusFilter: "Project", // Initialværdi
+  setStatusFilter: () => {},
 });
 
 export const useVisibility = () => useContext(VisibilityContext);
@@ -54,7 +58,12 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
     useState(false);
   const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] =
     useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null); // Tilføj dette
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  
+  // Tilføj statusFilter state
+  const [statusFilter, setStatusFilter] = useState<"Project" | "Published">(
+    "Project"
+  );
 
   const showPanel = (panelName: string) => {
     hideAllPanels();
@@ -109,13 +118,15 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
         isInfoPanelPurchasedVisible,
         isInfoPanelCartVisible,
         isInfoPanelApplicationsVisible,
-        isInfoPanelDevelopmentVisible,
         isInfoPanelApplicationsUdVisible,
         isInfoPanelApplicationsIndVisible,
+        isInfoPanelDevelopmentVisible,
         showPanel,
         hideAllPanels,
-        profileImage, // Tilføj dette
-        setProfileImage, // Og dette
+        profileImage,
+        setProfileImage,
+        statusFilter, // Tilføj dette
+        setStatusFilter, // Og dette
       }}
     >
       {children}
