@@ -161,7 +161,13 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={{}} />
+        <InfoPanel
+          key={project.id}
+          projectData={project}
+          config={{
+            showDelete: true, // Aktivér delete-knappen
+          }}
+        />
       ))}
     </View>
   );

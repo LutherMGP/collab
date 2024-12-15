@@ -24,6 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       ? [
           <NewProject key="NewProject" />,
           <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
+          <CircShare key="CircShare" />,
         ]
       : []),
   ];
