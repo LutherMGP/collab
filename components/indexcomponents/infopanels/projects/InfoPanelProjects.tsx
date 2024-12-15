@@ -1,7 +1,7 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import {
   collection,
   query,
@@ -158,10 +158,22 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
     );
   }
 
+  const config = {
+    showFavorite: true,
+    showPurchase: true,
+    showDelete: true,
+    showEdit: true,
+    showSnit: true,
+    showGuide: true,
+    longPressForPdf: true,
+    checkPurchaseStatus: true,
+    checkFavoriteStatus: true,
+  };
+
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={{}} />
+        <InfoPanel key={project.id} projectData={project} config={config} />
       ))}
     </View>
   );
@@ -175,17 +187,6 @@ const styles = StyleSheet.create({
   },
   panelContainer: {
     padding: 0,
-  },
-  closeButton: {
-    alignSelf: "flex-end",
-    padding: 10,
-    backgroundColor: Colors.light.tint,
-    borderRadius: 5,
-    margin: 10,
-  },
-  closeButtonText: {
-    color: "white",
-    fontWeight: "bold",
   },
 });
 
