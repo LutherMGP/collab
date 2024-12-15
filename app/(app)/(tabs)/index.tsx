@@ -15,14 +15,6 @@ import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
-import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
-import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
-import InfoPanelApplications from "@/components/indexcomponents/infopanels/applications/InfoPanelApplications";
-import InfoPanelApplicationsUd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsUd";
-import InfoPanelApplicationsInd from "@/components/indexcomponents/infopanels/applications/InfoPanelApplicationsInd";
-import EnsureProfileImage from "@/components/newuser/EnsureProfileImage";
-
-import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   getDoc,
   doc,
@@ -37,41 +29,20 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    isInfoPanelProjectsVisible,
-    isInfoPanelPublishedVisible,
-    isInfoPanelCatalogVisible,
-    isInfoPanelPurchasedVisible,
-    isInfoPanelCartVisible,
-    isInfoPanelApplicationsVisible,
-    isInfoPanelApplicationsUdVisible,
-    isInfoPanelApplicationsIndVisible,
-    isInfoPanelDevelopmentVisible,
-  } = useVisibility();
+  // Lokale tilstandsvariabler for panel synlighed
+  const [projectPanelStatus, setProjectPanelStatus] = useState<"Project" | "Published" | null>(null);
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
-  const shouldShowWelcomeMessage = !(
-    isInfoPanelProjectsVisible ||
-    isInfoPanelPublishedVisible ||
-    isInfoPanelCatalogVisible ||
-    isInfoPanelPurchasedVisible ||
-    isInfoPanelCartVisible ||
-    isInfoPanelApplicationsVisible ||
-    isInfoPanelApplicationsUdVisible ||
-    isInfoPanelApplicationsIndVisible ||
-    isInfoPanelDevelopmentVisible
-  );
+  const shouldShowWelcomeMessage = !projectPanelStatus;
 
   useEffect(() => {
     const updateLastUsed = async () => {
       if (user) {
         try {
-          console.log("Current userId:", user); // Tilføj dette
-          const userDocRef = doc(database, "users", user); // Brug 'user' direkte
+          const userDocRef = doc(database, "users", user);
           await updateDoc(userDocRef, {
             lastUsed: serverTimestamp(),
           });
-          console.log("Last used timestamp updated for user:", user);
         } catch (error) {
           console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
         } finally {
@@ -85,6 +56,15 @@ const Index = () => {
     updateLastUsed();
   }, [user]);
 
+  // Callback funktioner til at styre panel synlighed
+  const showProjectPanel = (status: "Project" | "Published" | null) => {
+    setProjectPanelStatus(status); // Tillader nu null
+  };
+
+  const hideProjectPanel = () => {
+    setProjectPanelStatus(null);
+  };
+
   return (
     <Animated.ScrollView
       style={[styles.container, { backgroundColor: Colors[theme].background }]}
@@ -96,28 +76,13 @@ const Index = () => {
       )}
       scrollEventThrottle={16}
     >
-      {/* Sørg for, at standard profilbillede er oprettet */}
-      {user && <EnsureProfileImage userId={user} />}
-
       {/* Dashboard komponenten */}
       <View style={styles.dashboardContainer}>
-        <Dashboard />
+        <Dashboard onShowProjectPanel={showProjectPanel} />
       </View>
-
-      {/* Separator linje efter Snit */}
-      <View
-        style={[styles.separator, { backgroundColor: Colors[theme].icon }]}
-      />
 
       {/* Velkomstmeddelelse - kun synlig hvis ingen InfoPanels er synlige */}
       {shouldShowWelcomeMessage && <WelcomeMessage />}
-
-      {/* Vis en loading indikator */}
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors[theme].text} />
-        </View>
-      )}
 
       {/* Vis en fejlbesked, hvis der er en fejl */}
       {error && (
@@ -127,44 +92,12 @@ const Index = () => {
       )}
 
       {/* Render InfoPanelProjects kun hvis synlig */}
-      {isInfoPanelProjectsVisible && (
+      {projectPanelStatus && (
         <View style={styles.infoPanelProjectsContainer}>
-          <InfoPanelProjects />
-        </View>
-      )}
-
-      {/* Render InfoPanelPublished kun hvis synlig */}
-      {isInfoPanelPublishedVisible && (
-        <View style={styles.infoPanelPublishedContainer}>
-          <InfoPanelPublished />
-        </View>
-      )}
-
-      {/* Render InfoPanelCatalog kun hvis synlig */}
-      {isInfoPanelCatalogVisible && (
-        <View style={styles.infoPanelCatalogContainer}>
-          <InfoPanelCatalog />
-        </View>
-      )}
-
-      {/* Render InfoPanelApplications kun hvis synlig */}
-      {isInfoPanelApplicationsVisible && (
-        <View style={styles.infoPanelApplicationsContainer}>
-          <InfoPanelApplications />
-        </View>
-      )}
-
-      {/* Render InfoPanelApplicationsUd kun hvis synlig */}
-      {isInfoPanelApplicationsUdVisible && (
-        <View style={styles.infoPanelApplicationsUdContainer}>
-          <InfoPanelApplicationsUd />
-        </View>
-      )}
-
-      {/* Render InfoPanelApplicationsInd kun hvis synlig */}
-      {isInfoPanelApplicationsIndVisible && (
-        <View style={styles.infoPanelApplicationsIndContainer}>
-          <InfoPanelApplicationsInd />
+          <InfoPanelProjects
+            statusFilter={projectPanelStatus}
+            onClose={hideProjectPanel}
+          />
         </View>
       )}
     </Animated.ScrollView>
@@ -184,51 +117,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   dashboardContainer: {},
-  separator: {
-    height: 0.5,
-    width: "100%",
-    alignSelf: "center",
-    marginBottom: "1.5%",
-  },
   infoPanelProjectsContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
     alignSelf: "center",
-  },
-  infoPanelPublishedContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  infoPanelCatalogContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  infoPanelApplicationsContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  infoPanelApplicationsUdContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  infoPanelApplicationsIndContainer: {
-    width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: "center",
   },
   errorContainer: {
     padding: 10,

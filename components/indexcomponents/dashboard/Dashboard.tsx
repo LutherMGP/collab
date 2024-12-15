@@ -1,28 +1,31 @@
 // @/components/indexcomponents/dashboard/Dashboard.tsx
 
 import React from "react";
-import { FlatList, StyleSheet, View, Dimensions } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import NewProject from "@/components/indexcomponents/dashboard/NewProject";
 import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
-import CircShare from "@/components/indexcomponents/dashboard/CircShare";
-import Published from "@/components/indexcomponents/dashboard/Published";
-import Catalog from "@/components/indexcomponents/dashboard/Catalog";
-import Purchased from "@/components/indexcomponents/dashboard/Purchased";
-import Applications from "@/components/indexcomponents/dashboard/Applications";
 
-const Dashboard = () => {
+type DashboardProps = {
+  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
+};
+
+const Dashboard: React.FC<DashboardProps> = ({
+  onShowProjectPanel,
+}) => {
   const theme = useColorScheme() || "light";
   const { userRole } = useAuth();
 
   // Opret en liste af komponenter baseret på brugerens rolle
   const components = [
     ...(userRole === "Designer" || userRole === "Admin"
-      ? [<NewProject key="NewProject" />, <Projects key="Projects" />, <CircShare key="CircShare" />, <Published key="Published" />, <Applications key="Applications" />, <Purchased key="Purchased" />]
+      ? [
+          <NewProject key="NewProject" />,
+          <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
+        ]
       : []),
-    <Catalog key="Catalog" />,
   ];
 
   return (

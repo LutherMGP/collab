@@ -1,7 +1,7 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from "react-native";
 import {
   collection,
   query,
@@ -33,9 +33,10 @@ type ProjectData = {
 
 type InfoPanelProjectsProps = {
   statusFilter: "Project" | "Published"; // Modtag statusFilter som prop
+  onClose: () => void; // Funktion til at lukke panelet
 };
 
-const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter }) => {
+const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onClose }) => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,6 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter }) =
       async (snapshot) => {
         if (snapshot.empty) {
           setProjects([]);
-          setError("Ingen projekter fundet.");
           setIsLoading(false);
           return;
         }
@@ -159,7 +159,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter }) =
   }
 
   return (
-    <View>
+    <View style={styles.panelContainer}>
       {projects.map((project) => (
         <InfoPanel key={project.id} projectData={project} config={{}} />
       ))}
@@ -172,6 +172,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  panelContainer: {
+    padding: 0,
+  },
+  closeButton: {
+    alignSelf: "flex-end",
+    padding: 10,
+    backgroundColor: Colors.light.tint,
+    borderRadius: 5,
+    margin: 10,
+  },
+  closeButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 

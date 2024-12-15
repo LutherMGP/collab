@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collection,
   CollectionReference,
@@ -15,16 +14,16 @@ import {
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
-const Projects = () => {
-  const theme = "light";
+type ProjectsProps = {
+  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
+};
+
+const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
+  const theme = "light"; // Du kan bruge useColorScheme her, hvis ønsket
   const { user } = useAuth();
-  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
-    useVisibility();
   const [draftCount, setDraftCount] = useState(0);
   const [publishedCount, setPublishedCount] = useState(0);
-  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
-    null
-  ); // Holder styr på aktiv knap
+  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(null); // Holder styr på aktiv knap
 
   useEffect(() => {
     if (!user) return;
@@ -64,10 +63,10 @@ const Projects = () => {
     if (activeButton === "left") {
       // Hvis venstre knap allerede er aktiv, deaktiver alt
       setActiveButton(null);
-      hideAllPanels();
+      onShowProjectPanel(null); // Skjul panelet
     } else {
       setActiveButton("left");
-      showPanel("projects"); // Aktiver "projects"-panelet
+      onShowProjectPanel("Project"); // Aktiver "projects"-panelet med "Project" filter
     }
   };
 
@@ -75,10 +74,10 @@ const Projects = () => {
     if (activeButton === "right") {
       // Hvis højre knap allerede er aktiv, deaktiver alt
       setActiveButton(null);
-      hideAllPanels();
+      onShowProjectPanel(null); // Skjul panelet
     } else {
       setActiveButton("right");
-      showPanel("projects"); // Aktiver "projects"-panelet
+      onShowProjectPanel("Published"); // Aktiver "projects"-panelet med "Published" filter
     }
   };
 
@@ -115,9 +114,7 @@ const Projects = () => {
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
-        <Text
-          style={[styles.createStoryText, { color: Colors[theme]?.text || "#000" }]}
-        >
+        <Text style={[styles.createStoryText, { color: Colors[theme]?.text || "#000" }]}>
           Projects
         </Text>
       </View>
