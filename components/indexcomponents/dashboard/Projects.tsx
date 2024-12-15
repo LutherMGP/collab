@@ -21,6 +21,7 @@ const Projects = () => {
   const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
     useVisibility();
   const [draftCount, setDraftCount] = useState(0);
+  const [isRightButtonActive, setIsRightButtonActive] = useState(false); // Til højre knap
 
   useEffect(() => {
     if (!user) return; // Brug user direkte som uid, da det er en streng
@@ -51,7 +52,7 @@ const Projects = () => {
     return () => unsubscribe(); // Ryd op efter lytteren
   }, [user]);
 
-  const handlePress = () => {
+  const handlePressLeft = () => {
     if (isInfoPanelProjectsVisible) {
       hideAllPanels();
     } else {
@@ -62,6 +63,11 @@ const Projects = () => {
     );
   };
 
+  const handlePressRight = () => {
+    setIsRightButtonActive((prev) => !prev); // Skifter visuel tilstand
+    console.log("Højre knap blev trykket.");
+  };
+
   return (
     <View style={[styles.createStoryContainer]}>
       <Image
@@ -70,15 +76,29 @@ const Projects = () => {
         resizeMode="cover"
       />
 
+      {/* Venstre knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
           isInfoPanelProjectsVisible ? styles.iconPressed : null,
+          styles.leftButton,
         ]}
-        onPress={handlePress}
+        onPress={handlePressLeft}
       >
         <Text style={styles.draftCountText}>{draftCount || 0}</Text>
         {/* Brug fallback */}
+      </TouchableOpacity>
+
+      {/* Højre knap */}
+      <TouchableOpacity
+        style={[
+          styles.iconContainer,
+          isRightButtonActive ? styles.iconPressed : null, // Viser aktiv tilstand
+          styles.rightButton,
+        ]}
+        onPress={handlePressRight}
+      >
+        <Text style={styles.draftCountText}>+</Text> {/* Placeholder tekst */}
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
@@ -115,8 +135,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     position: "absolute",
     top: 108,
-    left: "50%",
-    transform: [{ translateX: -20 }],
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
     justifyContent: "center",
@@ -132,7 +150,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   iconPressed: {
-    backgroundColor: "rgba(0, 128, 0, 0.8)",
+    backgroundColor: "rgba(0, 128, 0, 0.8)", // Aktiv visuel tilstand
   },
   draftCountText: {
     fontSize: 20,
@@ -152,6 +170,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginTop: 22,
+  },
+  leftButton: {
+    left: "29%", // Placering til venstre
+    transform: [{ translateX: -20 }],
+  },
+  rightButton: {
+    right: "29%", // Placering til højre
+    transform: [{ translateX: 20 }],
   },
 });
 
