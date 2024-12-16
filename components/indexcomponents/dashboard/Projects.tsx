@@ -147,6 +147,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     position: "absolute",
+    top: 108,
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
     justifyContent: "center",
