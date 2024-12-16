@@ -1,195 +1,105 @@
 // @/components/indexcomponents/dashboard/Catalog.tsx
 
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  Modal,
-  TextInput,
-} from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
-  collectionGroup,
-  doc,
-  setDoc,
+  collection,
   query,
   where,
   onSnapshot,
-  serverTimestamp,
+  CollectionReference,
+  DocumentData,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
-interface Project {
-  id: string;
-  ownerId: string;
-  [key: string]: any;
-}
-
 const Catalog = () => {
-  const theme = "light";
   const { user } = useAuth();
-  const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } =
-    useVisibility();
-
-  const [productCount, setProductCount] = useState(0);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [applicationMessage, setApplicationMessage] = useState("");
+  const { activePanel, setActivePanel } = useVisibility();
+  const [catalogCount, setCatalogCount] = useState(0);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
-
-    const fetchProducts = async () => {
-      const allProductsQuery = query(
-        collectionGroup(database, "projects"),
-        where("status", "==", "Published")
-      );
-
-      const unsubscribe = onSnapshot(allProductsQuery, (snapshot) => {
-        const allProductIds = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ownerId: doc.ref.parent.parent?.id || null,
-          ...doc.data(),
-        }));
-
-        const availableProducts = allProductIds.filter(
-          ({ ownerId }) => ownerId !== user
-        );
-
-        setProductCount(availableProducts.length);
-      });
-
-      return () => unsubscribe();
-    };
-
-    fetchProducts().catch((error) => {
-      console.error("Fejl ved hentning af produkter:", error);
-      Alert.alert("Fejl", "Kunne ikke hente produkter.");
+    const catalogCollection = collection(
+      database,
+      "public_projects"
+    ) as CollectionReference<DocumentData>;
+  
+    // Query for "Catalog" status
+    const catalogQuery = query(
+      catalogCollection,
+      where("status", "==", "Catalog")
+    );
+  
+    // Query for "Favorite" status
+    const favoriteQuery = query(
+      catalogCollection,
+      where("isFavorite", "==", true) // Sørg for, at dette felt findes
+    );
+  
+    const catalogUnsubscribe = onSnapshot(catalogQuery, (querySnapshot) => {
+      console.log("Catalog results:", querySnapshot.docs.map(doc => doc.data())); // Debug log
+      setCatalogCount(querySnapshot.size);
     });
-  }, [user]);
+  
+    const favoriteUnsubscribe = onSnapshot(favoriteQuery, (querySnapshot) => {
+      console.log("Favorite results:", querySnapshot.docs.map(doc => doc.data())); // Debug log
+      setFavoriteCount(querySnapshot.size);
+    });
+  
+    return () => {
+      catalogUnsubscribe();
+      favoriteUnsubscribe();
+    };
+  }, []);
 
-  const handleApply = (project: Project) => {
-    setSelectedProject(project);
-    setModalVisible(true);
-  };
-
-  const submitApplication = async () => {
-    if (!selectedProject) {
-      Alert.alert("Fejl", "Ingen projekt valgt.");
-      return;
-    }
-
-    if (!applicationMessage.trim()) {
-      Alert.alert("Fejl", "Skriv en besked før du sender ansøgningen.");
-      return;
-    }
-
-    try {
-      const applicationRef = doc(
-        database,
-        "users",
-        selectedProject.ownerId,
-        "projects",
-        selectedProject.id,
-        "applications",
-        `${user}_${Date.now()}`
-      );
-
-      await setDoc(applicationRef, {
-        applicantId: user,
-        message: applicationMessage.trim(),
-        status: "pending",
-        createdAt: serverTimestamp(),
-      });
-
-      Alert.alert("Ansøgning sendt!", "Din ansøgning er blevet sendt.");
-      setApplicationMessage("");
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Fejl ved indsendelse af ansøgning:", error);
-      Alert.alert("Fejl", "Kunne ikke sende ansøgningen. Prøv igen.");
-    }
+  const handlePress = (status: "Catalog" | "Favorite") => {
+    setActivePanel(activePanel === status ? null : status);
   };
 
   return (
-    <View style={[styles.createStoryContainer]}>
+    <View style={styles.container}>
       <Image
-        source={require("@/assets/images/offerings.webp")}
+        source={require("@/assets/images/catalog.webp")}
         style={styles.profileImg}
         resizeMode="cover"
       />
 
+      {/* Venstre knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelCatalogVisible ? styles.iconPressed : null,
+          activePanel === "Catalog" && styles.iconPressed,
+          styles.leftButton,
         ]}
-        onPress={() => {
-          if (isInfoPanelCatalogVisible) hideAllPanels();
-          else showPanel("catalog");
-        }}
+        onPress={() => handlePress("Catalog")}
       >
-        <Text style={styles.productCountText}>{productCount}</Text>
+        <Text style={styles.countText}>{catalogCount || 0}</Text>
       </TouchableOpacity>
 
-      <View style={styles.createStoryTextContainer}>
-        <Text style={[styles.createStoryText, { color: Colors[theme].text }]}>
-          Catalog
-        </Text>
-      </View>
-
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
+      {/* Højre knap */}
+      <TouchableOpacity
+        style={[
+          styles.iconContainer,
+          activePanel === "Favorite" && styles.iconPressed,
+          styles.rightButton,
+        ]}
+        onPress={() => handlePress("Favorite")}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Ansøg om projekt</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Skriv din besked..."
-              value={applicationMessage}
-              onChangeText={setApplicationMessage}
-              multiline
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.buttonText}>Annuller</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={submitApplication}
-              >
-                <Text style={styles.buttonText}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        <Text style={styles.countText}>{favoriteCount || 0}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.textContainer}>
+        <Text style={styles.text}>Catalog</Text>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  profileImg: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  createStoryContainer: {
+  container: {
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
     borderRadius: 10,
@@ -203,11 +113,16 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginLeft: 5,
   },
+  profileImg: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
   iconContainer: {
     position: "absolute",
     top: 108,
-    left: "50%",
-    transform: [{ translateX: -20 }],
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
     justifyContent: "center",
@@ -225,13 +140,13 @@ const styles = StyleSheet.create({
   iconPressed: {
     backgroundColor: "rgba(0, 128, 0, 0.8)",
   },
-  productCountText: {
+  countText: {
     fontSize: 20,
     color: "white",
     fontWeight: "bold",
     textAlign: "center",
   },
-  createStoryTextContainer: {
+  textContainer: {
     justifyContent: "center",
     alignItems: "center",
     width: "80%",
@@ -239,62 +154,18 @@ const styles = StyleSheet.create({
     display: "flex",
     borderColor: Colors.light.background,
   },
-  createStoryText: {
+  text: {
     fontSize: 16,
     textAlign: "center",
     marginTop: 22,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+  leftButton: {
+    left: "29%",
+    transform: [{ translateX: -20 }],
   },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    width: "100%",
-    marginBottom: 20,
-    textAlignVertical: "top",
-    height: 80,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  cancelButton: {
-    backgroundColor: "red",
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  submitButton: {
-    backgroundColor: Colors.light.tint,
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
+  rightButton: {
+    right: "29%",
+    transform: [{ translateX: 20 }],
   },
 });
 

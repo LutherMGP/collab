@@ -5,27 +5,20 @@ import { FlatList, StyleSheet, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import NewProject from "@/components/indexcomponents/dashboard/NewProject";
-import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
+import Catalog from "@/components/indexcomponents/dashboard/Catalog";
+import { useAuth } from "@/hooks/useAuth";
 
-type DashboardProps = {
-  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
-};
-
-const Dashboard: React.FC<DashboardProps> = ({
-  onShowProjectPanel,
-}) => {
+const Dashboard: React.FC = () => {
   const theme = useColorScheme() || "light";
   const { userRole } = useAuth();
 
   // Opret en liste af komponenter baseret på brugerens rolle
   const components = [
     ...(userRole === "Designer" || userRole === "Admin"
-      ? [
-          <NewProject key="NewProject" />,
-          <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
-        ]
+      ? [<NewProject key="NewProject" />, <Projects key="Projects" />]
       : []),
+    <Catalog key="Catalog" />,
   ];
 
   return (
@@ -49,7 +42,7 @@ const styles = StyleSheet.create({
     paddingRight: "0%",
     marginBottom: "3%",
     marginTop: "3%",
-    elevation: 4, // Tilføj skygge for et bedre design
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,

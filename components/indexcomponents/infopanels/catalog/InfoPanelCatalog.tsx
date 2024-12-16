@@ -1,167 +1,128 @@
 // @/components/indexcomponents/infopanels/catalog/InfoPanelCatalog.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text } from "react-native";
+import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import {
-  collectionGroup,
   collection,
   query,
   where,
-  getDocs,
-  doc,
-  getDoc,
+  onSnapshot,
+  CollectionReference,
   DocumentData,
 } from "firebase/firestore";
-import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/catalog/InfoPanel";
+import { ref, getDownloadURL } from "firebase/storage";
+import { database, storage } from "@/firebaseConfig";
+import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
+import { ProjectData, Category } from "@/types/ProjectData";
 
-type ProjectData = {
-  id: string;
-  image?: string;
-  overlayImage?: string;
-  projectImage?: string;
-  guideImage?: string;
-  previewUrl?: string;
-  name?: string;
-  comment?: string;
-  status?: string;
-  price?: number;
-  isFavorite?: boolean;
-  toBePurchased?: boolean;
-  guideId?: string | null;
-  projectId?: string | null;
-  userId?: string | null;
+type InfoPanelCatalogProps = {
+  statusFilter: "Project" | "Favorite"; // Modtag statusFilter som prop
+  onClose: () => void; // Funktion til at lukke panelet
 };
 
-const InfoPanelProducts = () => {
+const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
+  statusFilter,
+  onClose,
+}) => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  const config = {
-    showFavorite: true, // true: favorit-ikonet kan benyttes (F1A)
-    showPurchase: true, // true: purchase-ikonet kan benyttes (F1B)
-    showDelete: false, // true: slet-knappen kan benyttes (F8)
-    showEdit: false, // true: redigerings-knappen kan benyttes (F8)
-    showSnit: false, // true: pdf filen vises hvis der long-presses (F5)
-    showGuide: false, // true: Viser guide-billede (F3)
-    // Herunder bør altid alle 3 altid være true
-    longPressForPdf: true, // true: nødvendig for F3 og F5
-    checkPurchaseStatus: true, // true: henter køb-status fra Firestore
-    checkFavoriteStatus: true, // true: henter favorit-status fra Firestore
-  };
-
-  const fetchAvailableProjects = async () => {
-    if (!user) return;
+  const fetchProjectStorageData = async (
+    userId: string,
+    projectId: string
+  ): Promise<Partial<ProjectData>> => {
+    const storageData: Partial<ProjectData> = {};
 
     try {
-      // Hent alle publicerede projekter
-      const allPublishedProjectsQuery = query(
-        collectionGroup(database, "projects"),
-        where("status", "==", "Published")
-      );
+      const categories: Category[] = ["f8", "f5", "f3", "f2"];
+      for (const category of categories) {
+        const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+        const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
 
-      const allPublishedProjectsSnapshot = await getDocs(
-        allPublishedProjectsQuery
-      );
-      const allPublishedProjects = allPublishedProjectsSnapshot.docs.map(
-        (docSnap) => ({
-          id: docSnap.id,
-          ...(docSnap.data() as DocumentData),
-          userId: docSnap.ref.parent.parent?.id || null,
-        })
-      ) as ProjectData[];
+        const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
+          () => undefined
+        );
+        const pdfUrl = await getDownloadURL(ref(storage, pdfPath)).catch(
+          () => undefined
+        );
 
-      // Hent brugerens købte projekter
-      const userPurchasesSnapshot = await getDocs(
-        query(
-          collection(database, "users", user, "purchases"),
-          where("purchased", "==", true)
-        )
-      );
-
-      const purchasedProjectIds = new Set(
-        userPurchasesSnapshot.docs.map((purchaseDoc) => {
-          const purchaseData = purchaseDoc.data() as DocumentData;
-          return purchaseData.projectId;
-        })
-      );
-
-      // Filtrer projekter for at udelukke brugerens egne og allerede købte
-      const filteredProjects = allPublishedProjects.filter(
-        (project) =>
-          project.userId !== user && !purchasedProjectIds.has(project.id)
-      );
-
-      // Hent billeder for hvert filtreret projekt
-      const projectsWithImages = await Promise.all(
-        filteredProjects.map(async (project) => {
-          let projectImage = null;
-          let guideImage = null;
-          let previewUrl = null;
-
-          // Hent projektbillede fra assets
-          if (project.projectId && project.userId) {
-            const projectDocRef = doc(
-              database,
-              "users",
-              project.userId,
-              "assets",
-              project.projectId
-            );
-            const projectDocSnap = await getDoc(projectDocRef);
-            if (projectDocSnap.exists()) {
-              projectImage = projectDocSnap.data().coverUrl || null;
-            }
-          }
-
-          // Hent guidebillede fra assets
-          if (project.guideId && project.userId) {
-            const guideDocRef = doc(
-              database,
-              "users",
-              project.userId,
-              "assets",
-              project.guideId
-            );
-            const guideDocSnap = await getDoc(guideDocRef);
-            if (guideDocSnap.exists()) {
-              guideImage = guideDocSnap.data().coverUrl || null;
-              previewUrl = guideDocSnap.data().previewUrl || null;
-            }
-          }
-
-          return {
-            ...project,
-            projectImage,
-            guideImage,
-            previewUrl,
-          };
-        })
-      );
-
-      setProjects(projectsWithImages);
-      setError(null);
-    } catch (err) {
-      console.error("Fejl ved behandling af tilgængelige projekter:", err);
-      setError("Der opstod en fejl ved hentning af data. Prøv igen senere.");
-    } finally {
-      setIsLoading(false);
+        storageData[`${category}CoverImageLowRes`] = imageUrl;
+        storageData[`${category}PDF`] = pdfUrl;
+      }
+    } catch (error) {
+      console.error("Fejl ved hentning af data fra Firebase Storage:", error);
     }
+
+    return storageData;
   };
 
   useEffect(() => {
-    fetchAvailableProjects();
-  }, [user]);
+    if (!user) return;
+
+    const userProjectsCollection = collection(
+      database,
+      "users",
+      user,
+      "projects"
+    ) as CollectionReference<DocumentData>;
+
+    const q = query(userProjectsCollection, where("status", "==", statusFilter));
+
+    const unsubscribe = onSnapshot(
+      q,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          setProjects([]);
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          const fetchedProjects = await Promise.all(
+            snapshot.docs.map(async (doc) => {
+              const data = doc.data();
+              const storageData = await fetchProjectStorageData(user, doc.id);
+
+              return {
+                id: doc.id,
+                name: data.name || "Uden navn",
+                description: data.description || "Ingen kommentar",
+                status: data.status || "Project",
+                price: data.price ?? undefined,
+                userId: user,
+                ...storageData,
+              } as ProjectData;
+            })
+          );
+
+          setProjects(fetchedProjects);
+          setError(null);
+        } catch (fetchError) {
+          console.error("Fejl ved hentning af projekter:", fetchError);
+          setError("Kunne ikke hente projekter. Prøv igen senere.");
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Fejl ved hentning af projekter:", err);
+        setError("Kunne ikke hente projekter. Prøv igen senere.");
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, statusFilter]);
 
   if (isLoading) {
     return (
-      <View>
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors[theme].text} />
       </View>
     );
@@ -169,19 +130,37 @@ const InfoPanelProducts = () => {
 
   if (error) {
     return (
-      <View>
+      <View style={styles.centered}>
         <Text style={{ color: Colors[theme].text }}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View>
+    <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={config} />
+        <InfoPanel
+          key={project.id}
+          projectData={project}
+          config={{
+            showFavorite: statusFilter === "Project", // Kun for Projects
+            showApply: statusFilter === "Project", // Aktiver ansøgningsknap for "Project"
+          }}
+        />
       ))}
     </View>
   );
 };
 
-export default InfoPanelProducts;
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  panelContainer: {
+    padding: 0,
+  },
+});
+
+export default InfoPanelCatalog;
