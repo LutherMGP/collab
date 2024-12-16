@@ -33,7 +33,10 @@ const NewProject: React.FC = () => {
    * @param localFilePath - Den lokale URI for filen
    * @param destinationPath - Destinationstien i Firebase Storage
    */
-  const uploadFileToStorage = async (localFilePath: string, destinationPath: string) => {
+  const uploadFileToStorage = async (
+    localFilePath: string,
+    destinationPath: string
+  ) => {
     try {
       const fileResponse = await fetch(localFilePath);
       const fileBlob = await fileResponse.blob();
@@ -47,7 +50,9 @@ const NewProject: React.FC = () => {
     }
   };
 
-  /* Funktion til at håndtere oprettelse af et nyt projekt */
+  /**
+   * Funktion til at håndtere oprettelse af et nyt projekt
+   */
   const handleCreateProject = async () => {
     if (!user) {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
@@ -67,18 +72,18 @@ const NewProject: React.FC = () => {
 
       // Definer filer og deres destinationer
       const filesToUpload = [
+        // f8 Kategori
         {
-          asset: Asset.fromModule(require("@/assets/default/projectimage/projectImage.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`,
-          key: "projectImage.jpg",
+          asset: Asset.fromModule(
+            require("@/assets/default/f8/f8CoverImageLowRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageLowRes.jpg`,
+          key: "f8CoverImageLowRes.jpg",
         },
         {
-          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageLowRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageLowRes`,
-          key: "f8CoverImageLowRes",
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageHighRes.jpg")),
+          asset: Asset.fromModule(
+            require("@/assets/default/f8/f8CoverImageHighRes.jpg")
+          ),
           destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageHighRes.jpg`,
           key: "f8CoverImageHighRes.jpg",
         },
@@ -87,8 +92,74 @@ const NewProject: React.FC = () => {
           destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8PDF.pdf`,
           key: "f8PDF.pdf",
         },
-        // Tilsvarende for f5, f3, f2
-        // ...
+        // f5 Kategori
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/f5/f5CoverImageLowRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageLowRes.jpg`,
+          key: "f5CoverImageLowRes.jpg",
+        },
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/f5/f5CoverImageHighRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageHighRes.jpg`,
+          key: "f5CoverImageHighRes.jpg",
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f5/f5PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5PDF.pdf`,
+          key: "f5PDF.pdf",
+        },
+        // f3 Kategori
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/f3/f3CoverImageLowRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageLowRes.jpg`,
+          key: "f3CoverImageLowRes.jpg",
+        },
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/f3/f3CoverImageHighRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageHighRes.jpg`,
+          key: "f3CoverImageHighRes.jpg",
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f3/f3PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3PDF.pdf`,
+          key: "f3PDF.pdf",
+        },
+        // f2 Kategori
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/f2/f2CoverImageLowRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageLowRes.jpg`,
+          key: "f2CoverImageLowRes.jpg",
+        },
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/f2/f2CoverImageHighRes.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageHighRes.jpg`,
+          key: "f2CoverImageHighRes.jpg",
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
+          key: "f2PDF.pdf",
+        },
+        // Projektets billede
+        {
+          asset: Asset.fromModule(
+            require("@/assets/default/projectimage/projectImage.jpg")
+          ),
+          destinationPath: `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`,
+          key: "projectImage.jpg",
+        },
       ];
 
       // URL’er til gemning i Firestore
