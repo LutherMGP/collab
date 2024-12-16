@@ -61,16 +61,16 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
 
   useEffect(() => {
     if (!user) return;
-
+  
     const userProjectsCollection = collection(
       database,
       "users",
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
-
+  
     const q = query(userProjectsCollection, where("status", "==", statusFilter));
-
+  
     const unsubscribe = onSnapshot(
       q,
       async (snapshot) => {
@@ -79,25 +79,22 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
           setIsLoading(false);
           return;
         }
-
+  
         try {
-          const fetchedProjects = await Promise.all(
-            snapshot.docs.map(async (doc) => {
-              const data = doc.data();
-              const storageData = await fetchProjectStorageData(user, doc.id);
-
-              return {
-                id: doc.id,
-                name: data.name || "Uden navn",
-                description: data.description || "Ingen kommentar",
-                status: data.status || "Project",
-                price: data.price ?? undefined,
-                userId: user,
-                ...storageData,
-              } as ProjectData;
-            })
-          );
-
+          const fetchedProjects = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name || "Uden navn",
+              description: data.description || "Ingen kommentar",
+              status: data.status || "Project",
+              price: data.price ?? undefined,
+              userId: user,
+              coverImageUrl: data.coverImageUrl || null, // Gemt i Firestore
+              pdfUrl: data.pdfUrl || null, // Gemt i Firestore
+            } as ProjectData;
+          });
+  
           setProjects(fetchedProjects);
           setError(null);
         } catch (fetchError) {
@@ -113,7 +110,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
         setIsLoading(false);
       }
     );
-
+  
     return () => unsubscribe();
   }, [user, statusFilter]);
 
