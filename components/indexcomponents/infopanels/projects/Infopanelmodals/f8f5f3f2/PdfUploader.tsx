@@ -11,8 +11,9 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
-import { FilePaths } from "@/utils/filePaths";
+import { doc, setDoc } from "firebase/firestore"; // Importer setDoc
+import { storage, database } from "@/firebaseConfig"; // Sikre at 'database' er importeret korrekt
+import { FilePaths } from "@/utils/filePaths"; // Antag at du har denne helper
 
 type PdfUploaderProps = {
   userId: string;
@@ -56,7 +57,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
     try {
       const pdfBlob = await (await fetch(pdfUri)).blob();
-      const pdfPath = FilePaths.pdf(userId, projectId, category); // `category` er nu korrekt typed
+      const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
       const pdfRef = ref(storage, pdfPath);
 
       const uploadTask = uploadBytesResumable(pdfRef, pdfBlob);
@@ -73,6 +74,19 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         },
         async () => {
           const downloadURL = await getDownloadURL(pdfRef);
+
+          // **Gem URL'en i Firestore**
+          const projectDocRef = doc(database, "users", userId, "projects", projectId);
+          await setDoc(
+            projectDocRef,
+            {
+              fileUrls: {
+                [`${category}PDF`]: downloadURL,
+              },
+            },
+            { merge: true }
+          );
+
           Alert.alert("Succes", "PDF'en er uploadet.");
           onUploadSuccess(downloadURL);
         }

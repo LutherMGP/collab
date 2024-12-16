@@ -13,7 +13,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebaseConfig";
+import { doc, setDoc } from "firebase/firestore"; // Importer setDoc
+import { storage, database } from "@/firebaseConfig"; // Sikre at 'database' er importeret korrekt
 import { categoryImageConfig, Category } from "@/constants/ImageConfig";
 
 type SelectedImageUris = {
@@ -126,6 +127,19 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       const lowResURL = await uploadWithProgress(lowRes, lowResPath, 0);
       const highResURL = await uploadWithProgress(highRes, highResPath, 50);
 
+      // **Gem URL'er i Firestore**
+      const projectDocRef = doc(database, "users", userId, "projects", projectId);
+      await setDoc(
+        projectDocRef,
+        {
+          fileUrls: {
+            [`${category}CoverImageLowRes`]: lowResURL,
+            [`${category}CoverImageHighRes`]: highResURL,
+          },
+        },
+        { merge: true }
+      );
+
       setSelectedImageUris(null);
       setIsUploading(false);
       onUploadSuccess({ lowRes: lowResURL, highRes: highResURL });
@@ -144,6 +158,7 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       {selectedImageUris ? (
         <View style={styles.imageContainer}>
           <Image source={{ uri: selectedImageUris.lowRes }} style={styles.image} />
+          <Image source={{ uri: selectedImageUris.highRes }} style={styles.image} />
         </View>
       ) : (
         <Text style={styles.noImageText}>Ingen billede valgt</Text>
