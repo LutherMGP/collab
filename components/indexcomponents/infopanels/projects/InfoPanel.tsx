@@ -47,6 +47,7 @@ type InfoPanelConfig = {
   longPressForPdf?: boolean;
   checkPurchaseStatus?: boolean;
   checkFavoriteStatus?: boolean;
+  showApply?: boolean; // Tilføj showApply her
 };
 
 type InfoPanelProps = {

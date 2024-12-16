@@ -19,7 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ProjectData, Category } from "@/types/ProjectData";
 
 type InfoPanelCatalogProps = {
-  statusFilter: "Project" | "Favorite"; // Modtag statusFilter som prop
+  statusFilter: "Catalog" | "Favorite"; // StatusFilter for Catalog eller Favorite
   onClose: () => void; // Funktion til at lukke panelet
 };
 
@@ -65,14 +65,33 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
   useEffect(() => {
     if (!user) return;
 
-    const userProjectsCollection = collection(
+    const catalogCollection = collection(
       database,
-      "users",
-      user,
-      "projects"
+      "public_projects"
     ) as CollectionReference<DocumentData>;
 
-    const q = query(userProjectsCollection, where("status", "==", statusFilter));
+    let q;
+    if (statusFilter === "Catalog") {
+      // Query for Catalog: Published projects not owned by user and not marked as Favorite
+      q = query(
+        catalogCollection,
+        where("status", "==", "Published"),
+        where("ownerId", "!=", user), // Exclude user's own projects
+        where("isFavorite", "==", false) // Exclude favorite projects
+      );
+    } else if (statusFilter === "Favorite") {
+      // Query for Favorite: Published projects not owned by user but marked as Favorite
+      q = query(
+        catalogCollection,
+        where("status", "==", "Published"),
+        where("ownerId", "!=", user), // Exclude user's own projects
+        where("isFavorite", "==", true) // Include only favorite projects
+      );
+    } else {
+      setError("Ugyldigt statusFilter.");
+      setIsLoading(false);
+      return;
+    }
 
     const unsubscribe = onSnapshot(
       q,
@@ -93,9 +112,9 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
                 id: doc.id,
                 name: data.name || "Uden navn",
                 description: data.description || "Ingen kommentar",
-                status: data.status || "Project",
+                status: data.status || "Catalog",
                 price: data.price ?? undefined,
-                userId: user,
+                userId: data.ownerId || user,
                 ...storageData,
               } as ProjectData;
             })
@@ -143,8 +162,8 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
           key={project.id}
           projectData={project}
           config={{
-            showFavorite: statusFilter === "Project", // Kun for Projects
-            showApply: statusFilter === "Project", // Aktiver ansøgningsknap for "Project"
+            showFavorite: statusFilter === "Catalog", // Kun aktiveret for Catalog
+            showApply: statusFilter === "Catalog", // Aktiver ansøgningsknap for Catalog
           }}
         />
       ))}

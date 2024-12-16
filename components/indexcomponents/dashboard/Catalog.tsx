@@ -22,38 +22,69 @@ const Catalog = () => {
   const [favoriteCount, setFavoriteCount] = useState(0);
 
   useEffect(() => {
+    if (!user) {
+      console.log("Bruger ikke logget ind, afslutter.");
+      return;
+    }
+  
+    // Kontrollér om user er en streng (typisk user.uid fra Firebase Auth)
+    if (typeof user !== "string") {
+      console.error("user er ikke en streng:", user);
+      return;
+    }
+  
     const catalogCollection = collection(
       database,
       "public_projects"
     ) as CollectionReference<DocumentData>;
   
-    // Query for "Catalog" status
+    // Query for Catalog: Published projects not owned by user and not marked as Favorite
     const catalogQuery = query(
       catalogCollection,
-      where("status", "==", "Catalog")
+      where("status", "==", "Published"),
+      where("ownerId", "!=", user) // Exclude user's own projects
     );
   
-    // Query for "Favorite" status
+    const catalogUnsubscribe = onSnapshot(
+      catalogQuery,
+      (querySnapshot) => {
+        console.log("Catalog Query Snapshot:", querySnapshot.docs.map(doc => doc.data()));
+  
+        const filteredProjects = querySnapshot.docs.filter(
+          (doc) => !doc.data().isFavorite // Exclude Favorite projects
+        );
+  
+        setCatalogCount(filteredProjects.length);
+      },
+      (error) => {
+        console.error("Fejl ved hentning af Catalog data:", error);
+      }
+    );
+  
+    // Query for Favorite: Published projects not owned by user and marked as Favorite
     const favoriteQuery = query(
       catalogCollection,
-      where("isFavorite", "==", true) // Sørg for, at dette felt findes
+      where("status", "==", "Published"),
+      where("ownerId", "!=", user), // Exclude user's own projects
+      where("isFavorite", "==", true) // Include only Favorite projects
     );
   
-    const catalogUnsubscribe = onSnapshot(catalogQuery, (querySnapshot) => {
-      console.log("Catalog results:", querySnapshot.docs.map(doc => doc.data())); // Debug log
-      setCatalogCount(querySnapshot.size);
-    });
-  
-    const favoriteUnsubscribe = onSnapshot(favoriteQuery, (querySnapshot) => {
-      console.log("Favorite results:", querySnapshot.docs.map(doc => doc.data())); // Debug log
-      setFavoriteCount(querySnapshot.size);
-    });
+    const favoriteUnsubscribe = onSnapshot(
+      favoriteQuery,
+      (querySnapshot) => {
+        console.log("Favorite Query Snapshot:", querySnapshot.docs.map(doc => doc.data()));
+        setFavoriteCount(querySnapshot.size);
+      },
+      (error) => {
+        console.error("Fejl ved hentning af Favorite data:", error);
+      }
+    );
   
     return () => {
       catalogUnsubscribe();
       favoriteUnsubscribe();
     };
-  }, []);
+  }, [user]);
 
   const handlePress = (status: "Catalog" | "Favorite") => {
     setActivePanel(activePanel === status ? null : status);
@@ -67,7 +98,7 @@ const Catalog = () => {
         resizeMode="cover"
       />
 
-      {/* Venstre knap */}
+      {/* Left button for Catalog */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
@@ -79,7 +110,7 @@ const Catalog = () => {
         <Text style={styles.countText}>{catalogCount || 0}</Text>
       </TouchableOpacity>
 
-      {/* Højre knap */}
+      {/* Right button for Favorite */}
       <TouchableOpacity
         style={[
           styles.iconContainer,

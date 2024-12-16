@@ -9,24 +9,61 @@ import Projects from "@/components/indexcomponents/dashboard/Projects";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import { useAuth } from "@/hooks/useAuth";
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
+  onShowCatalogPanel: (status: "Catalog" | "Favorite" | null) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({
+  onShowProjectPanel,
+  onShowCatalogPanel,
+}) => {
   const theme = useColorScheme() || "light";
   const { userRole } = useAuth();
 
-  // Opret en liste af komponenter baseret på brugerens rolle
-  const components = [
+  // Debug: Log brugerens rolle
+  console.log("Brugerens rolle:", userRole);
+
+  // Komponentlisten
+  const components: { key: string; component: React.FC<any>; props: any }[] = [
     ...(userRole === "Designer" || userRole === "Admin"
-      ? [<NewProject key="NewProject" />, <Projects key="Projects" />]
+      ? [
+          {
+            key: "NewProject",
+            component: NewProject,
+            props: { onShowProjectPanel },
+          },
+          {
+            key: "Projects",
+            component: Projects,
+            props: { onShowProjectPanel },
+          },
+        ]
       : []),
-    <Catalog key="Catalog" />,
+    {
+      key: "Catalog",
+      component: Catalog,
+      props: { onShowCatalogPanel },
+    },
   ];
 
   return (
     <FlatList
       data={components}
       horizontal
-      keyExtractor={(item) => item.key || Math.random().toString()}
-      renderItem={({ item }) => <View style={styles.container}>{item}</View>}
+      keyExtractor={(item) => item.key}
+      renderItem={({ item }) => {
+        const { component: Component, props } = item;
+
+        // Debug: Log komponenten der renderes
+        console.log("Renderer komponent:", item.key);
+
+        return (
+          <View style={styles.container}>
+            <Component {...props} />
+          </View>
+        );
+      }}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={[
         styles.contentContainerStyle,

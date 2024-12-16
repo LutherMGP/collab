@@ -117,10 +117,14 @@ const Index = () => {
       {/* Render InfoPanelCatalog kun hvis synlig */}
       {catalogPanelStatus && (
         <View style={styles.infoPanelContainer}>
-          <InfoPanelCatalog
-            statusFilter={catalogPanelStatus}
-            onClose={hideCatalogPanel}
-          />
+          {catalogPanelStatus === "Catalog" || catalogPanelStatus === "Favorite" ? (
+            <InfoPanelCatalog
+              statusFilter={catalogPanelStatus}
+              onClose={hideCatalogPanel}
+            />
+          ) : (
+            <Text>Ugyldig status: {catalogPanelStatus}</Text>
+          )}
         </View>
       )}
     </Animated.ScrollView>
