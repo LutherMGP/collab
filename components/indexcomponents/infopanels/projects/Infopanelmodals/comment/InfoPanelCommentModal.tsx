@@ -39,7 +39,7 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
           const data = snapshot.data();
-          const categoryData = data.data?.[category];
+          const categoryData = data.filecomments?.[category];
           setComment(categoryData?.comment || "Ingen kommentar endnu.");
         } else {
           setComment("Ingen kommentar endnu.");
@@ -59,7 +59,7 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
       await setDoc(
         docRef,
         {
-          data: {
+          filecomments: {
             [category]: {
               comment: comment.trim(),
               updatedAt: new Date().toISOString(),
