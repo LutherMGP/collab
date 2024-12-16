@@ -924,7 +924,7 @@ const InfoPanel = ({
               onClose={closeProjectImageModal}
               projectId={projectData.id}
               userId={userId || ""}
-              category="f8"
+              category="f8" // Sørg for, at 'category' er inkluderet her
               onUploadSuccess={(downloadURL: string) => {
                 setProjectData((prev) => ({
                   ...prev,
@@ -933,7 +933,6 @@ const InfoPanel = ({
                     "projectImage.jpg": downloadURL,
                   },
                 }));
-                Alert.alert("Success", "Billedet blev uploadet med succes.");
               }}
               onUploadFailure={(error: unknown) => {
                 console.error("Billedet kunne ikke uploades:", error);
