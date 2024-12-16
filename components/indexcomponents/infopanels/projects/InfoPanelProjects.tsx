@@ -49,8 +49,12 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
           () => undefined
         );
 
-        storageData[`${category}CoverImageLowRes`] = imageUrl;
-        storageData[`${category}PDF`] = pdfUrl;
+        const coverImageKey = `${category}CoverImageLowRes` as keyof ProjectData;
+        const pdfKey = `${category}PDF` as keyof ProjectData;
+
+        // Type assertion for dynamic keys
+        storageData[coverImageKey] = (imageUrl || null) as ProjectData[typeof coverImageKey];
+        storageData[pdfKey] = (pdfUrl || null) as ProjectData[typeof pdfKey];
       }
     } catch (error) {
       console.error("Fejl ved hentning af data fra Firebase Storage:", error);
@@ -60,7 +64,13 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log("Bruger ikke logget ind, afslutter.");
+      setIsLoading(false);
+      return;
+    }
+
+    console.log("Bruger logget ind:", user);
 
     const userProjectsCollection = collection(
       database,
@@ -71,10 +81,13 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
 
     const q = query(userProjectsCollection, where("status", "==", statusFilter));
 
+    console.log("Kører query med statusFilter:", statusFilter);
+
     const unsubscribe = onSnapshot(
       q,
       async (snapshot) => {
         if (snapshot.empty) {
+          console.log("Ingen projekter fundet for status:", statusFilter);
           setProjects([]);
           setIsLoading(false);
           return;
@@ -83,15 +96,17 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
         try {
           const fetchedProjects = await Promise.all(
             snapshot.docs.map(async (doc) => {
-              const data = doc.data();
+              const data = doc.data() as Partial<ProjectData>;
               const storageData = await fetchProjectStorageData(user, doc.id);
+
+              console.log("Projekt fundet:", data);
 
               return {
                 id: doc.id,
                 name: data.name || "Uden navn",
                 description: data.description || "Ingen kommentar",
                 status: data.status || "Project",
-                price: data.price ?? undefined,
+                price: data.price ?? 0,
                 userId: user,
                 ...storageData,
               } as ProjectData;
@@ -108,7 +123,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
         }
       },
       (err) => {
-        console.error("Fejl ved hentning af projekter:", err);
+        console.error("Snapshot fejl:", err);
         setError("Kunne ikke hente projekter. Prøv igen senere.");
         setIsLoading(false);
       }
@@ -129,6 +144,16 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
     return (
       <View style={styles.centered}>
         <Text style={{ color: Colors[theme].text }}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (!projects.length) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: Colors[theme].text }}>
+          Ingen projekter fundet.
+        </Text>
       </View>
     );
   }

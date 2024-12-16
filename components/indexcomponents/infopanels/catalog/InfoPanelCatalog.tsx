@@ -46,14 +46,18 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
 
         const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
-          () => undefined
+          () => null
         );
         const pdfUrl = await getDownloadURL(ref(storage, pdfPath)).catch(
-          () => undefined
+          () => null
         );
 
-        storageData[`${category}CoverImageLowRes`] = imageUrl;
-        storageData[`${category}PDF`] = pdfUrl;
+        const coverImageKey = `${category}CoverImageLowRes` as keyof ProjectData;
+        const pdfKey = `${category}PDF` as keyof ProjectData;
+
+        // Type assertion for dynamic keys
+        storageData[coverImageKey] = imageUrl ?? null;
+        storageData[pdfKey] = pdfUrl ?? null;
       }
     } catch (error) {
       console.error("Fejl ved hentning af data fra Firebase Storage:", error);
@@ -105,7 +109,7 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
         try {
           const fetchedProjects = await Promise.all(
             snapshot.docs.map(async (doc) => {
-              const data = doc.data();
+              const data = doc.data() as Partial<ProjectData>;
               const storageData = await fetchProjectStorageData(user, doc.id);
 
               return {
@@ -113,7 +117,7 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({
                 name: data.name || "Uden navn",
                 description: data.description || "Ingen kommentar",
                 status: data.status || "Catalog",
-                price: data.price ?? undefined,
+                price: data.price ?? null,
                 userId: data.ownerId || user,
                 ...storageData,
               } as ProjectData;

@@ -13,7 +13,6 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -33,9 +32,7 @@ import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/proje
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { deleteFolderContents as deleteFolder } from "@/utils/storageUtils";
-import { ProjectData } from "@/types/ProjectData";
-
-type Category = "f8" | "f5" | "f3" | "f2";
+import { ProjectData, Category } from "@/types/ProjectData";
 
 type InfoPanelConfig = {
   showFavorite?: boolean;
@@ -70,31 +67,31 @@ const InfoPanel = ({
   // Define projectData as a state variable
   const [projectData, setProjectData] = useState<ProjectData>({
     ...initialProjectData,
-    f8CoverImageLowRes: initialProjectData.f8CoverImageLowRes || null,
-    f8PDF: initialProjectData.f8PDF || null,
-    f5CoverImageLowRes: initialProjectData.f5CoverImageLowRes || null,
-    f5PDF: initialProjectData.f5PDF || null,
-    f3CoverImageLowRes: initialProjectData.f3CoverImageLowRes || null,
-    f3PDF: initialProjectData.f3PDF || null,
-    f2CoverImageLowRes: initialProjectData.f2CoverImageLowRes || null,
-    f2PDF: initialProjectData.f2PDF || null,
+    f8CoverImageLowRes: initialProjectData.f8CoverImageLowRes ?? null,
+    f8PDF: initialProjectData.f8PDF ?? null,
+    f5CoverImageLowRes: initialProjectData.f5CoverImageLowRes ?? null,
+    f5PDF: initialProjectData.f5PDF ?? null,
+    f3CoverImageLowRes: initialProjectData.f3CoverImageLowRes ?? null,
+    f3PDF: initialProjectData.f3PDF ?? null,
+    f2CoverImageLowRes: initialProjectData.f2CoverImageLowRes ?? null,
+    f2PDF: initialProjectData.f2PDF ?? null,
   });
 
-  const f8CoverImage = projectData.f8CoverImageLowRes || null;
-  const f8PDF = projectData.f8PDF || null;
-  const f5CoverImage = projectData.f5CoverImageLowRes || null;
-  const f5PDF = projectData.f5PDF || null;
-  const f3CoverImage = projectData.f3CoverImageLowRes || null;
-  const f3PDF = projectData.f3PDF || null;
-  const f2CoverImage = projectData.f2CoverImageLowRes || null;
-  const f2PDF = projectData.f2PDF || null;
+  const f8CoverImage = projectData.f8CoverImageLowRes;
+  const f8PDF = projectData.f8PDF;
+  const f5CoverImage = projectData.f5CoverImageLowRes;
+  const f5PDF = projectData.f5PDF;
+  const f3CoverImage = projectData.f3CoverImageLowRes;
+  const f3PDF = projectData.f3PDF;
+  const f2CoverImage = projectData.f2CoverImageLowRes;
+  const f2PDF = projectData.f2PDF;
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
-  const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
+  const price = projectData.price !== null && projectData.price !== undefined ? `${projectData.price} kr.` : "Uden pris";
 
-  const [isFavorite, setIsFavorite] = useState(projectData.isFavorite || false);
+  const [isFavorite, setIsFavorite] = useState(projectData.isFavorite ?? false);
   const [toBePurchased, setToBePurchased] = useState(
-    projectData.toBePurchased || false
+    projectData.toBePurchased ?? false
   );
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -305,21 +302,22 @@ const InfoPanel = ({
 
   const ensureProjectFields = async () => {
     if (!userId || !projectData.id) return;
-  
+
     const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-  
+
     try {
       await setDoc(
         projectDocRef,
         {
-          f8CoverImageLowRes: projectData.f8CoverImageLowRes || null,
-          f8PDF: projectData.f8PDF || null,
+          f8CoverImageLowRes: projectData.f8CoverImageLowRes ?? null,
+          f8PDF: projectData.f8PDF ?? null,
         },
         { merge: true }
       );
       console.log("Project fields ensured in Firestore.");
     } catch (error) {
       console.error("Failed to ensure project fields:", error);
+      Alert.alert("Fejl", "Kunne ikke sikre projektfelter.");
     }
   };
 
@@ -349,6 +347,7 @@ const InfoPanel = ({
       } catch (error) {
         console.error("Fejl ved hentning af projektbillede:", error);
         setProjectImage(null);
+        Alert.alert("Fejl", "Kunne ikke hente projektbillede.");
       }
     };
 
@@ -465,6 +464,7 @@ const InfoPanel = ({
   const handleCloseCommentModal = () => {
     setActiveCategory(null);
     setIsCommentModalVisible(false);
+    refreshProjectData();
   };
 
   const openAttachmentModal = () => {
@@ -473,6 +473,7 @@ const InfoPanel = ({
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalVisible(false);
+    refreshProjectData();
   };
 
   // Function to update project data after changes
@@ -486,30 +487,36 @@ const InfoPanel = ({
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
-        const data = snapshot.data();
+        const data = snapshot.data() as Partial<ProjectData>; // Typecast data
+
+        const updatedFields: Partial<ProjectData> = categories.reduce((acc, category) => {
+          const coverImageKey = `${category}CoverImageLowRes` as keyof ProjectData;
+          const pdfKey = `${category}PDF` as keyof ProjectData;
+
+          // Type assertion for dynamic keys
+          acc[coverImageKey] = (data[coverImageKey] ?? projectData[coverImageKey] ?? null) as string | null;
+          acc[pdfKey] = (data[pdfKey] ?? projectData[pdfKey] ?? null) as string | null;
+
+          return acc;
+        }, {} as Partial<ProjectData>); // Type assertion
+
         setProjectData((prev) => ({
           ...prev,
-          name: data.name || "",
-          description: data.description || "",
-          status: data.status || prev.status || "",
-          price: data.price || prev.price || 0,
-          isFavorite: data.isFavorite || prev.isFavorite || false,
-          toBePurchased: data.toBePurchased || prev.toBePurchased || false,
-          ...categories.reduce((acc, category) => {
-            const keyLowRes = `${category}CoverImageLowRes` as keyof ProjectData;
-            const keyHighRes = `${category}CoverImageHighRes` as keyof ProjectData;
-            const keyPDF = `${category}PDF` as keyof ProjectData;
-
-            acc[keyLowRes] = data[category]?.CoverImageLowRes || null; 
-            acc[keyHighRes] = data[category]?.CoverImageHighRes || null; 
-            acc[keyPDF] = data[category]?.PDF || null;
-            return acc;
-          }, {} as Partial<ProjectData>),
+          name: data.name ?? prev.name ?? "Uden navn",
+          description: data.description ?? prev.description ?? "Ingen kommentar",
+          status: data.status ?? prev.status ?? "Project",
+          price: data.price ?? prev.price ?? 0,
+          isFavorite: data.isFavorite ?? prev.isFavorite ?? false,
+          toBePurchased: data.toBePurchased ?? prev.toBePurchased ?? false,
+          ...updatedFields,
         }));
+      } else {
+        console.warn("Projektdata findes ikke.");
+        Alert.alert("Advarsel", "Projektdata kunne ikke findes.");
       }
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
-      Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
+      Alert.alert("Fejl", "Kunne ikke opdatere projektdata. Prøv igen senere.");
     } finally {
       setIsLoading(false);
     }
@@ -517,67 +524,61 @@ const InfoPanel = ({
 
   // Function to toggle status between and to published
   const handleStatusToggle = async () => {
-    try {
-      if (!userId || !projectData.id) {
-        throw new Error("Bruger-ID eller projekt-ID mangler.");
-      }
-
-      const isCurrentlyPublished = projectData.status === "Published";
-      const newStatus = isCurrentlyPublished ? "Project" : "Published";
-
-      // Confirmation before status change
-      Alert.alert(
-        isCurrentlyPublished ? "Fjern Publicering" : "Bekræft Publicering",
-        isCurrentlyPublished
-          ? "Vil du ændre status til 'Project'? Dette vil gøre projektet privat igen."
-          : "Vil du ændre status til 'Published'? Projektet bliver synligt for andre.",
-        [
-          {
-            text: "Annuller",
-            style: "cancel",
-          },
-          {
-            text: isCurrentlyPublished ? "Gør Privat" : "Publicer",
-            style: "default",
-            onPress: async () => {
-              try {
-                const projectDocRef = doc(
-                  database,
-                  "users",
-                  userId,
-                  "projects",
-                  projectData.id
-                );
-
-                await setDoc(
-                  projectDocRef,
-                  { status: newStatus },
-                  { merge: true }
-                );
-
-                Alert.alert(
-                  "Status Opdateret",
-                  newStatus === "Published"
-                    ? "Projektet er nu publiceret."
-                    : "Projektet er nu tilbage som kladde."
-                );
-
-                setProjectData((prev) => ({ ...prev, status: newStatus })); // Update locally
-              } catch (error) {
-                console.error("Fejl ved opdatering af status:", error);
-                Alert.alert(
-                  "Fejl",
-                  "Kunne ikke opdatere status. Prøv igen senere."
-                );
-              }
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error("Fejl ved skift af status:", error);
-      Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
+    if (!userId || !projectData.id) {
+      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
+      return;
     }
+
+    const isCurrentlyPublished = projectData.status === "Published";
+    const newStatus = isCurrentlyPublished ? "Project" : "Published";
+
+    // Confirmation before status change
+    Alert.alert(
+      isCurrentlyPublished ? "Fjern Publicering" : "Bekræft Publicering",
+      isCurrentlyPublished
+        ? "Vil du gøre projektet privat igen?"
+        : "Vil du gøre projektet synligt for andre?",
+      [
+        {
+          text: "Annuller",
+          style: "cancel",
+        },
+        {
+          text: isCurrentlyPublished ? "Gør Privat" : "Publicer",
+          style: "default",
+          onPress: async () => {
+            try {
+              const projectDocRef = doc(
+                database,
+                "users",
+                userId,
+                "projects",
+                projectData.id
+              );
+
+              await setDoc(
+                projectDocRef,
+                { status: newStatus },
+                { merge: true }
+              );
+
+              Alert.alert(
+                "Status Opdateret",
+                `Projektet er nu ${newStatus === "Published" ? "publiceret" : "privat"}.`
+              );
+
+              setProjectData((prev) => ({ ...prev, status: newStatus })); // Update locally
+            } catch (error) {
+              console.error("Fejl ved opdatering af status:", error);
+              Alert.alert(
+                "Fejl",
+                "Kunne ikke opdatere status. Prøv igen senere."
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -613,8 +614,10 @@ const InfoPanel = ({
           key={`f8-modal-${refreshKey}`} // Unique key for modal update
         >
           {/* Show image if available */}
-          {f8CoverImage && (
+          {f8CoverImage ? (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
+          ) : (
+            <Text style={componentStyles.fallbackText}>Intet billede tilgængeligt</Text>
           )}
 
           {/* Text at the top of f8 */}
@@ -689,8 +692,10 @@ const InfoPanel = ({
                 key={`f2-modal-${refreshKey}`} // Unique key for modal update
               >
                 {/* Show image if available */}
-                {f2CoverImage && (
+                {f2CoverImage ? (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
+                ) : (
+                  <Text style={componentStyles.fallbackText}>Intet billede tilgængeligt</Text>
                 )}
 
                 {/* Text at the top of f2 */}
@@ -749,8 +754,10 @@ const InfoPanel = ({
               key={`f3-modal-${refreshKey}`} // Unique key for modal update
             >
               {/* Show image if available */}
-              {f3CoverImage && (
+              {f3CoverImage ? (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
+              ) : (
+                <Text style={componentStyles.fallbackText}>Intet billede tilgængeligt</Text>
               )}
 
               {/* Text at the top of f3 */}
@@ -777,8 +784,10 @@ const InfoPanel = ({
             key={`f5-modal-${refreshKey}`} // Unique key for modal update
           >
             {/* Show image if available */}
-            {f5CoverImage && (
+            {f5CoverImage ? (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
+            ) : (
+              <Text style={componentStyles.fallbackText}>Intet billede tilgængeligt</Text>
             )}
 
             {/* Text at the top of f5 */}
@@ -798,7 +807,7 @@ const InfoPanel = ({
       </View>
 
       {isLoading && (
-        <View style={baseStyles.loadingOverlay}>
+        <View style={componentStyles.loadingOverlay}>
           <ActivityIndicator size="large" color="blue" />
         </View>
       )}
@@ -811,8 +820,8 @@ const InfoPanel = ({
         onRequestClose={closeF8Modal}
         key={`f8-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelF8
               projectId={projectData.id} // Add projectId
               userId={userId || ""} // Add userId
@@ -830,8 +839,8 @@ const InfoPanel = ({
         onRequestClose={closeF5Modal}
         key={`f5-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelF5
               projectId={projectData.id} // Add projectId
               userId={userId || ""} // Add userId
@@ -849,8 +858,8 @@ const InfoPanel = ({
         onRequestClose={closeF3Modal}
         key={`f3-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelF3
               projectId={projectData.id} // Add projectId
               userId={userId || ""} // Add userId
@@ -868,8 +877,8 @@ const InfoPanel = ({
         onRequestClose={closeF2Modal}
         key={`f2-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelF2
               projectId={projectData.id} // Add projectId
               userId={userId || ""} // Add userId
@@ -887,8 +896,8 @@ const InfoPanel = ({
         onRequestClose={closeNameCommentModal}
         key={`name-comment-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelNameComment
               onClose={closeNameCommentModal}
               name={name}
@@ -907,8 +916,8 @@ const InfoPanel = ({
         transparent={true}
         onRequestClose={closePrizeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
               selectedOption={selectedOption}
@@ -928,25 +937,25 @@ const InfoPanel = ({
         onRequestClose={closeProjectImageModal}
         key={`project-image-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-          <InfoPanelProjectImage
-            onClose={closeProjectImageModal}
-            projectId={projectData.id}
-            userId={userId || ""}
-            category="f8"
-            onUploadSuccess={(downloadURL: string) => {
-              setProjectData((prev) => ({
-                ...prev,
-                f8CoverImageLowRes: downloadURL, // Brug downloadURL direkte
-              }));
-              Alert.alert("Success", "Billedet blev uploadet med succes.");
-            }}
-            onUploadFailure={(error: unknown) => {
-              console.error("Billedet kunne ikke uploades:", error);
-              Alert.alert("Fejl", "Der opstod en fejl under upload.");
-            }}
-          />
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
+            <InfoPanelProjectImage
+              onClose={closeProjectImageModal}
+              projectId={projectData.id}
+              userId={userId || ""}
+              category="f8"
+              onUploadSuccess={(downloadURL: string) => {
+                setProjectData((prev) => ({
+                  ...prev,
+                  f8CoverImageLowRes: downloadURL, // Brug downloadURL direkte
+                }));
+                Alert.alert("Success", "Billedet blev uploadet med succes.");
+              }}
+              onUploadFailure={(error: unknown) => {
+                console.error("Billedet kunne ikke uploades:", error);
+                Alert.alert("Fejl", "Der opstod en fejl under upload.");
+              }}
+            />
           </View>
         </View>
       </Modal>
@@ -958,7 +967,7 @@ const InfoPanel = ({
         transparent={true}
         onRequestClose={handleCloseCommentModal}
       >
-        <View style={styles.modalOverlay}>
+        <View style={componentStyles.modalOverlay}>
           {activeCategory && ( // Sikrer, at category aldrig er null
             <InfoPanelCommentModal
               projectId={projectData.id}
@@ -988,8 +997,8 @@ const InfoPanel = ({
         onRequestClose={closeAttachmentModal}
         key={`attachment-modal-${refreshKey}`} // Unique key for modal update
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={componentStyles.modalOverlay}>
+          <View style={componentStyles.modalContent}>
             <InfoPanelAttachment
               userId={userId || ""}
               projectId={projectData.id}
@@ -1006,7 +1015,7 @@ const InfoPanel = ({
   );
 };
 
-const styles = StyleSheet.create({
+const componentStyles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -1019,7 +1028,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
-  // Removed toggleEditButton and toggleEditText, as they are no longer needed
+  fallbackText: {
+    color: "gray",
+    textAlign: "center",
+    padding: 10,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+  },
 });
 
 export default InfoPanel;
