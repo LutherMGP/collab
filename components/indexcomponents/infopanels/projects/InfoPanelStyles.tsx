@@ -53,6 +53,12 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
+  f8CoverImageHighRes: { // Tilføjet stil
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    borderRadius: 10,
+  },
   projectImageContainer: {
     position: "absolute",
     top: 5,
@@ -98,7 +104,7 @@ export const styles = StyleSheet.create({
     padding: 8, // Tilføjer lidt afstand omkring ikonet
     justifyContent: "center",
     alignItems: "center",
-    elevation: 4, // Tilføjer skygge for bedre synlighed
+    elevation: 4, // Tilføj skygge for bedre synlighed
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -197,6 +203,12 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
+  f2CoverImageHighRes: { // Tilføjet stil
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    borderRadius: 10,
+  },
   rightTop: {
     flex: 5,
     flexDirection: "column",
@@ -286,6 +298,12 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
+  f3CoverImageHighRes: { // Tilføjet stil
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    borderRadius: 10,
+  },
   f5Side: {
     flex: 8,
     justifyContent: "center",
@@ -312,6 +330,12 @@ export const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   f5CoverImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    borderRadius: 10,
+  },
+  f5CoverImageHighRes: { // Tilføjet stil
     width: "100%",
     height: "100%",
     resizeMode: "cover",
@@ -409,7 +433,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 3,
+    elevation: 3, // Tilføj skygge for bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -427,7 +451,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 3,
+    elevation: 3, // Tilføj skygge for bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -445,7 +469,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 3,
+    elevation: 3, // Tilføj skygge for bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -463,7 +487,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 3, // Tilføj skygge for et bedre design
+    elevation: 3, // Tilføj skygge for bedre design
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

@@ -70,22 +70,24 @@ const InfoPanel = ({
   });
 
   // Hent URL'er direkte fra fileUrls
-  const f8CoverImage =
-    projectData.fileUrls?.["f8CoverImageHighRes.jpg"] || null;
+  const f8CoverImage = projectData.fileUrls?.f8CoverImageLowRes || null;
+  const f8CoverImageHighRes = projectData.fileUrls?.["f8CoverImageHighRes.jpg"] || null;
   const f8PDF = projectData.fileUrls?.["f8PDF.pdf"] || null;
-  const f5CoverImage =
-    projectData.fileUrls?.["f5CoverImageHighRes.jpg"] || null;
+
+  const f5CoverImage = projectData.fileUrls?.f5CoverImageLowRes || null;
+  const f5CoverImageHighRes = projectData.fileUrls?.["f5CoverImageHighRes.jpg"] || null;
   const f5PDF = projectData.fileUrls?.["f5PDF.pdf"] || null;
-  const f3CoverImage =
-    projectData.fileUrls?.["f3CoverImageHighRes.jpg"] || null;
+
+  const f3CoverImage = projectData.fileUrls?.f3CoverImageLowRes || null;
+  const f3CoverImageHighRes = projectData.fileUrls?.["f3CoverImageHighRes.jpg"] || null;
   const f3PDF = projectData.fileUrls?.["f3PDF.pdf"] || null;
-  const f2CoverImage =
-    projectData.fileUrls?.["f2CoverImageHighRes.jpg"] || null;
+
+  const f2CoverImage = projectData.fileUrls?.f2CoverImageLowRes || null;
+  const f2CoverImageHighRes = projectData.fileUrls?.["f2CoverImageHighRes.jpg"] || null;
   const f2PDF = projectData.fileUrls?.["f2PDF.pdf"] || null;
 
   // Projektets billede fra fileUrls
-  const projectImage =
-    projectData.fileUrls?.["projectImage.jpg"] || null;
+  const projectImage = projectData.fileUrls?.["projectImage.jpg"] || null;
 
   const name = projectData.name || "Uden navn";
   const description = projectData.description || "Ingen kommentar";
@@ -165,7 +167,7 @@ const InfoPanel = ({
       setIsFavorite(newFavoriteStatus);
 
       if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
+        Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
         return;
       }
 
@@ -205,7 +207,7 @@ const InfoPanel = ({
       setToBePurchased(newToBePurchasedStatus);
 
       if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
+        Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
         return;
       }
 
@@ -311,8 +313,20 @@ const InfoPanel = ({
       await setDoc(
         projectDocRef,
         {
-          f8CoverImageLowRes: projectData.f8CoverImageLowRes || null,
-          f8PDF: projectData.f8PDF || null,
+          // Sørg for, at alle relevante felter er til stede
+          f8CoverImageLowRes: projectData.fileUrls?.f8CoverImageLowRes || null,
+          f5CoverImageLowRes: projectData.fileUrls?.f5CoverImageLowRes || null,
+          f3CoverImageLowRes: projectData.fileUrls?.f3CoverImageLowRes || null,
+          f2CoverImageLowRes: projectData.fileUrls?.f2CoverImageLowRes || null,
+          // Tilføj de højopløselige billeder og PDF'er
+          "f8CoverImageHighRes.jpg": projectData.fileUrls?.["f8CoverImageHighRes.jpg"] || null,
+          "f5CoverImageHighRes.jpg": projectData.fileUrls?.["f5CoverImageHighRes.jpg"] || null,
+          "f3CoverImageHighRes.jpg": projectData.fileUrls?.["f3CoverImageHighRes.jpg"] || null,
+          "f2CoverImageHighRes.jpg": projectData.fileUrls?.["f2CoverImageHighRes.jpg"] || null,
+          "f8PDF.pdf": projectData.fileUrls?.["f8PDF.pdf"] || null,
+          "f5PDF.pdf": projectData.fileUrls?.["f5PDF.pdf"] || null,
+          "f3PDF.pdf": projectData.fileUrls?.["f3PDF.pdf"] || null,
+          "f2PDF.pdf": projectData.fileUrls?.["f2PDF.pdf"] || null,
         },
         { merge: true }
       );
@@ -465,8 +479,8 @@ const InfoPanel = ({
           description: data.description || "",
           status: data.status || projectData.status,
           price: data.price || projectData.price,
-          isFavorite: data.isFavorite || projectData.isFavorite,
-          toBePurchased: data.toBePurchased || projectData.toBePurchased,
+          isFavorite: data.isFavorite ?? projectData.isFavorite,
+          toBePurchased: data.toBePurchased ?? projectData.toBePurchased,
           fileUrls: data.fileUrls || projectData.fileUrls,
           // Tilføj yderligere felter, hvis nødvendigt
         });
@@ -580,6 +594,9 @@ const InfoPanel = ({
           {f8CoverImage && (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
           )}
+          {f8CoverImageHighRes && (
+            <Image source={{ uri: f8CoverImageHighRes }} style={baseStyles.f8CoverImageHighRes} />
+          )}
 
           {/* Tekst øverst i F8 */}
           <View style={baseStyles.textTag}>
@@ -595,14 +612,14 @@ const InfoPanel = ({
             >
               <Image
                 source={{ uri: projectImage }}
-                style={baseStyles.projectImage} // Juster denne stil om nødvendigt
+                style={baseStyles.projectImage} // Bruger eksisterende stil
               />
             </Pressable>
           )}
 
           {/* Nyt Prize/Transfer felt */}
           <Pressable
-            style={baseStyles.newButton} // Din eksisterende styling
+            style={baseStyles.newButton} // Bruger eksisterende styling
             onPress={() => handlePress("Prize")} // Kalder "Prize" handleren
             accessibilityLabel="Transfer Method Button"
           >
@@ -655,6 +672,9 @@ const InfoPanel = ({
                 {/* Vis billede, hvis tilgængeligt */}
                 {f2CoverImage && (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
+                )}
+                {f2CoverImageHighRes && (
+                  <Image source={{ uri: f2CoverImageHighRes }} style={baseStyles.f2CoverImageHighRes} />
                 )}
 
                 {/* Tekst øverst i F2 */}
@@ -716,6 +736,9 @@ const InfoPanel = ({
               {f3CoverImage && (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
+              {f3CoverImageHighRes && (
+                <Image source={{ uri: f3CoverImageHighRes }} style={baseStyles.f3CoverImageHighRes} />
+              )}
 
               {/* Tekst øverst i F3 */}
               <View style={baseStyles.textTag}>
@@ -743,6 +766,9 @@ const InfoPanel = ({
             {/* Vis billede, hvis tilgængeligt */}
             {f5CoverImage && (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
+            )}
+            {f5CoverImageHighRes && (
+              <Image source={{ uri: f5CoverImageHighRes }} style={baseStyles.f5CoverImageHighRes} />
             )}
 
             {/* Tekst øverst i F5 */}
@@ -973,6 +999,7 @@ const InfoPanel = ({
   );
 };
 
+// **Ingen ændringer i styles**
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
@@ -986,7 +1013,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
-  // Fjernet toggleEditButton og toggleEditText, da de ikke længere er nødvendige
 });
 
 export default InfoPanel;

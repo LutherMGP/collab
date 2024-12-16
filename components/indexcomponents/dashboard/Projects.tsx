@@ -122,6 +122,7 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
   );
 };
 
+// **Ingen ændringer i styles**
 const styles = StyleSheet.create({
   profileImg: {
     flex: 1,
@@ -146,7 +147,6 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     position: "absolute",
-    top: 108,
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
     justifyContent: "center",

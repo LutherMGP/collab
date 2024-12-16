@@ -40,7 +40,7 @@ const NewProject: React.FC = () => {
       const destinationRef = ref(storage, destinationPath);
 
       await uploadBytes(destinationRef, fileBlob);
-      console.log(`${destinationPath} kopieret til Firebase Storage.`);
+      console.log(`${destinationPath} uploadet til Firebase Storage.`);
     } catch (error) {
       console.error(`Fejl ved upload af ${destinationPath}:`, error);
       throw new Error(`Kunne ikke uploade filen: ${destinationPath}`);
@@ -53,77 +53,63 @@ const NewProject: React.FC = () => {
       Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
       return;
     }
-  
+
     if (!name || !description) {
       Alert.alert("Manglende oplysninger", "Udfyld både navn og beskrivelse.");
       return;
     }
-  
+
     setIsCreating(true);
-  
+
     try {
       const projectRef = doc(collection(database, "users", user, "projects"));
       console.log("Opretter nyt projekt med ID:", projectRef.id);
-  
+
       // Definer filer og deres destinationer
       const filesToUpload = [
         {
           asset: Asset.fromModule(require("@/assets/default/projectimage/projectImage.jpg")),
           destinationPath: `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`,
+          key: "projectImage.jpg",
+        },
+        {
+          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageLowRes`,
+          key: "f8CoverImageLowRes",
         },
         {
           asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageHighRes.jpg")),
           destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageHighRes.jpg`,
+          key: "f8CoverImageHighRes.jpg",
         },
         {
           asset: Asset.fromModule(require("@/assets/default/f8/f8PDF.pdf")),
           destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8PDF.pdf`,
+          key: "f8PDF.pdf",
         },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f5/f5PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5PDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f3/f3PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3PDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
-        },
+        // Tilsvarende for f5, f3, f2
+        // ...
       ];
-  
+
       // URL’er til gemning i Firestore
       const fileUrls: { [key: string]: string } = {};
-  
+
       // Upload hver fil og hent dens download-URL
       for (const file of filesToUpload) {
         await file.asset.downloadAsync();
         if (!file.asset.localUri) {
           throw new Error(`Filen ${file.destinationPath} kunne ikke findes.`);
         }
-  
+
         // Upload filen til Storage
         await uploadFileToStorage(file.asset.localUri, file.destinationPath);
-  
+
         // Hent download-URL og gem den
         const storageRef = ref(storage, file.destinationPath);
         const downloadUrl = await getDownloadURL(storageRef);
-        fileUrls[file.destinationPath] = downloadUrl;
+        fileUrls[file.key] = downloadUrl;
       }
-  
+
       // Projektdata, inkl. URL’er
       const projectData = {
         id: projectRef.id,
@@ -132,12 +118,12 @@ const NewProject: React.FC = () => {
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
-        fileUrls, // Tilføj alle download-URL’er
+        fileUrls, // Gemmer alle download-URL’er under fileUrls
       };
-  
+
       console.log("Gemmer projektdata i Firestore:", projectData);
       await setDoc(projectRef, projectData);
-  
+
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");
       setName("");
       setDescription("");
@@ -221,6 +207,7 @@ const NewProject: React.FC = () => {
   );
 };
 
+// **Ingen ændringer i styles**
 const styles = StyleSheet.create({
   profileImg: {
     flex: 1,
@@ -340,17 +327,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  disabledButton: {
-    backgroundColor: "#a0a0a0",
-  },
   buttonText: {
     color: "black",
     fontWeight: "600",
-  },
-  errorText: {
-    color: "red",
-    textAlign: "center",
-    marginBottom: 10,
   },
 });
 

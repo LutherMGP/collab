@@ -10,67 +10,37 @@ import {
   CollectionReference,
   DocumentData,
 } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
-import { database, storage } from "@/firebaseConfig";
+import { ProjectData, Category } from "@/types/ProjectData";
+import { database } from "@/firebaseConfig";
 import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { ProjectData, Category } from "@/types/ProjectData";
 
 type InfoPanelProjectsProps = {
   statusFilter: "Project" | "Published"; // Modtag statusFilter som prop
-  onClose: () => void; // Funktion til at lukke panelet
+  onClosePanel: () => void; // Funktion til at lukke panelet, hvis nødvendigt
 };
 
-const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onClose }) => {
+const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onClosePanel }) => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  const fetchProjectStorageData = async (
-    userId: string,
-    projectId: string
-  ): Promise<Partial<ProjectData>> => {
-    const storageData: Partial<ProjectData> = {};
-
-    try {
-      const categories: Category[] = ["f8", "f5", "f3", "f2"];
-      for (const category of categories) {
-        const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
-        const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
-
-        const imageUrl = await getDownloadURL(ref(storage, imagePath)).catch(
-          () => undefined
-        );
-        const pdfUrl = await getDownloadURL(ref(storage, pdfPath)).catch(
-          () => undefined
-        );
-
-        storageData[`${category}CoverImageLowRes`] = imageUrl;
-        storageData[`${category}PDF`] = pdfUrl;
-      }
-    } catch (error) {
-      console.error("Fejl ved hentning af data fra Firebase Storage:", error);
-    }
-
-    return storageData;
-  };
-
   useEffect(() => {
     if (!user) return;
-  
+
     const userProjectsCollection = collection(
       database,
       "users",
       user,
       "projects"
     ) as CollectionReference<DocumentData>;
-  
+
     const q = query(userProjectsCollection, where("status", "==", statusFilter));
-  
+
     const unsubscribe = onSnapshot(
       q,
       async (snapshot) => {
@@ -79,22 +49,27 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
           setIsLoading(false);
           return;
         }
-  
+
         try {
-          const fetchedProjects = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
+          const fetchedProjects: ProjectData[] = [];
+
+          for (const docSnap of snapshot.docs) {
+            const data = docSnap.data() as ProjectData;
+            const project: ProjectData = {
+              id: docSnap.id,
               name: data.name || "Uden navn",
               description: data.description || "Ingen kommentar",
               status: data.status || "Project",
               price: data.price ?? undefined,
-              userId: user,
-              coverImageUrl: data.coverImageUrl || null, // Gemt i Firestore
-              pdfUrl: data.pdfUrl || null, // Gemt i Firestore
-            } as ProjectData;
-          });
-  
+              userId: data.userId,
+              isFavorite: data.isFavorite ?? false,
+              toBePurchased: data.toBePurchased ?? false,
+              fileUrls: data.fileUrls || {},
+            };
+
+            fetchedProjects.push(project);
+          }
+
           setProjects(fetchedProjects);
           setError(null);
         } catch (fetchError) {
@@ -110,7 +85,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
         setIsLoading(false);
       }
     );
-  
+
     return () => unsubscribe();
   }, [user, statusFilter]);
 
@@ -141,6 +116,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
             showFavorite: true,
             showPurchase: true,
             showEdit: true,
+            // Tilføj flere konfigurationsindstillinger, hvis nødvendigt
           }}
         />
       ))}
