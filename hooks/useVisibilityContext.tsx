@@ -2,40 +2,61 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-type ActivePanelType = "Project" | "Published" | "Catalog" | "Favorite" | null; // Definer specifikke paneltyper for bedre typekontrol
+interface VisibilityContextType {
+  isInfoPanelProjectsVisible: boolean;
+  isInfoPanelPublishedVisible: boolean;
+  showPanel: (
+    panel:
+      | "projects"
+      | "published"
+  ) => void;
+  hideAllPanels: () => void;
+}
 
-type VisibilityContextType = {
-  activePanel: ActivePanelType; // Det aktive panel, hvis nogen
-  setActivePanel: (panelName: ActivePanelType) => void; // Funktion til at opdatere aktivt panel
-  profileImage: string | null; // Brugerens profilbillede, hvis et er valgt
-  setProfileImage: (imageUri: string | null) => void; // Funktion til at opdatere profilbilledet
+const VisibilityContext = createContext<VisibilityContextType | undefined>(
+  undefined
+);
+
+export const useVisibility = () => {
+  const context = useContext(VisibilityContext);
+  if (context === undefined) {
+    throw new Error("useVisibility must be used within a VisibilityProvider");
+  }
+  return context;
 };
 
-const VisibilityContext = createContext<VisibilityContextType>({
-  activePanel: null, // Standard: ingen aktive paneler
-  setActivePanel: () => {},
-  profileImage: null, // Standard: ingen profilbillede
-  setProfileImage: () => {},
-});
+interface VisibilityProviderProps {
+  children: ReactNode;
+}
 
-export const useVisibility = () => useContext(VisibilityContext);
+export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
+  children,
+}) => {
+  const [isInfoPanelProjectsVisible, setIsInfoPanelProjectsVisible] =
+    useState(false);
+  const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
+    useState(false);
+  const showPanel = (
+    panel:
+      | "projects"
+      | "published"
+  ) => {
+    setIsInfoPanelProjectsVisible(panel === "projects");
+    setIsInfoPanelPublishedVisible(panel === "published");
+  };
 
-export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
-  const [activePanel, setActivePanel] = useState<ActivePanelType>(null); // Initialiserer uden noget aktivt panel
-  const [profileImage, setProfileImage] = useState<string | null>(null); // Initialiserer uden et valgt profilbillede
-
-  // Debugging: Log ændringer i activePanel for at spore opdateringer
-  React.useEffect(() => {
-    console.log("Active panel updated:", activePanel);
-  }, [activePanel]);
+  const hideAllPanels = () => {
+    setIsInfoPanelProjectsVisible(false);
+    setIsInfoPanelPublishedVisible(false);
+  };
 
   return (
     <VisibilityContext.Provider
       value={{
-        activePanel,
-        setActivePanel,
-        profileImage,
-        setProfileImage,
+        isInfoPanelProjectsVisible,
+        isInfoPanelPublishedVisible,
+        showPanel,
+        hideAllPanels,
       }}
     >
       {children}
