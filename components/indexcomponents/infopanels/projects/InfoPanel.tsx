@@ -594,9 +594,6 @@ const InfoPanel = ({
           {f8CoverImage && (
             <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />
           )}
-          {f8CoverImageHighRes && (
-            <Image source={{ uri: f8CoverImageHighRes }} style={baseStyles.f8CoverImageHighRes} />
-          )}
 
           {/* Tekst øverst i F8 */}
           <View style={baseStyles.textTag}>
@@ -673,9 +670,6 @@ const InfoPanel = ({
                 {f2CoverImage && (
                   <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
                 )}
-                {f2CoverImageHighRes && (
-                  <Image source={{ uri: f2CoverImageHighRes }} style={baseStyles.f2CoverImageHighRes} />
-                )}
 
                 {/* Tekst øverst i F2 */}
                 <View style={baseStyles.textTag}>
@@ -736,9 +730,6 @@ const InfoPanel = ({
               {f3CoverImage && (
                 <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
-              {f3CoverImageHighRes && (
-                <Image source={{ uri: f3CoverImageHighRes }} style={baseStyles.f3CoverImageHighRes} />
-              )}
 
               {/* Tekst øverst i F3 */}
               <View style={baseStyles.textTag}>
@@ -766,9 +757,6 @@ const InfoPanel = ({
             {/* Vis billede, hvis tilgængeligt */}
             {f5CoverImage && (
               <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
-            )}
-            {f5CoverImageHighRes && (
-              <Image source={{ uri: f5CoverImageHighRes }} style={baseStyles.f5CoverImageHighRes} />
             )}
 
             {/* Tekst øverst i F5 */}
