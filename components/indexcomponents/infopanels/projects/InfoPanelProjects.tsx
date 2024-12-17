@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
+import InfoPanel1 from "@/components/indexcomponents/infopanels/projects/InfoPanel1";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,7 +106,7 @@ const InfoPanelProjects = () => {
   return (
     <View>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={config} />
+        <InfoPanel1 key={project.id} projectData={project} config={config} />
       ))}
     </View>
   );

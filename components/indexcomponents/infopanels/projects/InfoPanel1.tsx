@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/published/InfoPanel.tsx
+// @/components/indexcomponents/infopanels/projects/InfoPanel1.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -13,12 +13,11 @@ import {
   Modal,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -39,43 +38,23 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
+  projectImage?: string | null;
   f8CoverImage?: string | null;
   f8PDF?: string | null;
-  f8BrandImage?: string | null;
   f5CoverImage?: string | null;
   f5PDF?: string | null;
   f3CoverImage?: string | null;
   f3PDF?: string | null;
   f2CoverImage?: string | null;
   f2PDF?: string | null;
-  isFavorite?: boolean;
-  toBePurchased?: boolean;
-  guideId?: string | null;
-  projectId?: string | null;
   userId?: string | null;
-};
-
-type InfoPanelConfig = {
-  showFavorite?: boolean;
-  showPurchase?: boolean;
-  showDelete?: boolean;
-  showEdit?: boolean;
-  showProject?: boolean;
-  showGuide?: boolean;
-  longPressForPdf?: boolean;
-  checkPurchaseStatus?: boolean;
-  checkFavoriteStatus?: boolean;
 };
 
 type InfoPanelProps = {
   projectData: ProjectData;
-  config: InfoPanelConfig;
 };
 
-const InfoPanel = ({
-  projectData: initialProjectData,
-  config,
-}: InfoPanelProps) => {
+const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -86,43 +65,21 @@ const InfoPanel = ({
 
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
-
-  const f8CoverImage = projectData.f8CoverImage || null;
-  const f8PDF = projectData.f8PDF || null;
-  const f5CoverImage = projectData.f5CoverImage || null;
-  const f5PDF = projectData.f5PDF || null;
-  const f3CoverImage = projectData.f3CoverImage || null;
-  const f3PDF = projectData.f3PDF || null;
-  const f2CoverImage = projectData.f2CoverImage || null;
-  const f2PDF = projectData.f2PDF || null;
-  const name = projectData.name || "Uden navn";
-  const description = projectData.description || "Ingen kommentar";
-  const price = projectData.price ? `${projectData.price} kr.` : "Uden pris";
-
-  const [isFavorite, setIsFavorite] = useState(projectData.isFavorite || false);
-  const [toBePurchased, setToBePurchased] = useState(
-    projectData.toBePurchased || false
-  );
+  const [projectImage, setProjectImage] = useState<string | null>(null);
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // State for Edit-tilstand og modaler
   const [isEditEnabled, setIsEditEnabled] = useState(false);
   const [isF8ModalVisible, setIsF8ModalVisible] = useState(false);
   const [isF5ModalVisible, setIsF5ModalVisible] = useState(false);
   const [isF3ModalVisible, setIsF3ModalVisible] = useState(false);
   const [isF2ModalVisible, setIsF2ModalVisible] = useState(false);
-  const [isNameCommentModalVisible, setIsNameCommentModalVisible] =
-    useState(false);
+  const [isNameCommentModalVisible, setIsNameCommentModalVisible] = useState(false);
   const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
-  const [isProjectImageModalVisible, setIsProjectImageModalVisible] =
-    useState(false);
+  const [isProjectImageModalVisible, setIsProjectImageModalVisible] = useState(false);
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<
-    "f8" | "f5" | "f3" | "f2" | null
-  >(null);
-  const [isAttachmentModalVisible, setIsAttachmentModalVisible] =
-    useState(false);
+  const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
+  const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
 
   // Funktion til at togglere Edit-tilstand
@@ -130,184 +87,45 @@ const InfoPanel = ({
     setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
   };
 
-  const handleSaveSuccess = () => {
-    console.log("Projekt blev opdateret");
-    // Hvis du har andre funktioner til at håndtere succesfulde opdateringer, kan du tilføje dem her
-  };
+  // Funktion til at opdatere projektdata efter ændringer
+  const refreshProjectData = async () => {
+    if (!userId || !projectData.id) return;
 
-  // Generisk håndtering af lang tryk
-  const handleLongPress = async (pdfURL: string | null, fieldName: string) => {
-    if (!pdfURL) {
-      Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
-      return;
-    }
-    try {
-      await Linking.openURL(pdfURL);
-    } catch (error) {
-      console.error(`Fejl ved åbning af ${fieldName} PDF:`, error);
-      Alert.alert(
-        "Fejl",
-        `Der opstod en fejl under åbning af ${fieldName} PDF.`
-      );
-    }
-  };
-
-  const handleLongPressF8 = () => handleLongPress(f8PDF, "Specification (F8)");
-  const handleLongPressF5 = () =>
-    handleLongPress(f5PDF, "Terms & Conditions (F5)");
-  const handleLongPressF3 = () =>
-    handleLongPress(f3PDF, "Sustainability Report (F3)");
-  const handleLongPressF2 = () =>
-    handleLongPress(f2PDF, "Partnership Agreement (F2)");
-
-  const handleFavoriteToggle = async () => {
-    if (!config.showFavorite) return;
+    setIsLoading(true);
 
     try {
-      const newFavoriteStatus = !isFavorite;
-      console.log("Favorite button pressed");
-      setIsFavorite(newFavoriteStatus);
-
-      if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
-        return;
-      }
-
-      const favoriteDocRef = doc(
-        database,
-        "users",
-        userId,
-        "favorites",
-        projectData.id
-      );
-
-      if (newFavoriteStatus) {
-        await setDoc(
-          favoriteDocRef,
-          { projectId: projectData.id },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} markeret som favorit.`);
-      } else {
-        await deleteDoc(favoriteDocRef);
-        console.log(`Project ${projectData.id} fjernet fra favoritter.`);
+      // Hent data fra Firestore
+      const docRef = doc(database, "users", userId, "projects", projectData.id);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setProjectData((prev) => ({
+          ...prev,
+          name: data.name || "",
+          description: data.description || "",
+          f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
+          f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
+          f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
+          f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
+          status: data.status || prev.status || "",
+          price: data.price || prev.price || 0,
+        }));
       }
     } catch (error) {
-      console.error("Fejl ved opdatering af favoritstatus:", error);
-      Alert.alert(
-        "Fejl",
-        "Der opstod en fejl under opdatering af favoritstatus."
-      );
+      console.error("Fejl ved opdatering af projektdata:", error);
+      Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handlePurchase = async () => {
-    if (!config.showPurchase) return;
-
-    try {
-      const newToBePurchasedStatus = !toBePurchased;
-      setToBePurchased(newToBePurchasedStatus);
-
-      if (!userId) {
-        Alert.alert("Fejl", "Bruger ikke logget ind.");
-        return;
-      }
-
-      const purchaseDocRef = doc(
-        database,
-        "users",
-        userId,
-        "purchases",
-        projectData.id
-      );
-
-      if (newToBePurchasedStatus) {
-        await setDoc(
-          purchaseDocRef,
-          {
-            projectId: projectData.id,
-            projectOwnerId: projectData.userId,
-            purchased: false,
-          },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} tilføjet til køb.`);
-        Alert.alert("Success", "Projekt tilføjet til din kurv.");
-      } else {
-        await deleteDoc(purchaseDocRef);
-        console.log(`Project ${projectData.id} fjernet fra køb.`);
-        Alert.alert("Success", "Projekt fjernet fra din kurv.");
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af køb status:", error);
-      Alert.alert("Fejl", "Der opstod en fejl under opdatering af køb status.");
-    }
-  };
-
-  const handleDelete = () => {
-    if (!config.showDelete) return;
-
-    Alert.alert(
-      "Bekræft Sletning",
-      "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
-      [
-        { text: "Annuller", style: "cancel" },
-        {
-          text: "Slet",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (!userId || !projectData.id) {
-                Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log(
-                  "userId:",
-                  userId,
-                  "projectData.id:",
-                  projectData.id
-                );
-                return;
-              }
-
-              const projectDocRef = doc(
-                database,
-                "users",
-                userId,
-                "projects",
-                projectData.id
-              );
-
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
-              console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
-            } catch (error) {
-              console.error("Fejl ved sletning af projekt:", error);
-              Alert.alert(
-                "Fejl",
-                "Der opstod en fejl under sletningen. Prøv igen senere."
-              );
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const [projectImage, setProjectImage] = useState<string | null>(null);
-
-  // Log projekt-ID for debugging
-  useEffect(() => {
-    console.log("Henter billede for projekt:", projectData.id);
-  }, [projectData.id]);
-
-  // Hent projektets billede
   useEffect(() => {
     const fetchProjectImage = async () => {
       if (!projectData.userId || !projectData.id) {
         console.error("Project ownerId or projectId missing");
         return;
       }
-  
+
       try {
         const projectImageRef = ref(
           storage,
@@ -321,9 +139,61 @@ const InfoPanel = ({
         setProjectImage(null);
       }
     };
-  
+
     fetchProjectImage();
   }, [projectData.userId, projectData.id]);
+
+  // Generisk håndtering af lang tryk
+  const handleLongPress = async (pdfURL: string | null, fieldName: string) => {
+    if (!pdfURL) {
+      Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
+      return;
+    }
+    try {
+      await Linking.openURL(pdfURL);
+    } catch (error) {
+      console.error(`Fejl ved åbning af ${fieldName} PDF:`, error);
+      Alert.alert("Fejl", `Der opstod en fejl under åbning af ${fieldName} PDF.`);
+    }
+  };
+
+  const handleLongPressF8 = () => handleLongPress(projectData.f8PDF, "Specification (F8)");
+  const handleLongPressF5 = () => handleLongPress(projectData.f5PDF, "Terms & Conditions (F5)");
+  const handleLongPressF3 = () => handleLongPress(projectData.f3PDF, "Sustainability Report (F3)");
+  const handleLongPressF2 = () => handleLongPress(projectData.f2PDF, "Partnership Agreement (F2)");
+
+  const handleDelete = () => {
+    // Always show Delete button since config.showDelete is removed
+    Alert.alert(
+      "Bekræft Sletning",
+      "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
+      [
+        { text: "Annuller", style: "cancel" },
+        {
+          text: "Slet",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (!userId || !projectData.id) {
+                Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
+                console.log("userId:", userId, "projectData.id:", projectData.id);
+                return;
+              }
+
+              const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
+              await deleteDoc(projectDocRef); // Sletning fra Firestore
+              console.log(`Project ${projectData.id} slettet.`);
+              Alert.alert("Success", "Projektet er blevet slettet.");
+            } catch (error) {
+              console.error("Fejl ved sletning af projekt:", error);
+              Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   // Generisk handlePress funktion med conditional
   const handlePress = (button: string) => {
@@ -413,42 +283,6 @@ const InfoPanel = ({
     setIsAttachmentModalVisible(false);
   };
 
-  // Funktion til at opdatere projektdata efter ændringer
-  const refreshProjectData = async () => {
-    if (!userId || !projectData.id) return;
-
-    setIsLoading(true);
-
-    try {
-      // Hent data fra Firestore
-      const docRef = doc(database, "users", userId, "projects", projectData.id);
-      const snapshot = await getDoc(docRef);
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setProjectData((prev) => ({
-          ...prev,
-          name: data.name || "",
-          description: data.description || "",
-          f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          // Fjern hentning af PDF-URL'er her
-          f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
-          f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
-          f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
-          status: data.status || prev.status || "",
-          price: data.price || prev.price || 0,
-          isFavorite: data.isFavorite || prev.isFavorite || false,
-          toBePurchased: data.toBePurchased || prev.toBePurchased || false,
-        }));
-      }
-
-    } catch (error) {
-      console.error("Fejl ved opdatering af projektdata:", error);
-      Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Funktion til at skifte status fra og til published
   const handleStatusToggle = async () => {
     try {
@@ -475,19 +309,8 @@ const InfoPanel = ({
             style: "default",
             onPress: async () => {
               try {
-                const projectDocRef = doc(
-                  database,
-                  "users",
-                  userId,
-                  "projects",
-                  projectData.id
-                );
-
-                await setDoc(
-                  projectDocRef,
-                  { status: newStatus },
-                  { merge: true }
-                );
+                const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
+                await setDoc(projectDocRef, { status: newStatus }, { merge: true });
 
                 Alert.alert(
                   "Status Opdateret",
@@ -499,10 +322,7 @@ const InfoPanel = ({
                 setProjectData((prev) => ({ ...prev, status: newStatus })); // Opdater lokalt
               } catch (error) {
                 console.error("Fejl ved opdatering af status:", error);
-                Alert.alert(
-                  "Fejl",
-                  "Kunne ikke opdatere status. Prøv igen senere."
-                );
+                Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
               }
             },
           },
@@ -522,7 +342,7 @@ const InfoPanel = ({
           style={[baseStyles.nameText, { color: Colors[theme].tint }]}
           onPress={() => handlePress("Name & Comment")}
         >
-          {name}
+          {projectData.name || "Uden navn"}
         </Text>
         <Text
           style={[baseStyles.commentText, { color: Colors[theme].text }]}
@@ -533,7 +353,7 @@ const InfoPanel = ({
             setShowFullComment(!showFullComment);
           }}
         >
-          {description}
+          {projectData.description || "Ingen kommentar"}
         </Text>
       </View>
 
@@ -546,7 +366,9 @@ const InfoPanel = ({
           accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
-          {f8CoverImage && <Image source={{ uri: f8CoverImage }} style={baseStyles.f8CoverImage} />}
+          {projectData.f8CoverImage && (
+            <Image source={{ uri: projectData.f8CoverImage }} style={baseStyles.f8CoverImage} />
+          )}
 
           {/* Tekst i f8 toppen */}
           <View style={baseStyles.textTag}>
@@ -573,19 +395,17 @@ const InfoPanel = ({
             onPress={() => handlePress("Prize")}
             accessibilityLabel="Prize Button"
           >
-            <Text style={baseStyles.priceText}>{price}</Text>
+            <Text style={baseStyles.priceText}>{projectData.price ? `${projectData.price} kr.` : "Uden pris"}</Text>
           </Pressable>
 
           {/* Delete-knap */}
-          {config.showDelete && (
-            <Pressable
-              style={baseStyles.deleteIconContainer}
-              onPress={handleDelete}
-              accessibilityLabel="Delete Button"
-            >
-              <AntDesign name="delete" size={20} color="red" />
-            </Pressable>
-          )}
+          <Pressable
+            style={baseStyles.deleteIconContainer}
+            onPress={handleDelete}
+            accessibilityLabel="Delete Button"
+          >
+            <AntDesign name="delete" size={20} color="red" />
+          </Pressable>
 
           {/* Comment-knap f8 */}
           <Pressable
@@ -617,8 +437,8 @@ const InfoPanel = ({
                 accessibilityLabel="F2 Button"
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
-                {f2CoverImage && (
-                  <Image source={{ uri: f2CoverImage }} style={baseStyles.f2CoverImage} />
+                {projectData.f2CoverImage && (
+                  <Image source={{ uri: projectData.f2CoverImage }} style={baseStyles.f2CoverImage} />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -652,17 +472,13 @@ const InfoPanel = ({
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={() => handleStatusToggle()} // Kalder funktionen for at skifte status
+                  onPress={handleStatusToggle} // Kalder funktionen for at skifte status
                   accessibilityLabel="Status Toggle Button"
                 >
                   <AntDesign
-                    name={
-                      projectData.status === "Published" ? "unlock" : "lock"
-                    } // Dynamisk ikon
+                    name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
                     size={24}
-                    color={
-                      projectData.status === "Published" ? "green" : "red"
-                    } // Dynamisk farve
+                    color={projectData.status === "Published" ? "green" : "red"} // Dynamisk farve
                   />
                 </Pressable>
               </View>
@@ -676,8 +492,8 @@ const InfoPanel = ({
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
-              {f3CoverImage && (
-                <Image source={{ uri: f3CoverImage }} style={baseStyles.f3CoverImage} />
+              {projectData.f3CoverImage && (
+                <Image source={{ uri: projectData.f3CoverImage }} style={baseStyles.f3CoverImage} />
               )}
 
               {/* Tekst i f3 toppen */}
@@ -703,8 +519,8 @@ const InfoPanel = ({
             accessibilityLabel="F5 Button"
           >
             {/* Vis billede, hvis det er tilgængeligt */}
-            {f5CoverImage && (
-              <Image source={{ uri: f5CoverImage }} style={baseStyles.f5CoverImage} />
+            {projectData.f5CoverImage && (
+              <Image source={{ uri: projectData.f5CoverImage }} style={baseStyles.f5CoverImage} />
             )}
 
             {/* Tekst i f5 toppen */}
@@ -812,8 +628,8 @@ const InfoPanel = ({
           <View style={styles.modalContent}>
             <InfoPanelNameComment
               onClose={closeNameCommentModal}
-              name={name}
-              comment={description}
+              name={projectData.name || "Uden navn"}
+              comment={projectData.description || "Ingen kommentar"}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />
@@ -832,7 +648,7 @@ const InfoPanel = ({
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
-              price={price}
+              price={projectData.price ? `${projectData.price} kr.` : "Uden pris"}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />
@@ -909,9 +725,8 @@ const InfoPanel = ({
           </View>
         </View>
       </Modal>
-      <View
-        style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]}
-      />
+
+      <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
     </ScrollView>
   );
 };
@@ -932,4 +747,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InfoPanel;
+export default InfoPanel1;
