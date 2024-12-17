@@ -11,13 +11,16 @@ import {
   Alert,
 } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
-import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+
+// Import dine konfigurationer korrekt
 import { categoryImageConfig, Category } from "../../../../../../constants/ImageConfig";
 
 const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
+const PDF_ICON = require("@/assets/images/pdf_icon.png");
 
 interface InfoPanelBaseProps {
   projectId: string;
@@ -29,7 +32,7 @@ interface InfoPanelBaseProps {
   onUploadFailure?: (error: unknown) => void;
 }
 
-const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
+const InfoPanelBase: React.FC<InfoPanelBaseProps> = React.memo(({
   projectId,
   userId,
   category,
@@ -44,6 +47,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   useEffect(() => {
+    console.log("Rendering InfoPanelBase for category:", category);
     refreshData();
   }, [userId, projectId, category]);
 
@@ -52,6 +56,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
 
       const updatedImageURL = await getDownloadURL(ref(storage, imagePath)).catch(() => null);
+      console.log(`Fetched imageURL for ${category}:`, updatedImageURL);
 
       setImageURL(updatedImageURL);
     } catch (error) {
@@ -91,6 +96,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
             async () => {
               try {
                 const downloadURL = await getDownloadURL(fileRef);
+                console.log(`Uploaded ${path}:`, downloadURL);
                 resolve(downloadURL);
               } catch (err) {
                 reject(err);
@@ -121,6 +127,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         },
         { merge: true }
       );
+      console.log(`Updated Firestore for ${category} with LowRes and HighRes URLs`);
 
       // Opdater UI
       setImageURL(lowResURL); // Viser Low-res billedet
@@ -181,8 +188,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
     }
   };
 
+  const handlePdfUpload = async () => {
+    // Placeholder for PDF-upload logik, hvis nødvendig
+    Alert.alert("Info", "PDF-upload er ikke implementeret endnu.");
+  };
+
   const handleCloseModal = async () => {
-    await refreshData();
+    await refreshData(); // Hent ny data før modal lukkes
     onClose();
   };
 
@@ -197,6 +209,11 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
             <Image source={imageURL ? { uri: imageURL } : DEFAULT_IMAGE} style={styles.image} />
           </TouchableOpacity>
 
+          {/* PDF */}
+          <TouchableOpacity style={styles.pdfContainer} onPress={handlePdfUpload}>
+            <Image source={PDF_ICON} style={styles.pdfIcon} />
+          </TouchableOpacity>
+
           {/* Luk Modal */}
           <TouchableOpacity style={styles.closeButton} onPress={handleCloseModal}>
             <Text style={styles.closeButtonText}>Luk</Text>
@@ -208,12 +225,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       {isUploading && (
         <View style={styles.uploadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
-          <Text>{Math.round(uploadProgress)}%</Text>
+          <Text style={styles.uploadingText}>Uploader billede...</Text>
+          <Text style={styles.uploadingText}>{Math.round(uploadProgress)}%</Text>
         </View>
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -225,7 +243,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   imageContainer: {
+    alignItems: "center",
     marginBottom: 20,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  pdfContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   image: {
     width: 250,
@@ -234,12 +267,22 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#ccc",
   },
+  pdfIcon: {
+    width: 150,
+    height: 150,
+    resizeMode: "contain",
+  },
   closeButton: {
-    marginTop: 20,
+    marginTop: 30,
     padding: 15,
     backgroundColor: "#007AFF",
     borderRadius: 10,
     alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   closeButtonText: {
     color: "white",
@@ -250,12 +293,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     left: "50%",
-    marginLeft: -50,
-    marginTop: -50,
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.8)", // Semi-transparent baggrund
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     padding: 20,
     borderRadius: 10,
+    alignItems: "center",
+  },
+  uploadingText: {
+    color: "#fff",
+    marginTop: 10,
   },
 });
 
