@@ -33,14 +33,13 @@ export const styles = StyleSheet.create({
   F8: {
     width: "94%",
     height: "98.7%",
-    borderRadius: 11,
+    borderRadius: 10,
     justifyContent: "flex-start", // Placér indholdet øverst
     alignItems: "center", // Centrer indholdet vandret
     // paddingTop: 5, // Giv afstand fra toppen
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    // borderColor: "rgba(255, 255, 255, 0.7)",
     position: "relative",
     elevation: 4,
     shadowColor: "#000",
@@ -90,6 +89,21 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  newButton: {
+    position: "absolute",
+    bottom: 5, // Placeret tæt på bunden
+    right: 5, // Placeret tæt på højre kant
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8, // Tilføjer lidt afstand omkring ikonet
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføjer skygge for bedre synlighed
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   priceText: {
     fontSize: 14,
     fontWeight: "bold",
@@ -110,10 +124,31 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  editIconContainer: {
+    position: "absolute", // Absolut position for placering i nederste venstre hjørne
+    bottom: 5, // Afstand fra bunden
+    left: 5, // Afstand fra venstre
+    padding: 6,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    backgroundColor: "gray", // Standardfarve
+  },
+  editEnabled: {
+    backgroundColor: "green", // Farve når Edit-tilstand er aktiveret
+  },
+  editDisabled: {
+    backgroundColor: "transparent", // Farve når Edit-tilstand er deaktiveret
+  },
+  editText: {
+    marginLeft: 4,
+    fontSize: 12,
+  },
   lowerContainer: {
     flex: 5,
     flexDirection: "row",
-    width: "99%",
+    width: "100%",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -141,7 +176,7 @@ export const styles = StyleSheet.create({
   F2: {
     width: "88%",
     height: "100%",
-    borderRadius: 11,
+    borderRadius: 10,
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: 0,
@@ -229,9 +264,10 @@ export const styles = StyleSheet.create({
   F3: {
     width: "93%",
     height: "96.5%",
-    borderRadius: 11,
+    borderRadius: 10,
     justifyContent: "flex-start",
     alignItems: "center",
+    // paddingTop: 10,
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     position: "absolute",
     bottom: 0,
@@ -268,7 +304,7 @@ export const styles = StyleSheet.create({
     padding: 0,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    borderRadius: 11,
+    borderRadius: 10,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
@@ -496,7 +532,7 @@ export const styles = StyleSheet.create({
   attachmentButton: {
     position: "absolute", // Gør det muligt at placere knappen præcist
     bottom: 5, // Juster afhængigt af afstanden fra bunden
-    left: "40%", // Placer midt horisontalt i forhold til forælderen
+    left: "50%", // Placer midt horisontalt i forhold til forælderen
     transform: [{ translateX: -20 }], // Flyt tilbage med halvdelen af knappen bredde for at centrere
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
@@ -508,39 +544,5 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    width: "100%",
-    marginBottom: 20,
-    textAlignVertical: "top",
-    height: 80,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  cancelButton: {
-    backgroundColor: "red",
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  submitButton: {
-    backgroundColor: Colors.light.tint,
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
   },
 });
