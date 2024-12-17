@@ -106,7 +106,7 @@ const InfoPanelProjects = () => {
   return (
     <View>
       {projects.map((project) => (
-        <InfoPanel1 key={project.id} projectData={project} config={config} />
+        <InfoPanel1 key={project.id} projectData={project} />
       ))}
     </View>
   );

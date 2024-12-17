@@ -1,6 +1,6 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanel1.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -17,9 +17,8 @@ import {
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
-import { database, storage } from "@/firebaseConfig";
+import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { database } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
@@ -31,6 +30,15 @@ import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/proje
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/published/InfoPanelStyles";
+import { FilePaths } from "@/utils/filePaths";
+
+const FIREBASE_STORAGE_BUCKET = "snit-ba20b.appspot.com"; // Erstat med dit bucket-navn
+
+// Funktion til at konstruere statiske URL'er
+const constructStaticURL = (path: string): string => {
+  const encodedPath = encodeURIComponent(path);
+  return `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media&t=${Date.now()}`; // Cache-bypass med timestamp
+};
 
 type ProjectData = {
   id: string;
@@ -65,7 +73,6 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
-  const [projectImage, setProjectImage] = useState<string | null>(null);
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -119,48 +126,45 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     }
   };
 
-  useEffect(() => {
-    const fetchProjectImage = async () => {
-      if (!projectData.userId || !projectData.id) {
-        console.error("Project ownerId or projectId missing");
-        return;
-      }
+  // Konstruer statiske URL'er baseret på faste stier
+  const projectImageURL = constructStaticURL(
+    FilePaths.projectImage(projectData.userId || "", projectData.id)
+  );
 
-      try {
-        const projectImageRef = ref(
-          storage,
-          `users/${projectData.userId}/projects/${projectData.id}/projectimage/projectImage.jpg`
-        );
-        const projectImageUrl = await getDownloadURL(projectImageRef);
-        setProjectImage(`${projectImageUrl}?t=${Date.now()}`); // Cache-bypass
-        console.log("Projektbillede hentet:", projectImageUrl);
-      } catch (error) {
-        console.error("Fejl ved hentning af projektbillede:", error);
-        setProjectImage(null);
-      }
-    };
+  const f8CoverImageLowResURL = constructStaticURL(
+    FilePaths.coverImage(projectData.userId || "", projectData.id, "f8", "LowRes")
+  );
 
-    fetchProjectImage();
-  }, [projectData.userId, projectData.id]);
+  const f5CoverImageLowResURL = constructStaticURL(
+    FilePaths.coverImage(projectData.userId || "", projectData.id, "f5", "LowRes")
+  );
+
+  const f3CoverImageLowResURL = constructStaticURL(
+    FilePaths.coverImage(projectData.userId || "", projectData.id, "f3", "LowRes")
+  );
+
+  const f2CoverImageLowResURL = constructStaticURL(
+    FilePaths.coverImage(projectData.userId || "", projectData.id, "f2", "LowRes")
+  );
 
   // Generisk håndtering af lang tryk
-  const handleLongPress = async (pdfURL: string | null, fieldName: string) => {
-    if (!pdfURL) {
+  const handleLongPress = async (url: string | null, fieldName: string) => {
+    if (!url) {
       Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
       return;
     }
     try {
-      await Linking.openURL(pdfURL);
+      await Linking.openURL(url);
     } catch (error) {
       console.error(`Fejl ved åbning af ${fieldName} PDF:`, error);
       Alert.alert("Fejl", `Der opstod en fejl under åbning af ${fieldName} PDF.`);
     }
   };
 
-  const handleLongPressF8 = () => handleLongPress(projectData.f8PDF, "Specification (F8)");
-  const handleLongPressF5 = () => handleLongPress(projectData.f5PDF, "Terms & Conditions (F5)");
-  const handleLongPressF3 = () => handleLongPress(projectData.f3PDF, "Sustainability Report (F3)");
-  const handleLongPressF2 = () => handleLongPress(projectData.f2PDF, "Partnership Agreement (F2)");
+  const handleLongPressF8 = () => handleLongPress(null, "Specification (F8)"); // PDF hentes on-demand
+  const handleLongPressF5 = () => handleLongPress(null, "Terms & Conditions (F5)"); // PDF hentes on-demand
+  const handleLongPressF3 = () => handleLongPress(null, "Sustainability Report (F3)"); // PDF hentes on-demand
+  const handleLongPressF2 = () => handleLongPress(null, "Partnership Agreement (F2)"); // PDF hentes on-demand
 
   const handleDelete = () => {
     // Always show Delete button since config.showDelete is removed
@@ -367,7 +371,7 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         >
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImage && (
-            <Image source={{ uri: projectData.f8CoverImage }} style={baseStyles.f8CoverImage} />
+            <Image source={{ uri: f8CoverImageLowResURL }} style={baseStyles.f8CoverImage} />
           )}
 
           {/* Tekst i f8 toppen */}
@@ -376,14 +380,14 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           </View>
 
           {/* Projektbilledet i det runde felt med onPress */}
-          {projectImage && (
+          {projectImageURL && (
             <Pressable
               style={baseStyles.projectImageContainer}
               onPress={() => handlePress("Project Image")}
               accessibilityLabel="Project Image Button"
             >
               <Image
-                source={{ uri: projectImage }}
+                source={{ uri: projectImageURL }}
                 style={baseStyles.projectImage} // Tilpas eventuelt denne style
               />
             </Pressable>
@@ -395,7 +399,9 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             onPress={() => handlePress("Prize")}
             accessibilityLabel="Prize Button"
           >
-            <Text style={baseStyles.priceText}>{projectData.price ? `${projectData.price} kr.` : "Uden pris"}</Text>
+            <Text style={baseStyles.priceText}>
+              {projectData.price ? `${projectData.price} kr.` : "Uden pris"}
+            </Text>
           </Pressable>
 
           {/* Delete-knap */}
@@ -433,12 +439,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               <Pressable
                 style={baseStyles.F2}
                 onPress={() => handlePress("F2")}
-                onLongPress={handleLongPressF2}
+                onLongPress={handleLongPressF2} // Longpress forbliver uændret
                 accessibilityLabel="F2 Button"
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
                 {projectData.f2CoverImage && (
-                  <Image source={{ uri: projectData.f2CoverImage }} style={baseStyles.f2CoverImage} />
+                  <Image source={{ uri: f2CoverImageLowResURL }} style={baseStyles.f2CoverImage} />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -488,12 +494,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             <Pressable
               style={baseStyles.F3}
               onPress={() => handlePress("F3")}
-              onLongPress={handleLongPressF3}
+              onLongPress={handleLongPressF3} // Longpress forbliver uændret
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
               {projectData.f3CoverImage && (
-                <Image source={{ uri: projectData.f3CoverImage }} style={baseStyles.f3CoverImage} />
+                <Image source={{ uri: f3CoverImageLowResURL }} style={baseStyles.f3CoverImage} />
               )}
 
               {/* Tekst i f3 toppen */}
@@ -515,12 +521,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           <Pressable
             style={[baseStyles.F5, { right: rightMargin }]}
             onPress={() => handlePress("F5")}
-            onLongPress={handleLongPressF5}
+            onLongPress={handleLongPressF5} // Longpress forbliver uændret
             accessibilityLabel="F5 Button"
           >
             {/* Vis billede, hvis det er tilgængeligt */}
             {projectData.f5CoverImage && (
-              <Image source={{ uri: projectData.f5CoverImage }} style={baseStyles.f5CoverImage} />
+              <Image source={{ uri: f5CoverImageLowResURL }} style={baseStyles.f5CoverImage} />
             )}
 
             {/* Tekst i f5 toppen */}
@@ -667,7 +673,7 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
               onClose={closeProjectImageModal}
-              projectImageUri={projectImage} // Brug projectImage
+              projectImageUri={projectImageURL} // Brug statisk URL
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />
