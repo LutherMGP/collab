@@ -17,9 +17,10 @@ import { database } from "@/firebaseConfig";
 
 const Projects = () => {
   const { user } = useAuth();
-  const { activePanel, setActivePanel } = useVisibility();
-  const [draftCount, setDraftCount] = useState(0);
-  const [publishedCount, setPublishedCount] = useState(0);
+  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
+    useVisibility();
+  const [totalCount, setTotalCount] = useState(0); // Samlet antal projekter
+  const [publishedCount, setPublishedCount] = useState(0); // Antal publicerede projekter
 
   useEffect(() => {
     if (!user) return;
@@ -31,31 +32,33 @@ const Projects = () => {
       "projects"
     ) as CollectionReference<DocumentData>;
 
-    const draftQuery = query(
-      projectCollection,
-      where("status", "==", "Project")
-    );
-    const draftUnsubscribe = onSnapshot(draftQuery, (querySnapshot) => {
-      setDraftCount(querySnapshot.size);
+    // Forespørgsel for ALLE projekter
+    const allProjectsQuery = query(projectCollection);
+    const unsubscribeAll = onSnapshot(allProjectsQuery, (querySnapshot) => {
+      setTotalCount(querySnapshot.size);
     });
 
-    const publishedQuery = query(
-      projectCollection,
-      where("status", "==", "Published")
-    );
-    const publishedUnsubscribe = onSnapshot(publishedQuery, (querySnapshot) => {
+    // Forespørgsel for projekter med status "Published"
+    const publishedQuery = query(projectCollection, where("status", "==", "Published"));
+    const unsubscribePublished = onSnapshot(publishedQuery, (querySnapshot) => {
       setPublishedCount(querySnapshot.size);
     });
 
     return () => {
-      draftUnsubscribe();
-      publishedUnsubscribe();
+      unsubscribeAll();
+      unsubscribePublished();
     };
   }, [user]);
 
-  const handlePress = (status: "Project" | "Published") => {
-    setActivePanel(activePanel === status ? null : status);
+  const handlePress = () => {
+    if (isInfoPanelProjectsVisible) {
+      hideAllPanels();
+    } else {
+      showPanel("projects");
+    }
   };
+
+  const unPublishedCount = totalCount - publishedCount; // Fratræk Published projekter
 
   return (
     <View style={styles.container}>
@@ -65,28 +68,15 @@ const Projects = () => {
         resizeMode="cover"
       />
 
-      {/* Venstre knap */}
+      {/* Tæller-knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activePanel === "Project" && styles.iconPressed,
-          styles.leftButton,
+          isInfoPanelProjectsVisible && styles.iconPressed,
         ]}
-        onPress={() => handlePress("Project")}
+        onPress={handlePress}
       >
-        <Text style={styles.countText}>{draftCount || 0}</Text>
-      </TouchableOpacity>
-
-      {/* Højre knap */}
-      <TouchableOpacity
-        style={[
-          styles.iconContainer,
-          activePanel === "Published" && styles.iconPressed,
-          styles.rightButton,
-        ]}
-        onPress={() => handlePress("Published")}
-      >
-        <Text style={styles.countText}>{publishedCount || 0}</Text>
+        <Text style={styles.countText}>{unPublishedCount || 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.textContainer}>
@@ -121,6 +111,8 @@ const styles = StyleSheet.create({
   iconContainer: {
     position: "absolute",
     top: 108,
+    left: "50%",
+    transform: [{ translateX: -20 }],
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
     justifyContent: "center",
@@ -156,14 +148,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginTop: 22,
-  },
-  leftButton: {
-    left: "29%",
-    transform: [{ translateX: -20 }],
-  },
-  rightButton: {
-    right: "29%",
-    transform: [{ translateX: 20 }],
   },
 });
 

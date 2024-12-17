@@ -441,39 +441,6 @@ const InfoPanel = ({
         }));
       }
 
-      // Fjern eller kommenter ud denne del, hvis PDF-URL'er allerede er i Firestore
-      /*
-      const fetchDataForCategoryFromStorage = async (
-        category: "f8" | "f5" | "f3" | "f2"
-      ) => {
-        try {
-          const coverImageRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}CoverImage.jpg`
-          );
-          const coverImageUrl = await getDownloadURL(coverImageRef);
-
-          const pdfRef = ref(
-            storage,
-            `users/${userId}/projects/${projectData.id}/data/${category}/${category}PDF.pdf`
-          );
-          const pdfUrl = await getDownloadURL(pdfRef);
-
-          setProjectData((prev) => ({
-            ...prev,
-            [`${category}CoverImage`]: coverImageUrl,
-            [`${category}PDF`]: pdfUrl,
-          }));
-        } catch (error) {
-          console.warn(`Kunne ikke hente ${category} data fra Storage:`, error);
-        }
-      };
-
-      // Kald hentning fra Storage for alle kategorier
-      ["f8", "f5", "f3", "f2"].forEach((category) => {
-        fetchDataForCategoryFromStorage(category as "f8" | "f5" | "f3" | "f2");
-      });
-      */
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
