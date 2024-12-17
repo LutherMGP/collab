@@ -78,11 +78,6 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({ onClose }) => {
         )}
         contentContainerStyle={styles.listContent}
       />
-
-      {/* Luk-knap */}
-      <Text onPress={onClose} style={styles.closeButton}>
-        Luk
-      </Text>
     </View>
   );
 };

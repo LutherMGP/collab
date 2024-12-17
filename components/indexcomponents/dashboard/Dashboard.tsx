@@ -1,35 +1,42 @@
 // @/components/indexcomponents/dashboard/Dashboard.tsx
 
-import React from "react";
+import React, { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import NewProject from "@/components/indexcomponents/dashboard/NewProject";
-import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
+import { useAuth } from "@/hooks/useAuth";
 
-type DashboardProps = {
-  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
-  onShowCatalogPanel: () => void; // Ny prop til at vise katalogpanel
-};
-
-const Dashboard: React.FC<DashboardProps> = ({
-  onShowProjectPanel,
-  onShowCatalogPanel,
-}) => {
+const Dashboard: React.FC = () => {
   const theme = useColorScheme() || "light";
   const { userRole } = useAuth();
 
-  // Komponentliste baseret på brugerrolle
+  // Global tilstand for aktiv knap
+  const [activeButton, setActiveButton] = useState<string | null>(null);
+
+  // Funktion til at aktivere en knap
+  const handleSetActiveButton = (buttonId: string) => {
+    setActiveButton((prev) => (prev === buttonId ? null : buttonId)); // Toggle
+  };
+
   const components = [
     ...(userRole === "Designer" || userRole === "Admin"
       ? [
           <NewProject key="NewProject" />,
-          <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
+          <Projects
+            key="Projects"
+            activeButton={activeButton}
+            onActivate={handleSetActiveButton}
+          />,
         ]
       : []),
-    <Catalog key="Catalog" onShowCatalogPanel={onShowCatalogPanel} />,
+    <Catalog
+      key="Catalog"
+      activeButton={activeButton}
+      onActivate={handleSetActiveButton}
+    />,
   ];
 
   return (
@@ -53,7 +60,7 @@ const styles = StyleSheet.create({
     paddingRight: "0%",
     marginBottom: "3%",
     marginTop: "3%",
-    elevation: 4, // Skyggeeffekt
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,

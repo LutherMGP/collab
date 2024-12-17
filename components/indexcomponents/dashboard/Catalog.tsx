@@ -1,37 +1,23 @@
 // @/components/indexcomponents/dashboard/Catalog.tsx
 
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  collectionGroup,
-  query,
-  collection,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
+import { collectionGroup, query, collection, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 type CatalogProps = {
-  onShowCatalogPanel: () => void; // Prop til at vise Catalog-panelet
+  activeButton: string | null; // Den aktive knap globalt
+  onActivate: (buttonId: string) => void; // Funktion til at aktivere en knap
 };
 
-const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
+const Catalog: React.FC<CatalogProps> = ({ activeButton, onActivate }) => {
   const theme = "light";
   const { user } = useAuth();
 
   const [productCount, setProductCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0); // Nyt tæller til højre knap
-  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
-    null
-  );
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -42,16 +28,14 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
         collectionGroup(database, "projects"),
         where("status", "==", "Published")
       );
-
       return onSnapshot(allProductsQuery, (snapshot) => {
         setProductCount(snapshot.size);
       });
     };
 
-    // Hent tæller for favoritter (højre knap)
+    // Hent tæller for favoritter
     const fetchUserFavorites = () => {
       const favoritesRef = collection(database, "users", user, "favorites");
-
       return onSnapshot(favoritesRef, (snapshot) => {
         setPendingCount(snapshot.size);
       });
@@ -66,19 +50,6 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
     };
   }, [user]);
 
-  const handlePressLeft = () => {
-    if (activeButton === "left") {
-      setActiveButton(null); // Skjul panelet
-    } else {
-      setActiveButton("left");
-      onShowCatalogPanel(); // Viser Catalog-panelet via prop
-    }
-  };
-
-  const handlePressRight = () => {
-    setActiveButton((prev) => (prev === "right" ? null : "right"));
-  };
-
   return (
     <View style={styles.createStoryContainer}>
       {/* Billede */}
@@ -92,10 +63,10 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activeButton === "left" ? styles.iconPressed : null,
+          activeButton === "Catalog_Left" ? styles.iconPressed : null,
           styles.leftButton,
         ]}
-        onPress={handlePressLeft}
+        onPress={() => onActivate("Catalog_Left")}
       >
         <Text style={styles.productCountText}>{productCount}</Text>
       </TouchableOpacity>
@@ -104,10 +75,10 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activeButton === "right" ? styles.iconPressed : null,
+          activeButton === "Catalog_Right" ? styles.iconPressed : null,
           styles.rightButton,
         ]}
-        onPress={handlePressRight}
+        onPress={() => onActivate("Catalog_Right")}
       >
         <Text style={styles.productCountText}>{pendingCount}</Text>
       </TouchableOpacity>
@@ -162,7 +133,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   iconPressed: {
-    backgroundColor: "rgba(0, 128, 0, 0.8)",
+    backgroundColor: "rgba(0, 128, 0, 0.8)", // Aktiv stil for knap
   },
   productCountText: {
     fontSize: 20,

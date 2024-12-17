@@ -15,15 +15,15 @@ import {
 import { database } from "@/firebaseConfig";
 
 type ProjectsProps = {
-  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
+  activeButton: string | null; // Den aktive knap globalt
+  onActivate: (buttonId: string) => void; // Funktion til at aktivere en knap
 };
 
-const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
+const Projects: React.FC<ProjectsProps> = ({ activeButton, onActivate }) => {
   const theme = "light"; // Du kan bruge useColorScheme her, hvis ønsket
   const { user } = useAuth();
   const [draftCount, setDraftCount] = useState(0);
   const [publishedCount, setPublishedCount] = useState(0);
-  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(null); // Holder styr på aktiv knap
 
   useEffect(() => {
     if (!user) return;
@@ -59,28 +59,6 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
     };
   }, [user]);
 
-  const handlePressLeft = () => {
-    if (activeButton === "left") {
-      // Hvis venstre knap allerede er aktiv, deaktiver alt
-      setActiveButton(null);
-      onShowProjectPanel(null); // Skjul panelet
-    } else {
-      setActiveButton("left");
-      onShowProjectPanel("Project"); // Aktiver "projects"-panelet med "Project" filter
-    }
-  };
-
-  const handlePressRight = () => {
-    if (activeButton === "right") {
-      // Hvis højre knap allerede er aktiv, deaktiver alt
-      setActiveButton(null);
-      onShowProjectPanel(null); // Skjul panelet
-    } else {
-      setActiveButton("right");
-      onShowProjectPanel("Published"); // Aktiver "projects"-panelet med "Published" filter
-    }
-  };
-
   return (
     <View style={[styles.createStoryContainer]}>
       <Image
@@ -93,10 +71,10 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activeButton === "left" ? styles.iconPressed : null,
+          activeButton === "Projects_Left" ? styles.iconPressed : null, // Tjek for aktiv knap
           styles.leftButton,
         ]}
-        onPress={handlePressLeft}
+        onPress={() => onActivate("Projects_Left")}
       >
         <Text style={styles.draftCountText}>{draftCount || 0}</Text>
       </TouchableOpacity>
@@ -105,10 +83,10 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activeButton === "right" ? styles.iconPressed : null,
+          activeButton === "Projects_Right" ? styles.iconPressed : null, // Tjek for aktiv knap
           styles.rightButton,
         ]}
-        onPress={handlePressRight}
+        onPress={() => onActivate("Projects_Right")}
       >
         <Text style={styles.draftCountText}>{publishedCount || 0}</Text>
       </TouchableOpacity>
@@ -122,7 +100,6 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
   );
 };
 
-// **Ingen ændringer i styles**
 const styles = StyleSheet.create({
   profileImg: {
     flex: 1,
