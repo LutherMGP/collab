@@ -159,18 +159,15 @@ const InfoPanel = ({
     handleLongPress(f2PDF, "Partnership Agreement (F2)");
 
   const handleFavoriteToggle = async () => {
-    if (!config.showFavorite) return;
-
     try {
       const newFavoriteStatus = !isFavorite;
-      console.log("Favorite button pressed");
       setIsFavorite(newFavoriteStatus);
-
+  
       if (!userId) {
         Alert.alert("Fejl", "Brugerdata mangler. Log ind igen.");
         return;
       }
-
+  
       const favoriteDocRef = doc(
         database,
         "users",
@@ -178,24 +175,28 @@ const InfoPanel = ({
         "favorites",
         projectData.id
       );
-
+  
       if (newFavoriteStatus) {
-        await setDoc(
-          favoriteDocRef,
-          { projectId: projectData.id },
-          { merge: true }
-        );
-        console.log(`Project ${projectData.id} markeret som favorit.`);
+        // Gem projektinformation i 'favorites' collection
+        await setDoc(favoriteDocRef, {
+          projectId: projectData.id,
+          projectOwnerId: projectData.userId,
+          name: projectData.name || "Uden navn",
+          description: projectData.description || "Ingen beskrivelse",
+          coverImageUrl: projectData.fileUrls?.f8CoverImageLowRes || null,
+          status: projectData.status || "Project",
+          price: projectData.price || 0,
+          addedAt: new Date(),
+        });
+        console.log("Projekt tilføjet til favoritter.");
       } else {
+        // Fjern projektet fra 'favorites' collection
         await deleteDoc(favoriteDocRef);
-        console.log(`Project ${projectData.id} fjernet fra favoritter.`);
+        console.log("Projekt fjernet fra favoritter.");
       }
     } catch (error) {
-      console.error("Fejl ved opdatering af favoritstatus:", error);
-      Alert.alert(
-        "Fejl",
-        "Der opstod en fejl under opdatering af favoritstatus."
-      );
+      console.error("Fejl ved håndtering af favoritstatus:", error);
+      Alert.alert("Fejl", "Der opstod en fejl under opdatering af favoritstatus.");
     }
   };
 
