@@ -10,19 +10,16 @@ import {
   CollectionReference,
   DocumentData,
 } from "firebase/firestore";
-import { ProjectData, Category } from "@/types/ProjectData";
+import { ProjectData } from "@/types/ProjectData";
 import { database } from "@/firebaseConfig";
 import InfoPanel from "@/components/indexcomponents/infopanels/projects/InfoPanel";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
+import { useVisibility } from "@/hooks/useVisibilityContext"; // Importer context
 
-type InfoPanelProjectsProps = {
-  statusFilter: "Project" | "Published";
-  onClose: () => void; // Navngiv den som onClose
-};
-
-const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onClose }) => {
+const InfoPanelProjects: React.FC = () => {
+  const { isInfoPanelProjectsVisible } = useVisibility(); // Styr synlighed
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +27,7 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
+    if (!isInfoPanelProjectsVisible || !user) return; // Stop, hvis panelet ikke er synligt eller ingen bruger
 
     const userProjectsCollection = collection(
       database,
@@ -39,45 +36,17 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
       "projects"
     ) as CollectionReference<DocumentData>;
 
-    const q = query(userProjectsCollection, where("status", "==", statusFilter));
+    const q = query(userProjectsCollection, where("status", "==", "Project"));
 
     const unsubscribe = onSnapshot(
       q,
-      async (snapshot) => {
-        if (snapshot.empty) {
-          setProjects([]);
-          setIsLoading(false);
-          return;
-        }
-
-        try {
-          const fetchedProjects: ProjectData[] = [];
-
-          for (const docSnap of snapshot.docs) {
-            const data = docSnap.data() as ProjectData;
-            const project: ProjectData = {
-              id: docSnap.id,
-              name: data.name || "Uden navn",
-              description: data.description || "Ingen kommentar",
-              status: data.status || "Project",
-              price: data.price ?? undefined,
-              userId: data.userId,
-              isFavorite: data.isFavorite ?? false,
-              toBePurchased: data.toBePurchased ?? false,
-              fileUrls: data.fileUrls || {},
-            };
-
-            fetchedProjects.push(project);
-          }
-
-          setProjects(fetchedProjects);
-          setError(null);
-        } catch (fetchError) {
-          console.error("Fejl ved hentning af projekter:", fetchError);
-          setError("Kunne ikke hente projekter. Prøv igen senere.");
-        } finally {
-          setIsLoading(false);
-        }
+      (snapshot) => {
+        const fetchedProjects = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as ProjectData[];
+        setProjects(fetchedProjects);
+        setIsLoading(false);
       },
       (err) => {
         console.error("Fejl ved hentning af projekter:", err);
@@ -87,7 +56,9 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
     );
 
     return () => unsubscribe();
-  }, [user, statusFilter]);
+  }, [user, isInfoPanelProjectsVisible]); // Kun kør hvis panelet er synligt
+
+  if (!isInfoPanelProjectsVisible) return null; // Returnér ingenting, hvis panelet ikke er aktivt
 
   if (isLoading) {
     return (
@@ -112,11 +83,10 @@ const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onC
           key={project.id}
           projectData={project}
           config={{
-            showDelete: true, // Sørg for, at knappen vises
+            showDelete: true,
             showFavorite: true,
-            showPurchase: true,
+            showPurchase: false,
             showEdit: true,
-            // Tilføj flere konfigurationsindstillinger, hvis nødvendigt
           }}
         />
       ))}

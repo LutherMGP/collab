@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
-import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
+import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collection,
   CollectionReference,
@@ -13,20 +13,18 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { Colors } from "@/constants/Colors";
 
-type ProjectsProps = {
-  onShowProjectPanel: (status: "Project" | "Published" | null) => void;
-};
-
-const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
-  const theme = "light"; // Du kan bruge useColorScheme her, hvis ønsket
+const Projects: React.FC = () => {
+  const { showPanel, activeButton } = useVisibility();
   const { user } = useAuth();
   const [draftCount, setDraftCount] = useState(0);
   const [publishedCount, setPublishedCount] = useState(0);
-  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(null); // Holder styr på aktiv knap
 
   useEffect(() => {
     if (!user) return;
+
+    console.log("Henter projekter for bruger:", user);
 
     const projectCollection = collection(
       database,
@@ -35,21 +33,17 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
       "projects"
     ) as CollectionReference<DocumentData>;
 
-    // Lyt efter projekter med status "Project"
-    const draftQuery = query(
-      projectCollection,
-      where("status", "==", "Project")
-    );
+    // Lyt efter "Project" status
+    const draftQuery = query(projectCollection, where("status", "==", "Project"));
     const draftUnsubscribe = onSnapshot(draftQuery, (querySnapshot) => {
+      console.log("Antal projekter (Project):", querySnapshot.size);
       setDraftCount(querySnapshot.size);
     });
 
-    // Lyt efter projekter med status "Published"
-    const publishedQuery = query(
-      projectCollection,
-      where("status", "==", "Published")
-    );
+    // Lyt efter "Published" status
+    const publishedQuery = query(projectCollection, where("status", "==", "Published"));
     const publishedUnsubscribe = onSnapshot(publishedQuery, (querySnapshot) => {
+      console.log("Antal projekter (Published):", querySnapshot.size);
       setPublishedCount(querySnapshot.size);
     });
 
@@ -59,70 +53,51 @@ const Projects: React.FC<ProjectsProps> = ({ onShowProjectPanel }) => {
     };
   }, [user]);
 
-  const handlePressLeft = () => {
-    if (activeButton === "left") {
-      // Hvis venstre knap allerede er aktiv, deaktiver alt
-      setActiveButton(null);
-      onShowProjectPanel(null); // Skjul panelet
-    } else {
-      setActiveButton("left");
-      onShowProjectPanel("Project"); // Aktiver "projects"-panelet med "Project" filter
-    }
-  };
-
-  const handlePressRight = () => {
-    if (activeButton === "right") {
-      // Hvis højre knap allerede er aktiv, deaktiver alt
-      setActiveButton(null);
-      onShowProjectPanel(null); // Skjul panelet
-    } else {
-      setActiveButton("right");
-      onShowProjectPanel("Published"); // Aktiver "projects"-panelet med "Published" filter
-    }
-  };
-
   return (
-    <View style={[styles.createStoryContainer]}>
+    <View style={styles.createStoryContainer}>
       <Image
         source={require("@/assets/images/projects.webp")}
         style={styles.profileImg}
         resizeMode="cover"
       />
 
-      {/* Venstre knap */}
+      {/* Venstre knap - Projects */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activeButton === "left" ? styles.iconPressed : null,
           styles.leftButton,
+          activeButton === "projects" ? styles.iconPressed : null,
         ]}
-        onPress={handlePressLeft}
+        onPress={() => {
+          console.log("Knappen 'Projects' blev trykket.");
+          showPanel("projects");
+        }}
       >
-        <Text style={styles.draftCountText}>{draftCount || 0}</Text>
+        <Text style={styles.draftCountText}>{draftCount}</Text>
       </TouchableOpacity>
 
-      {/* Højre knap */}
+      {/* Højre knap - Publicated */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          activeButton === "right" ? styles.iconPressed : null,
           styles.rightButton,
+          activeButton === "publicated" ? styles.iconPressed : null,
         ]}
-        onPress={handlePressRight}
+        onPress={() => {
+          console.log("Knappen 'Publicated' blev trykket.");
+          showPanel("publicated");
+        }}
       >
-        <Text style={styles.draftCountText}>{publishedCount || 0}</Text>
+        <Text style={styles.draftCountText}>{publishedCount}</Text>
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
-        <Text style={[styles.createStoryText, { color: Colors[theme]?.text || "#000" }]}>
-          Projects
-        </Text>
+        <Text style={styles.createStoryText}>Projects</Text>
       </View>
     </View>
   );
 };
 
-// **Ingen ændringer i styles**
 const styles = StyleSheet.create({
   profileImg: {
     flex: 1,
@@ -156,11 +131,6 @@ const styles = StyleSheet.create({
     width: 40,
     borderWidth: 3,
     borderColor: "rgba(255, 255, 255, 0.7)",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   iconPressed: {
     backgroundColor: "rgba(0, 128, 0, 0.8)", // Aktiv visuel tilstand

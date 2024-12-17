@@ -34,34 +34,42 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
 
   useEffect(() => {
     if (!user) return;
-
+  
     // Hent tæller for publicerede projekter
     const fetchPublishedProjects = () => {
       const allProductsQuery = query(
         collectionGroup(database, "projects"),
         where("status", "==", "Published")
       );
-
+  
       return onSnapshot(allProductsQuery, (snapshot) => {
+        console.log(
+          "Catalog.tsx - Published Projects:",
+          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
         setProductCount(snapshot.size);
       });
     };
-
+  
     // Hent tæller for projekter med status "Pending"
     const fetchPendingProjects = () => {
       const pendingProjectsQuery = query(
         collectionGroup(database, "projects"),
         where("status", "==", "Pending")
       );
-
+  
       return onSnapshot(pendingProjectsQuery, (snapshot) => {
+        console.log(
+          "Catalog.tsx - Pending Projects:",
+          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
         setPendingCount(snapshot.size);
       });
     };
-
+  
     const unsubscribePublished = fetchPublishedProjects();
     const unsubscribePending = fetchPendingProjects();
-
+  
     return () => {
       unsubscribePublished();
       unsubscribePending();

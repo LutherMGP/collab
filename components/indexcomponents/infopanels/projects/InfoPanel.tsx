@@ -558,8 +558,17 @@ const InfoPanel = ({
     }
   };
 
+  console.log("Modtaget projectData:", projectData);
+
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
+        {/* Debug Data */}
+        <View style={{ margin: 10, padding: 10, backgroundColor: "lightgray" }}>
+          <Text style={{ color: "red", fontWeight: "bold" }}>Debug Data:</Text>
+          <Text style={{ fontSize: 12 }}>
+            {JSON.stringify(projectData, null, 2)}
+          </Text>
+        </View>
       {/* Tekst og kommentarer */}
       <View style={baseStyles.textContainer}>
         <Text

@@ -6,7 +6,7 @@ type VisibilityContextType = {
   isInfoPanelProjectsVisible: boolean;
   isInfoPanelPublicatedVisible: boolean;
   isInfoPanelCatalogVisible: boolean;
-  isInfoPanelFavoritesVisible: boolean; // Ny state placeret her
+  isInfoPanelFavoritesVisible: boolean;
   showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
   activeButton: string | null;
@@ -17,7 +17,7 @@ const VisibilityContext = createContext<VisibilityContextType>({
   isInfoPanelProjectsVisible: false,
   isInfoPanelPublicatedVisible: false,
   isInfoPanelCatalogVisible: false,
-  isInfoPanelFavoritesVisible: false, // Initialisering
+  isInfoPanelFavoritesVisible: false,
   showPanel: () => {},
   hideAllPanels: () => {},
   activeButton: null,
@@ -30,39 +30,50 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
   const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] = useState(false);
   const [isInfoPanelPublicatedVisible, setInfoPanelPublicatedVisible] = useState(false);
   const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] = useState(false);
-  const [isInfoPanelFavoritesVisible, setInfoPanelFavoritesVisible] = useState(false); // Ny state
+  const [isInfoPanelFavoritesVisible, setInfoPanelFavoritesVisible] = useState(false);
   const [activeButton, setActiveButton] = useState<string | null>(null);
 
   const showPanel = (panelName: string) => {
-    hideAllPanels();
-    switch (panelName) {
-      case "projects":
-        setInfoPanelProjectsVisible(true);
-        setActiveButton("projects");
-        break;
-      case "publicated":
-        setInfoPanelPublicatedVisible(true);
-        setActiveButton("publicated");
-        break;
-      case "catalog":
-        setInfoPanelCatalogVisible(true);
-        setActiveButton("catalog");
-        break;
-      case "favorites": // Ny case
-        setInfoPanelFavoritesVisible(true);
-        setActiveButton("favorites");
-        break;
-      default:
-        break;
+    if (activeButton === panelName) {
+      console.log(`Deaktiverer panel: ${panelName}`);
+      hideAllPanels();
+    } else {
+      console.log(`Aktiverer panel: ${panelName}`);
+      hideAllPanels();
+  
+      switch (panelName) {
+        case "projects":
+          if (!isInfoPanelProjectsVisible) {
+            setInfoPanelProjectsVisible(true);
+            console.log("isInfoPanelProjectsVisible sat til true");
+          }
+          break;
+  
+        case "publicated":
+          if (!isInfoPanelPublicatedVisible) {
+            setInfoPanelPublicatedVisible(true);
+            console.log("isInfoPanelPublicatedVisible sat til true");
+          }
+          break;
+  
+        default:
+          break;
+      }
+      setActiveButton(panelName);
     }
   };
 
   const hideAllPanels = () => {
+    console.log("Nulstiller alle paneler...");
     setInfoPanelProjectsVisible(false);
     setInfoPanelPublicatedVisible(false);
     setInfoPanelCatalogVisible(false);
-    setInfoPanelFavoritesVisible(false); // Nulstil ny state
+    setInfoPanelFavoritesVisible(false);
     setActiveButton(null);
+    console.log("isInfoPanelProjectsVisible:", false);
+    console.log("isInfoPanelPublicatedVisible:", false);
+    console.log("isInfoPanelCatalogVisible:", false);
+    console.log("isInfoPanelFavoritesVisible:", false);
   };
 
   return (
@@ -71,7 +82,7 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
         isInfoPanelProjectsVisible,
         isInfoPanelPublicatedVisible,
         isInfoPanelCatalogVisible,
-        isInfoPanelFavoritesVisible, // Ny state mellem de andre
+        isInfoPanelFavoritesVisible,
         showPanel,
         hideAllPanels,
         activeButton,

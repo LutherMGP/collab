@@ -1,67 +1,74 @@
 // @/components/indexcomponents/dashboard/Dashboard.tsx
 
 import React from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import NewProject from "@/components/indexcomponents/dashboard/NewProject";
-import { useAuth } from "@/hooks/useAuth";
-import Projects from "@/components/indexcomponents/dashboard/Projects";
-import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 
 type DashboardProps = {
   onShowProjectPanel: (status: "Project" | "Published" | null) => void;
-  onShowCatalogPanel: () => void; // Ny prop til at vise katalogpanel
+  onShowCatalogPanel: () => void;
 };
 
 const Dashboard: React.FC<DashboardProps> = ({
   onShowProjectPanel,
   onShowCatalogPanel,
 }) => {
-  const theme = useColorScheme() || "light";
-  const { userRole } = useAuth();
-
-  // Komponentliste baseret på brugerrolle
-  const components = [
-    ...(userRole === "Designer" || userRole === "Admin"
-      ? [
-          <NewProject key="NewProject" />,
-          <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
-        ]
-      : []),
-    <Catalog key="Catalog" onShowCatalogPanel={onShowCatalogPanel} />,
-  ];
+  const theme = "light";
 
   return (
-    <FlatList
-      data={components}
-      horizontal
-      keyExtractor={(item) => item.key || Math.random().toString()}
-      renderItem={({ item }) => <View style={styles.container}>{item}</View>}
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[
-        styles.contentContainerStyle,
-        { backgroundColor: Colors[theme].background },
-      ]}
-    />
+    <View style={styles.container}>
+      <Text style={[styles.header, { color: Colors[theme].text }]}>
+        Dashboard
+      </Text>
+
+      {/* Knap til at vise Project Panel */}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => onShowProjectPanel("Project")}
+      >
+        <Text style={styles.buttonText}>Vis Projekter (Kladder)</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => onShowProjectPanel("Published")}
+      >
+        <Text style={styles.buttonText}>Vis Publicerede Projekter</Text>
+      </TouchableOpacity>
+
+      {/* Knap til at vise Catalog Panel */}
+      <TouchableOpacity style={styles.button} onPress={onShowCatalogPanel}>
+        <Text style={styles.buttonText}>Vis Catalog</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
+export default Dashboard;
+
 const styles = StyleSheet.create({
   container: {
-    paddingLeft: "0%",
-    paddingRight: "0%",
-    marginBottom: "3%",
-    marginTop: "3%",
-    elevation: 4, // Skyggeeffekt
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    padding: 20,
+    backgroundColor: Colors.light.background,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  contentContainerStyle: {
-    paddingRight: 0,
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: Colors.light.tint,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginVertical: 10,
+  },
+  buttonText: {
+    fontSize: 16,
+    color: "white",
+    fontWeight: "bold",
   },
 });
-
-export default Dashboard;

@@ -16,12 +16,7 @@ import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
-import {
-  getDoc,
-  doc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 const Index = () => {
   const theme = useColorScheme() || "light";
@@ -30,11 +25,11 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Tilstandsvariabler for panel synlighed
+  // State for panel synlighed
   const [projectPanelStatus, setProjectPanelStatus] = useState<"Project" | "Published" | null>(null);
   const [showCatalogPanel, setShowCatalogPanel] = useState(false);
 
-  // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
+  // Velkomsthilsen vises, hvis ingen paneler er åbne
   const shouldShowWelcomeMessage = !projectPanelStatus && !showCatalogPanel;
 
   useEffect(() => {
@@ -42,9 +37,7 @@ const Index = () => {
       if (user) {
         try {
           const userDocRef = doc(database, "users", user);
-          await updateDoc(userDocRef, {
-            lastUsed: serverTimestamp(),
-          });
+          await updateDoc(userDocRef, { lastUsed: serverTimestamp() });
         } catch (error) {
           console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
         } finally {
@@ -58,7 +51,7 @@ const Index = () => {
     updateLastUsed();
   }, [user]);
 
-  // Funktioner til at styre paneler
+  // Funktioner til panelstyring
   const showProjectPanel = (status: "Project" | "Published" | null) => {
     setProjectPanelStatus(status);
   };
@@ -86,7 +79,7 @@ const Index = () => {
       )}
       scrollEventThrottle={16}
     >
-      {/* Dashboard komponenten */}
+      {/* Dashboard */}
       <View style={styles.dashboardContainer}>
         <Dashboard 
           onShowProjectPanel={showProjectPanel} 
@@ -94,17 +87,17 @@ const Index = () => {
         />
       </View>
 
-      {/* Velkomstmeddelelse - kun synlig hvis ingen InfoPanels er synlige */}
+      {/* Velkomsthilsen */}
       {shouldShowWelcomeMessage && <WelcomeMessage />}
 
-      {/* Vis en fejlbesked, hvis der er en fejl */}
+      {/* Fejlbesked */}
       {error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Render InfoPanelProjects kun hvis synlig */}
+      {/* InfoPanelProjects */}
       {projectPanelStatus && (
         <View style={styles.infoPanelContainer}>
           <InfoPanelProjects
@@ -114,7 +107,7 @@ const Index = () => {
         </View>
       )}
 
-      {/* Render InfoPanelCatalog kun hvis synlig */}
+      {/* InfoPanelCatalog */}
       {showCatalogPanel && (
         <View style={styles.infoPanelContainer}>
           <InfoPanelCatalog onClose={hideCatalogPanelHandler} />
@@ -129,19 +122,15 @@ export default Index;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 0,
-    padding: 0,
   },
   contentContainer: {
     flexGrow: 1,
-    justifyContent: "flex-start",
   },
-  dashboardContainer: {},
+  dashboardContainer: {
+    marginVertical: 20,
+  },
   infoPanelContainer: {
     width: "100%",
-    marginTop: 0,
-    paddingTop: 0,
-    alignSelf: "center",
   },
   errorContainer: {
     padding: 10,
