@@ -7,6 +7,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import NewProject from "@/components/indexcomponents/dashboard/NewProject";
 import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
+import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 
 type DashboardProps = {
   onShowProjectPanel: (status: "Project" | "Published" | null) => void;
@@ -26,6 +27,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
         ]
       : []),
+  
+    <Catalog key="Catalog" />, // Catalog kommer EFTER Projects
   ];
 
   return (

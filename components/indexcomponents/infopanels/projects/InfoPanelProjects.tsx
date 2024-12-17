@@ -18,11 +18,11 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 
 type InfoPanelProjectsProps = {
-  statusFilter: "Project" | "Published"; // Modtag statusFilter som prop
-  onClosePanel: () => void; // Funktion til at lukke panelet, hvis nødvendigt
+  statusFilter: "Project" | "Published";
+  onClose: () => void; // Navngiv den som onClose
 };
 
-const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onClosePanel }) => {
+const InfoPanelProjects: React.FC<InfoPanelProjectsProps> = ({ statusFilter, onClose }) => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

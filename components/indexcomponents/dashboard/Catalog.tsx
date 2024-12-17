@@ -16,20 +16,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collectionGroup,
-  doc,
-  setDoc,
   query,
   where,
   onSnapshot,
-  serverTimestamp,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-
-interface Project {
-  id: string;
-  ownerId: string;
-  [key: string]: any;
-}
 
 const Catalog = () => {
   const theme = "light";
@@ -38,83 +29,59 @@ const Catalog = () => {
     useVisibility();
 
   const [productCount, setProductCount] = useState(0);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [applicationMessage, setApplicationMessage] = useState("");
+  const [secondCount, setSecondCount] = useState(0); // Nyt tæller til højre knap
+  const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
+    null
+  );
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchProducts = async () => {
+    // Hent tæller for første knap (eksisterende funktionalitet)
+    const fetchProducts = () => {
       const allProductsQuery = query(
         collectionGroup(database, "projects"),
         where("status", "==", "Published")
       );
 
-      const unsubscribe = onSnapshot(allProductsQuery, (snapshot) => {
-        const allProductIds = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ownerId: doc.ref.parent.parent?.id || null,
-          ...doc.data(),
-        }));
-
-        const availableProducts = allProductIds.filter(
-          ({ ownerId }) => ownerId !== user
-        );
-
-        setProductCount(availableProducts.length);
+      return onSnapshot(allProductsQuery, (snapshot) => {
+        setProductCount(snapshot.size);
       });
-
-      return () => unsubscribe();
     };
 
-    fetchProducts().catch((error) => {
-      console.error("Fejl ved hentning af produkter:", error);
-      Alert.alert("Fejl", "Kunne ikke hente produkter.");
-    });
-  }, [user]);
-
-  const handleApply = (project: Project) => {
-    setSelectedProject(project);
-    setModalVisible(true);
-  };
-
-  const submitApplication = async () => {
-    if (!selectedProject) {
-      Alert.alert("Fejl", "Ingen projekt valgt.");
-      return;
-    }
-
-    if (!applicationMessage.trim()) {
-      Alert.alert("Fejl", "Skriv en besked før du sender ansøgningen.");
-      return;
-    }
-
-    try {
-      const applicationRef = doc(
-        database,
-        "users",
-        selectedProject.ownerId,
-        "projects",
-        selectedProject.id,
-        "applications",
-        `${user}_${Date.now()}`
+    // Hent tæller for anden knap (ny funktionalitet)
+    const fetchSecondCount = () => {
+      const secondQuery = query(
+        collectionGroup(database, "projects"),
+        where("status", "==", "Pending")
       );
 
-      await setDoc(applicationRef, {
-        applicantId: user,
-        message: applicationMessage.trim(),
-        status: "pending",
-        createdAt: serverTimestamp(),
+      return onSnapshot(secondQuery, (snapshot) => {
+        setSecondCount(snapshot.size);
       });
+    };
 
-      Alert.alert("Ansøgning sendt!", "Din ansøgning er blevet sendt.");
-      setApplicationMessage("");
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Fejl ved indsendelse af ansøgning:", error);
-      Alert.alert("Fejl", "Kunne ikke sende ansøgningen. Prøv igen.");
+    const unsubscribeProducts = fetchProducts();
+    const unsubscribeSecond = fetchSecondCount();
+
+    return () => {
+      unsubscribeProducts();
+      unsubscribeSecond();
+    };
+  }, [user]);
+
+  const handlePressLeft = () => {
+    if (activeButton === "left") {
+      setActiveButton(null);
+      hideAllPanels();
+    } else {
+      setActiveButton("left");
+      showPanel("catalog");
     }
+  };
+
+  const handlePressRight = () => {
+    setActiveButton((prev) => (prev === "right" ? null : "right"));
   };
 
   return (
@@ -125,17 +92,28 @@ const Catalog = () => {
         resizeMode="cover"
       />
 
+      {/* Venstre knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelCatalogVisible ? styles.iconPressed : null,
+          activeButton === "left" ? styles.iconPressed : null,
+          styles.leftButton,
         ]}
-        onPress={() => {
-          if (isInfoPanelCatalogVisible) hideAllPanels();
-          else showPanel("catalog");
-        }}
+        onPress={handlePressLeft}
       >
         <Text style={styles.productCountText}>{productCount}</Text>
+      </TouchableOpacity>
+
+      {/* Højre knap */}
+      <TouchableOpacity
+        style={[
+          styles.iconContainer,
+          activeButton === "right" ? styles.iconPressed : null,
+          styles.rightButton,
+        ]}
+        onPress={handlePressRight}
+      >
+        <Text style={styles.productCountText}>{secondCount}</Text>
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
@@ -143,40 +121,6 @@ const Catalog = () => {
           Catalog
         </Text>
       </View>
-
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Ansøg om projekt</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Skriv din besked..."
-              value={applicationMessage}
-              onChangeText={setApplicationMessage}
-              multiline
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.buttonText}>Annuller</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={submitApplication}
-              >
-                <Text style={styles.buttonText}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -206,8 +150,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     position: "absolute",
     top: 108,
-    left: "50%",
-    transform: [{ translateX: -20 }],
     borderRadius: 50,
     backgroundColor: Colors.light.tint,
     justifyContent: "center",
@@ -244,57 +186,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 22,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+  leftButton: {
+    left: "29%",
+    transform: [{ translateX: -20 }],
   },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    width: "100%",
-    marginBottom: 20,
-    textAlignVertical: "top",
-    height: 80,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  cancelButton: {
-    backgroundColor: "red",
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  submitButton: {
-    backgroundColor: Colors.light.tint,
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
+  rightButton: {
+    right: "29%",
+    transform: [{ translateX: 20 }],
   },
 });
 
