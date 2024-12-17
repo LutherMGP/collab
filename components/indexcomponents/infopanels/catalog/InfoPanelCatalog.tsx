@@ -59,9 +59,6 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({ onClose }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[theme].background }]}>
-      <Text style={[styles.header, { color: Colors[theme].text }]}>
-        Publicerede Projekter
-      </Text>
 
       {/* FlatList til at vise alle projekter */}
       <FlatList
@@ -95,7 +92,6 @@ export default InfoPanelCatalog;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
@@ -103,12 +99,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
   },
   listContent: {
     paddingBottom: 20,
