@@ -4,71 +4,53 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 
 type VisibilityContextType = {
   isInfoPanelProjectsVisible: boolean;
+  isInfoPanelPublicatedVisible: boolean;
   isInfoPanelCatalogVisible: boolean;
-  isInfoPanelPurchasedVisible: boolean;
-  isInfoPanelCartVisible: boolean;
-  isInfoPanelApplicationsVisible: boolean;
-  isInfoPanelApplicationsUdVisible: boolean;
-  isInfoPanelApplicationsIndVisible: boolean;
+  isInfoPanelFavoritesVisible: boolean; // Ny state placeret her
   showPanel: (panelName: string) => void;
   hideAllPanels: () => void;
-  profileImage: string | null; // Tilføj dette
-  setProfileImage: (imageUri: string) => void; // Og dette
+  activeButton: string | null;
+  setActiveButton: (buttonName: string | null) => void;
 };
 
 const VisibilityContext = createContext<VisibilityContextType>({
   isInfoPanelProjectsVisible: false,
+  isInfoPanelPublicatedVisible: false,
   isInfoPanelCatalogVisible: false,
-  isInfoPanelPurchasedVisible: false,
-  isInfoPanelCartVisible: false,
-  isInfoPanelApplicationsVisible: false,
-  isInfoPanelApplicationsUdVisible: false,
-  isInfoPanelApplicationsIndVisible: false,
+  isInfoPanelFavoritesVisible: false, // Initialisering
   showPanel: () => {},
   hideAllPanels: () => {},
-  profileImage: null,
-  setProfileImage: () => {},
+  activeButton: null,
+  setActiveButton: () => {},
 });
 
 export const useVisibility = () => useContext(VisibilityContext);
 
 export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
-  const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] =
-    useState(false);
-  const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] =
-    useState(false);
-  const [isInfoPanelPurchasedVisible, setInfoPanelPurchasedVisible] =
-    useState(false);
-  const [isInfoPanelCartVisible, setInfoPanelCartVisible] = 
-    useState(false);
-  const [isInfoPanelApplicationsVisible, setInfoPanelApplicationsVisible] =
-    useState(false);
-  const [isInfoPanelApplicationsUdVisible, setInfoPanelApplicationsUdVisible] =
-    useState(false);
-  const [isInfoPanelApplicationsIndVisible, setInfoPanelApplicationsIndVisible] =
-    useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null); // Tilføj dette
+  const [isInfoPanelProjectsVisible, setInfoPanelProjectsVisible] = useState(false);
+  const [isInfoPanelPublicatedVisible, setInfoPanelPublicatedVisible] = useState(false);
+  const [isInfoPanelCatalogVisible, setInfoPanelCatalogVisible] = useState(false);
+  const [isInfoPanelFavoritesVisible, setInfoPanelFavoritesVisible] = useState(false); // Ny state
+  const [activeButton, setActiveButton] = useState<string | null>(null);
 
   const showPanel = (panelName: string) => {
     hideAllPanels();
     switch (panelName) {
       case "projects":
         setInfoPanelProjectsVisible(true);
+        setActiveButton("projects");
+        break;
+      case "publicated":
+        setInfoPanelPublicatedVisible(true);
+        setActiveButton("publicated");
         break;
       case "catalog":
         setInfoPanelCatalogVisible(true);
+        setActiveButton("catalog");
         break;
-      case "purchased":
-        setInfoPanelPurchasedVisible(true);
-        break;
-      case "cart":
-        setInfoPanelCartVisible(true);
-        break;
-      case "applicationsUd":
-        setInfoPanelApplicationsUdVisible(true);
-        break;
-      case "applicationsInd":
-        setInfoPanelApplicationsIndVisible(true);
+      case "favorites": // Ny case
+        setInfoPanelFavoritesVisible(true);
+        setActiveButton("favorites");
         break;
       default:
         break;
@@ -77,28 +59,23 @@ export const VisibilityProvider = ({ children }: { children: ReactNode }) => {
 
   const hideAllPanels = () => {
     setInfoPanelProjectsVisible(false);
+    setInfoPanelPublicatedVisible(false);
     setInfoPanelCatalogVisible(false);
-    setInfoPanelPurchasedVisible(false);
-    setInfoPanelCartVisible(false);
-    setInfoPanelApplicationsVisible(false);
-    setInfoPanelApplicationsUdVisible(false);
-    setInfoPanelApplicationsIndVisible(false);
+    setInfoPanelFavoritesVisible(false); // Nulstil ny state
+    setActiveButton(null);
   };
 
   return (
     <VisibilityContext.Provider
       value={{
         isInfoPanelProjectsVisible,
+        isInfoPanelPublicatedVisible,
         isInfoPanelCatalogVisible,
-        isInfoPanelPurchasedVisible,
-        isInfoPanelCartVisible,
-        isInfoPanelApplicationsVisible,
-        isInfoPanelApplicationsUdVisible,
-        isInfoPanelApplicationsIndVisible,
+        isInfoPanelFavoritesVisible, // Ny state mellem de andre
         showPanel,
         hideAllPanels,
-        profileImage, // Tilføj dette
-        setProfileImage, // Og dette
+        activeButton,
+        setActiveButton,
       }}
     >
       {children}
