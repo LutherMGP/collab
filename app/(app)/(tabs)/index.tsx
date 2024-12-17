@@ -16,7 +16,6 @@ import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
-
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   getDoc,
@@ -41,7 +40,7 @@ const Index = () => {
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
   const shouldShowWelcomeMessage = !(
     isInfoPanelProjectsVisible ||
-    isInfoPanelPublishedVisible ||
+    isInfoPanelPublishedVisible
   );
 
   useEffect(() => {
