@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
+import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
 import {
   getDoc,
   doc,
@@ -29,11 +30,12 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Lokale tilstandsvariabler for panel synlighed
+  // Tilstandsvariabler for panel synlighed
   const [projectPanelStatus, setProjectPanelStatus] = useState<"Project" | "Published" | null>(null);
+  const [showCatalogPanel, setShowCatalogPanel] = useState(false);
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
-  const shouldShowWelcomeMessage = !projectPanelStatus;
+  const shouldShowWelcomeMessage = !projectPanelStatus && !showCatalogPanel;
 
   useEffect(() => {
     const updateLastUsed = async () => {
@@ -56,13 +58,21 @@ const Index = () => {
     updateLastUsed();
   }, [user]);
 
-  // Callback funktioner til at styre panel synlighed
+  // Funktioner til at styre paneler
   const showProjectPanel = (status: "Project" | "Published" | null) => {
-    setProjectPanelStatus(status); // Tillader nu null
+    setProjectPanelStatus(status);
   };
 
   const hideProjectPanel = () => {
     setProjectPanelStatus(null);
+  };
+
+  const showCatalogPanelHandler = () => {
+    setShowCatalogPanel(true);
+  };
+
+  const hideCatalogPanelHandler = () => {
+    setShowCatalogPanel(false);
   };
 
   return (
@@ -78,7 +88,10 @@ const Index = () => {
     >
       {/* Dashboard komponenten */}
       <View style={styles.dashboardContainer}>
-        <Dashboard onShowProjectPanel={showProjectPanel} />
+        <Dashboard 
+          onShowProjectPanel={showProjectPanel} 
+          onShowCatalogPanel={showCatalogPanelHandler} 
+        />
       </View>
 
       {/* Velkomstmeddelelse - kun synlig hvis ingen InfoPanels er synlige */}
@@ -93,11 +106,18 @@ const Index = () => {
 
       {/* Render InfoPanelProjects kun hvis synlig */}
       {projectPanelStatus && (
-        <View style={styles.infoPanelProjectsContainer}>
+        <View style={styles.infoPanelContainer}>
           <InfoPanelProjects
             statusFilter={projectPanelStatus}
             onClose={hideProjectPanel}
           />
+        </View>
+      )}
+
+      {/* Render InfoPanelCatalog kun hvis synlig */}
+      {showCatalogPanel && (
+        <View style={styles.infoPanelContainer}>
+          <InfoPanelCatalog onClose={hideCatalogPanelHandler} />
         </View>
       )}
     </Animated.ScrollView>
@@ -117,7 +137,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   dashboardContainer: {},
-  infoPanelProjectsContainer: {
+  infoPanelContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,

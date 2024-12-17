@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "@/components/indexcomponents/infopanels/catalog/InfoPanelStyles";
+import { styles as baseStyles } from "@/components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF3";

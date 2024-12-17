@@ -7,13 +7,9 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  Alert,
-  Modal,
-  TextInput,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collectionGroup,
   query,
@@ -22,14 +18,16 @@ import {
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
-const Catalog = () => {
+type CatalogProps = {
+  onShowCatalogPanel: () => void; // Prop til at vise Catalog-panelet
+};
+
+const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
   const theme = "light";
   const { user } = useAuth();
-  const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } =
-    useVisibility();
 
   const [productCount, setProductCount] = useState(0);
-  const [secondCount, setSecondCount] = useState(0); // Nyt tæller til højre knap
+  const [pendingCount, setPendingCount] = useState(0); // Nyt tæller til højre knap
   const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
     null
   );
@@ -37,8 +35,8 @@ const Catalog = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Hent tæller for første knap (eksisterende funktionalitet)
-    const fetchProducts = () => {
+    // Hent tæller for publicerede projekter
+    const fetchPublishedProjects = () => {
       const allProductsQuery = query(
         collectionGroup(database, "projects"),
         where("status", "==", "Published")
@@ -49,34 +47,33 @@ const Catalog = () => {
       });
     };
 
-    // Hent tæller for anden knap (ny funktionalitet)
-    const fetchSecondCount = () => {
-      const secondQuery = query(
+    // Hent tæller for projekter med status "Pending"
+    const fetchPendingProjects = () => {
+      const pendingProjectsQuery = query(
         collectionGroup(database, "projects"),
         where("status", "==", "Pending")
       );
 
-      return onSnapshot(secondQuery, (snapshot) => {
-        setSecondCount(snapshot.size);
+      return onSnapshot(pendingProjectsQuery, (snapshot) => {
+        setPendingCount(snapshot.size);
       });
     };
 
-    const unsubscribeProducts = fetchProducts();
-    const unsubscribeSecond = fetchSecondCount();
+    const unsubscribePublished = fetchPublishedProjects();
+    const unsubscribePending = fetchPendingProjects();
 
     return () => {
-      unsubscribeProducts();
-      unsubscribeSecond();
+      unsubscribePublished();
+      unsubscribePending();
     };
   }, [user]);
 
   const handlePressLeft = () => {
     if (activeButton === "left") {
-      setActiveButton(null);
-      hideAllPanels();
+      setActiveButton(null); // Skjul panelet
     } else {
       setActiveButton("left");
-      showPanel("catalog");
+      onShowCatalogPanel(); // Viser Catalog-panelet via prop
     }
   };
 
@@ -85,7 +82,8 @@ const Catalog = () => {
   };
 
   return (
-    <View style={[styles.createStoryContainer]}>
+    <View style={styles.createStoryContainer}>
+      {/* Billede */}
       <Image
         source={require("@/assets/images/offerings.webp")}
         style={styles.profileImg}
@@ -113,9 +111,10 @@ const Catalog = () => {
         ]}
         onPress={handlePressRight}
       >
-        <Text style={styles.productCountText}>{secondCount}</Text>
+        <Text style={styles.productCountText}>{pendingCount}</Text>
       </TouchableOpacity>
 
+      {/* Tekst */}
       <View style={styles.createStoryTextContainer}>
         <Text style={[styles.createStoryText, { color: Colors[theme].text }]}>
           Catalog

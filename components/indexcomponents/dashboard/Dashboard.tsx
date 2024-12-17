@@ -11,15 +11,17 @@ import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 
 type DashboardProps = {
   onShowProjectPanel: (status: "Project" | "Published" | null) => void;
+  onShowCatalogPanel: () => void; // Ny prop til at vise katalogpanel
 };
 
 const Dashboard: React.FC<DashboardProps> = ({
   onShowProjectPanel,
+  onShowCatalogPanel,
 }) => {
   const theme = useColorScheme() || "light";
   const { userRole } = useAuth();
 
-  // Opret en liste af komponenter baseret på brugerens rolle
+  // Komponentliste baseret på brugerrolle
   const components = [
     ...(userRole === "Designer" || userRole === "Admin"
       ? [
@@ -27,8 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <Projects key="Projects" onShowProjectPanel={onShowProjectPanel} />,
         ]
       : []),
-  
-    <Catalog key="Catalog" />, // Catalog kommer EFTER Projects
+    <Catalog key="Catalog" onShowCatalogPanel={onShowCatalogPanel} />,
   ];
 
   return (
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
     paddingRight: "0%",
     marginBottom: "3%",
     marginTop: "3%",
-    elevation: 4, // Tilføj skygge for et bedre design
+    elevation: 4, // Skyggeeffekt
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
