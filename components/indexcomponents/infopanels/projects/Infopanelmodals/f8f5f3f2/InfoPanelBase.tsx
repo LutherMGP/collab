@@ -11,10 +11,11 @@ import {
   Alert,
 } from "react-native";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import { doc, getDoc, setDoc } from "firebase/firestore"; // Importer getDoc og setDoc
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { storage, database } from "@/firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 
 const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
 const PDF_ICON = require("@/assets/images/pdf_icon.png");
@@ -38,7 +39,6 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   const [pdfURL, setPdfURL] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Fetch initial data
   useEffect(() => {
     refreshData();
   }, [userId, projectId, category]);
@@ -53,8 +53,8 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         const highResKey = `${category}CoverImageHighRes`;
         const pdfKey = `${category}PDF`;
 
-        setImageURL(data.fileUrls?.[lowResKey] || null);
-        setPdfURL(data.fileUrls?.[pdfKey] || null);
+        setImageURL(data?.fileUrls?.[lowResKey] || null);
+        setPdfURL(data?.fileUrls?.[pdfKey] || null);
       }
     } catch (error) {
       console.error("Fejl ved opdatering af data:", error);
@@ -64,12 +64,8 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
     }
   };
 
-  const handleUploadSuccess = async () => {
-    await refreshData(); // Sikrer opdatering efter upload
-    Alert.alert("Succes", "Upload gennemført.");
-  };
-
   const handleUploadFailure = (error: unknown) => {
+    console.error("Fejl under upload:", error);
     Alert.alert("Fejl", "Der opstod en fejl under upload.");
   };
 
@@ -81,46 +77,36 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         quality: 1.0,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.length > 0) {
         const selectedImageUri = result.assets[0].uri;
 
-        const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category].lowRes;
-
-        const lowResResult = await ImageManipulator.manipulateAsync(
+        const lowResResult = await manipulateAsync(
           selectedImageUri,
-          [{ resize: { width: resizeWidth, height: resizeHeight } }],
-          { compress: Math.min(compress, 0.9), format: ImageManipulator.SaveFormat.JPEG }
+          [{ resize: { width: 300, height: 300 } }],
+          { compress: 0.7, format: SaveFormat.JPEG }
         );
 
-        const highResResult = await ImageManipulator.manipulateAsync(
+        const highResResult = await manipulateAsync(
           selectedImageUri,
           [{ resize: { width: 1024, height: 1024 } }],
-          { compress: 1.0, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 1.0, format: SaveFormat.JPEG }
         );
 
-        // Upload billeder og gem URL'er i Firestore
-        const lowResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
-        const highResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
-
-        const uploadWithProgress = async (uri: string, path: string, progressBase: number) => {
+        const uploadFile = async (uri: string, path: string) => {
           const blob = await (await fetch(uri)).blob();
           const fileRef = ref(storage, path);
-          const uploadTask = uploadBytesResumable(fileRef, blob);
-
-          // Monitor upload progress if nødvendigt
-          uploadTask.on("state_changed", (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            // Du kan opdatere en progress state her, hvis ønsket
-          });
-
-          await uploadTask;
+          await uploadBytesResumable(fileRef, blob);
           return getDownloadURL(fileRef);
         };
 
-        const lowResURL = await uploadWithProgress(lowResResult.uri, lowResPath, 0);
-        const highResURL = await uploadWithProgress(highResResult.uri, highResPath, 0);
+        const lowResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+        const highResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
 
-        // **Gem URL'er i Firestore**
+        const [lowResURL, highResURL] = await Promise.all([
+          uploadFile(lowResResult.uri, lowResPath),
+          uploadFile(highResResult.uri, highResPath),
+        ]);
+
         const projectDocRef = doc(database, "users", userId, "projects", projectId);
         await setDoc(
           projectDocRef,
@@ -133,11 +119,10 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
           { merge: true }
         );
 
-        await handleUploadSuccess();
+        // Alert.alert("Succes", "Billede er uploadet.");
+        refreshData();
       }
     } catch (error) {
-      console.error("Fejl ved upload af billede:", error);
-      Alert.alert("Fejl", "Kunne ikke uploade billede.");
       handleUploadFailure(error);
     }
   };
@@ -146,55 +131,37 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: "application/pdf" });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.length > 0) {
         const selectedPdfUri = result.assets[0].uri;
         const pdfBlob = await (await fetch(selectedPdfUri)).blob();
 
         const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
         const pdfRef = ref(storage, pdfPath);
+        await uploadBytesResumable(pdfRef, pdfBlob);
 
-        const uploadTask = uploadBytesResumable(pdfRef, pdfBlob);
+        const downloadURL = await getDownloadURL(pdfRef);
 
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            // Du kan opdatere en progress state her, hvis ønsket
+        const projectDocRef = doc(database, "users", userId, "projects", projectId);
+        await setDoc(
+          projectDocRef,
+          {
+            fileUrls: {
+              [`${category}PDF`]: downloadURL,
+            },
           },
-          (error) => {
-            console.error("Fejl under upload:", error);
-            Alert.alert("Fejl", "Kunne ikke uploade PDF.");
-          },
-          async () => {
-            const downloadURL = await getDownloadURL(pdfRef);
-
-            // **Gem URL'en i Firestore**
-            const projectDocRef = doc(database, "users", userId, "projects", projectId);
-            await setDoc(
-              projectDocRef,
-              {
-                fileUrls: {
-                  [`${category}PDF`]: downloadURL,
-                },
-              },
-              { merge: true }
-            );
-
-            Alert.alert("Succes", "PDF'en er uploadet.");
-            onUploadSuccess(downloadURL);
-            await refreshData(); // Opdater UI
-          }
+          { merge: true }
         );
+
+        Alert.alert("Succes", "PDF'en er uploadet.");
+        refreshData();
       }
     } catch (error) {
-      console.error("Fejl ved upload af PDF:", error);
-      Alert.alert("Fejl", "Kunne ikke uploade PDF.");
       handleUploadFailure(error);
     }
   };
 
   const handleCloseModal = async () => {
-    await refreshData(); // Hent ny data før modal lukkes
+    await refreshData();
     onClose();
   };
 
@@ -211,7 +178,7 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 
           {/* PDF */}
           <TouchableOpacity style={styles.pdfContainer} onPress={handlePdfUpload}>
-            <Image source={pdfURL ? { uri: pdfURL } : PDF_ICON} style={styles.pdfIcon} />
+            <Image source={pdfURL ? PDF_ICON : PDF_ICON} style={styles.pdfIcon} />
           </TouchableOpacity>
 
           {/* Luk Modal */}
@@ -225,61 +192,13 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 10,
-  },
-  imageContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  pdfContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  image: {
-    width: 250,
-    height: 250,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#ccc",
-  },
-  pdfIcon: {
-    width: 150,
-    height: 150,
-    resizeMode: "contain",
-  },
-  closeButton: {
-    marginTop: 30,
-    padding: 15,
-    backgroundColor: "#007AFF",
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  closeButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  imageContainer: { marginBottom: 20 },
+  pdfContainer: { marginBottom: 20 },
+  image: { width: 250, height: 250, borderRadius: 10, borderWidth: 2, borderColor: "#ccc" },
+  pdfIcon: { width: 100, height: 100, resizeMode: "contain" },
+  closeButton: { backgroundColor: "#007AFF", padding: 10, borderRadius: 10 },
+  closeButtonText: { color: "#FFF", fontWeight: "bold" },
 });
 
 export default InfoPanelBase;
