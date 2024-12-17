@@ -12,6 +12,8 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import {
   collectionGroup,
+  collection,
+  Unsubscribe,
   query,
   where,
   onSnapshot,
@@ -26,8 +28,11 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
   const theme = "light";
   const { user } = useAuth();
 
+  // State til tællere
   const [productCount, setProductCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0); // Nyt tæller til højre knap
+  const [pendingCount, setPendingCount] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0); // Ny favorit tæller
+
   const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
     null
   );
@@ -59,21 +64,34 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
       });
     };
 
-    const unsubscribePublished = fetchPublishedProjects();
-    const unsubscribePending = fetchPendingProjects();
+    // Hent tæller for favoritprojekter
+    const fetchFavoritesCount = () => {
+      if (!user) return () => {}; // Returner tom unsubscribe hvis user mangler
+      const favoritesQuery = collection(database, `users/${user}/favorites`);
+      return onSnapshot(favoritesQuery, (snapshot) => {
+        setFavoritesCount(snapshot.size);
+      });
+    };
 
+    // Tilføj eventuelle unsubscribe lyttere
+    const unsubscribePublished: Unsubscribe = fetchPublishedProjects();
+    const unsubscribePending: Unsubscribe = fetchPendingProjects();
+    const unsubscribeFavorites: Unsubscribe = fetchFavoritesCount();
+
+    // Cleanup for at fjerne lyttere
     return () => {
-      unsubscribePublished();
-      unsubscribePending();
+      unsubscribePublished && unsubscribePublished();
+      unsubscribePending && unsubscribePending();
+      unsubscribeFavorites && unsubscribeFavorites();
     };
   }, [user]);
 
   const handlePressLeft = () => {
     if (activeButton === "left") {
-      setActiveButton(null); // Skjul panelet
+      setActiveButton(null);
     } else {
       setActiveButton("left");
-      onShowCatalogPanel(); // Viser Catalog-panelet via prop
+      onShowCatalogPanel();
     }
   };
 
@@ -113,6 +131,11 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
       >
         <Text style={styles.productCountText}>{pendingCount}</Text>
       </TouchableOpacity>
+
+      {/* Favoritter tæller */}
+      <View style={styles.favoritesCountContainer}>
+        <Text style={styles.favoritesCountText}>Favoritter: {favoritesCount}</Text>
+      </View>
 
       {/* Tekst */}
       <View style={styles.createStoryTextContainer}>
@@ -171,6 +194,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     textAlign: "center",
+  },
+  favoritesCountContainer: {
+    marginTop: 10,
+  },
+  favoritesCountText: {
+    fontSize: 14,
+    color: "gray",
+    fontWeight: "600",
   },
   createStoryTextContainer: {
     justifyContent: "center",
