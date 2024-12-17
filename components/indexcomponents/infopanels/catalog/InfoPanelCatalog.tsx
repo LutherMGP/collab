@@ -79,10 +79,9 @@ const InfoPanelCatalog: React.FC<InfoPanelCatalogProps> = ({ onClose }) => {
         contentContainerStyle={styles.listContent}
       />
 
-      {/* Luk-knap */}
-      <Text onPress={onClose} style={styles.closeButton}>
-        Luk
-      </Text>
+      {projects.length === 0 && (
+        <Text style={styles.noDataText}>Ingen publicerede projekter tilgængelige.</Text>
+      )}
     </View>
   );
 };
@@ -94,6 +93,12 @@ const styles = StyleSheet.create({
     flex: 1,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
+  },
+  noDataText: {
+    textAlign: "center",
+    marginTop: 20,
+    fontSize: 16,
+    color: "gray",
   },
   loaderContainer: {
     flex: 1,

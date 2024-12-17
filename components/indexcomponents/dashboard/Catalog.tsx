@@ -18,6 +18,8 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
+import InfoPanelFavorites from "@/components/indexcomponents/infopanels/catalog/InfoPanelFavorites";
 
 type CatalogProps = {
   onShowCatalogPanel: () => void; // Prop til at vise Catalog-panelet
@@ -28,7 +30,7 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
   const { user } = useAuth();
 
   const [productCount, setProductCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0); // Nyt tæller til højre knap
+  const [pendingCount, setPendingCount] = useState(0); // Tæller for favoritter
   const [activeButton, setActiveButton] = useState<"left" | "right" | null>(
     null
   );
@@ -66,17 +68,17 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
     };
   }, [user]);
 
+  const [showPublishedPanel, setShowPublishedPanel] = useState(false);
+  const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
+
   const handlePressLeft = () => {
-    if (activeButton === "left") {
-      setActiveButton(null); // Skjul panelet
-    } else {
-      setActiveButton("left");
-      onShowCatalogPanel(); // Viser Catalog-panelet via prop
-    }
+    setShowFavoritesPanel(false); // Luk favorites panelet
+    setShowPublishedPanel((prev) => !prev); // Åbn/luk published panelet
   };
 
   const handlePressRight = () => {
-    setActiveButton((prev) => (prev === "right" ? null : "right"));
+    setShowPublishedPanel(false); // Luk published panelet
+    setShowFavoritesPanel((prev) => !prev); // Åbn/luk favorites panelet
   };
 
   return (
@@ -118,6 +120,23 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
           Catalog
         </Text>
       </View>
+
+      {/* InfoPanelCatalog til venstre knap */}
+      {showPublishedPanel && (
+        <View style={styles.panelContainer}>
+          <InfoPanelCatalog onClose={() => setShowPublishedPanel(false)} />
+        </View>
+      )}
+
+      {/* InfoPanelFavorites til højre knap */}
+      {showFavoritesPanel && user && (
+      <View style={styles.panelContainer}>
+        <InfoPanelFavorites
+          userId={user}
+          onClose={() => setShowFavoritesPanel(false)}
+        />
+      </View>
+    )}
     </View>
   );
 };
@@ -190,6 +209,15 @@ const styles = StyleSheet.create({
   rightButton: {
     right: "29%",
     transform: [{ translateX: 20 }],
+  },
+  panelContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "white", // Sørger for en hvid baggrund
+    zIndex: 1000, // Sørger for, at panelet vises foran andet UI
   },
 });
 
