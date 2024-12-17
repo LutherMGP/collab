@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   collectionGroup,
   query,
+  collection,
   where,
   onSnapshot,
 } from "firebase/firestore";
@@ -47,24 +48,21 @@ const Catalog: React.FC<CatalogProps> = ({ onShowCatalogPanel }) => {
       });
     };
 
-    // Hent tæller for projekter med status "Pending"
-    const fetchPendingProjects = () => {
-      const pendingProjectsQuery = query(
-        collectionGroup(database, "projects"),
-        where("status", "==", "Pending")
-      );
+    // Hent tæller for favoritter (højre knap)
+    const fetchUserFavorites = () => {
+      const favoritesRef = collection(database, "users", user, "favorites");
 
-      return onSnapshot(pendingProjectsQuery, (snapshot) => {
+      return onSnapshot(favoritesRef, (snapshot) => {
         setPendingCount(snapshot.size);
       });
     };
 
     const unsubscribePublished = fetchPublishedProjects();
-    const unsubscribePending = fetchPendingProjects();
+    const unsubscribeFavorites = fetchUserFavorites();
 
     return () => {
       unsubscribePublished();
-      unsubscribePending();
+      unsubscribeFavorites();
     };
   }, [user]);
 
