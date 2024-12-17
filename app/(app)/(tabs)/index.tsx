@@ -15,10 +15,13 @@ import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
-import InfoPanelCatalog from "@/components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
+import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
+
+import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   getDoc,
   doc,
+  collectionGroup,
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -30,50 +33,33 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Lokale tilstandsvariabler for panel synlighed
-  const [projectPanelStatus, setProjectPanelStatus] = useState<"Project" | "Published" | null>(null);
-  const [catalogPanelStatus, setCatalogPanelStatus] = useState<"Catalog" | "Favorite" | null>(null);
+  const {
+    isInfoPanelProjectsVisible,
+    isInfoPanelPublishedVisible,
+  } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
-  const shouldShowWelcomeMessage = !projectPanelStatus && !catalogPanelStatus;
+  const shouldShowWelcomeMessage = !(
+    isInfoPanelProjectsVisible ||
+    isInfoPanelPublishedVisible ||
+  );
 
   useEffect(() => {
-    const updateLastUsed = async () => {
-      if (user) {
-        try {
-          const userDocRef = doc(database, "users", user);
-          await updateDoc(userDocRef, {
-            lastUsed: serverTimestamp(),
-          });
-        } catch (error) {
-          console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setIsLoading(false);
-      }
-    };
+    if (user) {
+      const updateLastUsed = async () => {
+        const userDocRef = doc(database, "users", user);
+        await updateDoc(userDocRef, {
+          lastUsed: serverTimestamp(),
+        });
+      };
 
-    updateLastUsed();
+      updateLastUsed().catch((error) => {
+        console.error("Fejl ved opdatering af sidste brugt timestamp:", error);
+      });
+
+      setIsLoading(false);
+    }
   }, [user]);
-
-  // Callback funktioner til at styre panel synlighed
-  const showProjectPanel = (status: "Project" | "Published" | null) => {
-    setProjectPanelStatus(status); // Tillader nu null
-  };
-
-  const hideProjectPanel = () => {
-    setProjectPanelStatus(null);
-  };
-
-  const showCatalogPanel = (status: "Catalog" | "Favorite" | null) => {
-    setCatalogPanelStatus(status); // Tillader nu null
-  };
-
-  const hideCatalogPanel = () => {
-    setCatalogPanelStatus(null);
-  };
 
   return (
     <Animated.ScrollView
@@ -88,14 +74,23 @@ const Index = () => {
     >
       {/* Dashboard komponenten */}
       <View style={styles.dashboardContainer}>
-        <Dashboard
-          onShowProjectPanel={showProjectPanel}
-          onShowCatalogPanel={showCatalogPanel}
-        />
+        <Dashboard />
       </View>
+
+      {/* Separator linje efter Snit */}
+      <View
+        style={[styles.separator, { backgroundColor: Colors[theme].icon }]}
+      />
 
       {/* Velkomstmeddelelse - kun synlig hvis ingen InfoPanels er synlige */}
       {shouldShowWelcomeMessage && <WelcomeMessage />}
+
+      {/* Vis en loading indikator */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[theme].text} />
+        </View>
+      )}
 
       {/* Vis en fejlbesked, hvis der er en fejl */}
       {error && (
@@ -105,26 +100,16 @@ const Index = () => {
       )}
 
       {/* Render InfoPanelProjects kun hvis synlig */}
-      {projectPanelStatus && (
-        <View style={styles.infoPanelContainer}>
-          <InfoPanelProjects
-            statusFilter={projectPanelStatus}
-            onClose={hideProjectPanel}
-          />
+      {isInfoPanelProjectsVisible && (
+        <View style={styles.infoPanelProjectsContainer}>
+          <InfoPanelProjects />
         </View>
       )}
 
-      {/* Render InfoPanelCatalog kun hvis synlig */}
-      {catalogPanelStatus && (
-        <View style={styles.infoPanelContainer}>
-          {catalogPanelStatus === "Catalog" || catalogPanelStatus === "Favorite" ? (
-            <InfoPanelCatalog
-              statusFilter={catalogPanelStatus}
-              onClose={hideCatalogPanel}
-            />
-          ) : (
-            <Text>Ugyldig status: {catalogPanelStatus}</Text>
-          )}
+      {/* Render InfoPanelPublished kun hvis synlig */}
+      {isInfoPanelPublishedVisible && (
+        <View style={styles.infoPanelPublishedContainer}>
+          <InfoPanelPublished />
         </View>
       )}
     </Animated.ScrollView>
@@ -144,11 +129,34 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   dashboardContainer: {},
-  infoPanelContainer: {
+  separator: {
+    height: 0.5,
+    width: "100%",
+    alignSelf: "center",
+    marginBottom: "1.5%",
+    marginTop: "3%",
+  },
+  infoPanelProjectsContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
     alignSelf: "center",
+  },
+  infoPanelPublishedContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelProductsContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
   },
   errorContainer: {
     padding: 10,
