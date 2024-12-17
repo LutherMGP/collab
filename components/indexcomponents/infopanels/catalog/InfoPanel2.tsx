@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/catalog/InfoPanel.tsx
+// @/components/indexcomponents/infopanels/catalog/InfoPanel2.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -686,19 +686,19 @@ const InfoPanel = ({
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
-                  accessibilityLabel="Edit Button"
-                >
-                  <AntDesign
-                    name="edit" // Ikon ændret til "edit"
-                    size={24}
-                    color={isEditEnabled ? "green" : "black"} // Dynamisk farve baseret på Edit-tilstand
-                  />
-                </Pressable>
-              </View>
+            <View style={baseStyles.f1topHalf}>
+              <Pressable
+                style={baseStyles.F1A}
+                onPress={handleFavoriteToggle} // Skifter favoritstatus
+                accessibilityLabel="Favorite Button"
+              >
+                <AntDesign
+                  name={isFavorite ? "heart" : "hearto"}
+                  size={24}
+                  color={isFavorite ? "#0a7ea4" : "#0a7ea4"}
+                />
+              </Pressable>
+            </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
