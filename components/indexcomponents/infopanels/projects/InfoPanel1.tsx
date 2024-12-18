@@ -104,13 +104,16 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setIsLoading(true);
   
     try {
-      // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
+  
       if (snapshot.exists()) {
         const data = snapshot.data();
+  
         setProjectData((prev) => ({
           ...prev,
+          transferMethod: data.transferMethod || prev.transferMethod || "", // Bevar eksisterende værdi
+          // Indlæs øvrige felter
           name: data.name || "",
           description: data.description || "",
           f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
@@ -119,7 +122,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
           projectImage: data.projectImage || prev.projectImage || null,
           status: data.status || prev.status || "",
-          transferMethod: data.transferMethod || prev.transferMethod || "",
         }));
       }
     } catch (error) {
@@ -144,13 +146,29 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  // Funktion til opdatering af transferMethod og pris
-  const updateTransferMethod = (newMethod: string) => {
-    // Opdater kun transferMethod i projektdata
-    setProjectData((prev) => ({
-      ...prev,
-      transferMethod: newMethod, // Opdater metoden
-    }));
+  const updateTransferMethod = async (newMethod: string) => {
+    try {
+      if (!userId || !projectData.id) {
+        throw new Error("Bruger-ID eller projekt-ID mangler.");
+      }
+  
+      const docRef = doc(database, "users", userId, "projects", projectData.id);
+      await setDoc(
+        docRef,
+        { transferMethod: newMethod }, // Gem den nye transferMethod
+        { merge: true } // Bevar andre felter
+      );
+  
+      setProjectData((prev) => ({
+        ...prev,
+        transferMethod: newMethod, // Opdater lokalt
+      }));
+  
+      console.log("transferMethod opdateret til:", newMethod);
+    } catch (error) {
+      console.error("Fejl ved opdatering af transferMethod:", error);
+      Alert.alert("Fejl", "Kunne ikke gemme transferMethod. Prøv igen.");
+    }
   };
 
   // Generisk håndtering af lang tryk (PDF on-demand, så pass null)
