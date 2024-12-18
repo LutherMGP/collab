@@ -708,7 +708,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 console.log("Upload successful:", downloadURL);
                 setProjectData((prev) => ({
                   ...prev,
-                  projectImage: downloadURL,
+                  projectImage: downloadURL, // Opdater med den nye URL
                 }));
               }}
               onUploadFailure={(error) => {
