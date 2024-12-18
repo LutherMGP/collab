@@ -10,36 +10,30 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { CircularEconomyData, InfoPanelCircularProps } from "@/types/ProjectData";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { FontAwesome5 } from "@expo/vector-icons"; // Til ikoner
-
-type InfoPanelCircularProps = {
-  onClose: () => void;
-  projectId: string;
-  userId: string;
-  isEditable: boolean;
-};
 
 const InfoPanelCircular = ({
   onClose,
   projectId,
   userId,
+  onSave,
   isEditable,
+  currentData,
 }: InfoPanelCircularProps) => {
   const [isSaving, setIsSaving] = useState(false);
-  const [data, setData] = useState({
-    waterUsage: { value: 0, description: "" },
-    CO2Emission: { value: 0, description: "" },
-  });
+  const [data, setData] = useState<CircularEconomyData>(currentData);
 
+  // Funktion til at hente data, hvis nødvendigt (kun hvis ikke i redigeringstilstand)
   const fetchData = async () => {
     try {
       const projectRef = doc(database, "users", userId, "projects", projectId);
       const snapshot = await getDoc(projectRef);
 
       if (snapshot.exists()) {
-        const circularData = snapshot.data()?.circularEconomy || {
+        const circularData: CircularEconomyData = snapshot.data()?.circularEconomy || {
           waterUsage: { value: 0, description: "" },
           CO2Emission: { value: 0, description: "" },
         };
@@ -60,6 +54,7 @@ const InfoPanelCircular = ({
   }, [isEditable]);
 
   const handleSave = async () => {
+    // Validering af input
     if (
       isNaN(data.waterUsage.value) ||
       data.waterUsage.value < 0 ||
@@ -78,6 +73,7 @@ const InfoPanelCircular = ({
       const projectRef = doc(database, "users", userId, "projects", projectId);
       await updateDoc(projectRef, { circularEconomy: data });
 
+      onSave(data); // Overfør de opdaterede data
       Alert.alert("Opdateret", "Data er blevet gemt.");
       onClose();
     } catch (error) {
@@ -97,6 +93,7 @@ const InfoPanelCircular = ({
         <FontAwesome5 name="water" size={24} color="#0a7ea4" />
         {isEditable ? (
           <>
+            <Text style={styles.sectionTitle}>Vandforbrug</Text>
             <TextInput
               style={styles.textInput}
               placeholder="Vandforbrug (liter)"
@@ -111,6 +108,7 @@ const InfoPanelCircular = ({
                   },
                 })
               }
+              editable={!isSaving}
             />
             <TextInput
               style={styles.textArea}
@@ -126,6 +124,7 @@ const InfoPanelCircular = ({
                 })
               }
               multiline
+              editable={!isSaving}
             />
           </>
         ) : (
@@ -145,6 +144,7 @@ const InfoPanelCircular = ({
         <FontAwesome5 name="cloud" size={24} color="#0a7ea4" />
         {isEditable ? (
           <>
+            <Text style={styles.sectionTitle}>CO2 Udledning</Text>
             <TextInput
               style={styles.textInput}
               placeholder="CO2 Aftryk (kg)"
@@ -159,6 +159,7 @@ const InfoPanelCircular = ({
                   },
                 })
               }
+              editable={!isSaving}
             />
             <TextInput
               style={styles.textArea}
@@ -174,6 +175,7 @@ const InfoPanelCircular = ({
                 })
               }
               multiline
+              editable={!isSaving}
             />
           </>
         ) : (
@@ -226,7 +228,12 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 20,
     alignItems: "center",
-    // borderWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 10,
   },
   textInput: {
     width: "100%",

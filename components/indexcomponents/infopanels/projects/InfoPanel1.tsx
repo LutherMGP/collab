@@ -32,12 +32,18 @@ import InfoPanelCircular from "@/components/indexcomponents/infopanels/projects/
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
 
+type CircularEconomyData = {
+  waterUsage: { value: number; description: string };
+  CO2Emission: { value: number; description: string };
+};
+
 type ProjectData = {
   id: string;
   name: string; // Default-værdi kan være en tom streng
   description: string;
   status: string;
   transferMethod: string;
+  circularEconomy?: CircularEconomyData; 
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
   f3CoverImageLowRes?: string | null;
@@ -811,16 +817,19 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelCircular
               onClose={() => setIsCircularModalVisible(false)}
-              currentDescription={projectData.circularEconomy || ""}
               projectId={projectData.id}
               userId={userId || ""}
-              onSave={(newDescription) => {
+              onSave={(newData: CircularEconomyData) => {
                 setProjectData((prev) => ({
                   ...prev,
-                  circularEconomy: newDescription,
+                  circularEconomy: newData, // Opdaterer hele circularEconomy-strukturen
                 }));
               }}
               isEditable={isEditEnabled}
+              currentData={projectData.circularEconomy || {
+                waterUsage: { value: 0, description: "" },
+                CO2Emission: { value: 0, description: "" },
+              }}
             />
           </View>
         </View>
