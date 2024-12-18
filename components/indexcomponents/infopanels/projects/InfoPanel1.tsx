@@ -530,21 +530,30 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                     uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
                   }}
                   style={baseStyles.f3CoverImage}
-              />
+                />
               )}
 
-              {/* Tekst i f3 toppen */}
+              {/* Tekst i F3 toppen */}
               <View style={baseStyles.textTag}>
                 <Text style={baseStyles.text}>Sustainability</Text>
               </View>
 
-              {/* Comment-knap f3 */}
+              {/* Comment-knap F3 */}
               <Pressable
                 style={baseStyles.commentButtonf3}
                 onPress={() => handleOpenCommentModal("f3")}
               >
                 <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
+            </Pressable>
+
+            {/* Ny knap for cirkulær økonomi */}
+            <Pressable
+              style={baseStyles.circularEconomyButton}
+              onPress={() => Alert.alert("Cirkulær Økonomi", "Ingen handling tilføjet endnu.")}
+              accessibilityLabel="Circular Economy Button"
+            >
+              <AntDesign name="sync" size={20} color="#0a7ea4" /> {/* Ikon der indikerer cirkulær økonomi */}
             </Pressable>
           </View>
         </View>

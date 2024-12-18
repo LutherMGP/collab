@@ -55,8 +55,8 @@ export const styles = StyleSheet.create({
   },
   projectImageContainer: {
     position: "absolute",
-    top: 4,
-    left: 5,
+    top: 5.5,
+    left: 5.5,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
     width: 50, // Diameter
@@ -112,7 +112,7 @@ export const styles = StyleSheet.create({
   deleteIconContainer: {
     position: "absolute",
     top: 5,
-    right: 5,
+    right: 5.5,
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
@@ -286,6 +286,22 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
+  circularEconomyButton: {
+    position: "absolute",
+    bottom: 6,
+    right: 6,
+    width: "auto",
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 25, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   f5Side: {
     flex: 8,
     justifyContent: "center",
@@ -319,8 +335,8 @@ export const styles = StyleSheet.create({
   },
   prizeTagF5: {
     position: "absolute",
-    bottom: 5,
-    right: 17,
+    bottom: 6,
+    right: 17.5,
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
@@ -486,7 +502,7 @@ export const styles = StyleSheet.create({
   },
   commentButtonf8: {
     position: "absolute", // Gør det muligt at placere knappen præcist
-    bottom: 5, // Juster afhængigt af ønsket placering
+    bottom: 5.5, // Juster afhængigt af ønsket placering
     left: 5, // Juster afhængigt af ønsket placering
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
@@ -517,7 +533,7 @@ export const styles = StyleSheet.create({
   commentButtonf3: {
     position: "absolute", // Gør det muligt at placere knappen præcist
     bottom: 5, // Juster afhængigt af ønsket placering
-    left: 5, // Juster afhængigt af ønsket placering
+    left: 5.5, // Juster afhængigt af ønsket placering
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
@@ -532,7 +548,7 @@ export const styles = StyleSheet.create({
   commentButtonf2: {
     position: "absolute", // Gør det muligt at placere knappen præcist
     bottom: 6, // Juster afhængigt af ønsket placering
-    left: 17, // Juster afhængigt af ønsket placering
+    left: 16.7, // Juster afhængigt af ønsket placering
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
@@ -546,8 +562,8 @@ export const styles = StyleSheet.create({
   },
   attachmentButton: {
     position: "absolute", // Gør det muligt at placere knappen præcist
-    bottom: 5, // Juster afhængigt af afstanden fra bunden
-    right: 5, // Placer midt horisontalt i forhold til forælderen
+    bottom: 5.5, // Juster afhængigt af afstanden fra bunden
+    right: 5.5, // Placer midt horisontalt i forhold til forælderen
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
