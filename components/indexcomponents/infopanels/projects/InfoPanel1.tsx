@@ -61,6 +61,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null); 
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -76,6 +77,15 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+    // Tjek for manglende data
+    if (!projectData || !projectData.id || !userId) {
+      return (
+        <View style={baseStyles.container}>
+          <Text>Data mangler. Tjek dine props.</Text>
+        </View>
+      );
+    }
 
   // Synchroniser local state med props
   useEffect(() => {
@@ -649,9 +659,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
-              price={projectData.price ? `${projectData.price} kr.` : "Uden pris"}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              selectedOption={selectedOption} // Send den aktuelle værdi
+              setSelectedOption={setSelectedOption} // Send funktionen til opdatering
+              projectId={projectData.id}
+              userId={userId || ""}
             />
           </View>
         </View>
@@ -668,9 +679,20 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
               onClose={closeProjectImageModal}
-              projectImageUri={projectData.projectImage || ""}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              projectId={projectData.id}
+              userId={userId || ""}
+              category="projectImage" // Tilføj denne linje
+              onUploadSuccess={(downloadURL) => {
+                console.log("Upload successful:", downloadURL);
+                setProjectData((prev) => ({
+                  ...prev,
+                  projectImage: downloadURL,
+                }));
+              }}
+              onUploadFailure={(error) => {
+                console.error("Fejl ved upload:", error);
+                Alert.alert("Upload Fejl", "Kunne ikke uploade billede. Prøv igen.");
+              }}
             />
           </View>
         </View>
@@ -699,7 +721,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                     ? "Sustainability Report"
                     : "Partnership Agreement"
                 }
-                isVisible={isCommentModalVisible}
                 onClose={handleCloseCommentModal}
                 isEditable={isEditEnabled}
               />

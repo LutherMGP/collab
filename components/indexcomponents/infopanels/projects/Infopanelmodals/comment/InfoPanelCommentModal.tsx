@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import { Colors } from "@/constants/Colors";
 
 interface InfoPanelCommentModalProps {
   projectId: string;
@@ -39,8 +38,12 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
           const data = snapshot.data();
-          const categoryData = data.data?.[category];
-          setComment(categoryData?.comment || "Ingen kommentar endnu.");
+          const categoryData = data?.data?.[category];
+          setComment(
+            typeof categoryData?.comment === "string"
+              ? categoryData.comment
+              : "Ingen kommentar endnu."
+          );
         } else {
           setComment("Ingen kommentar endnu.");
         }
@@ -68,7 +71,10 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
         },
         { merge: true }
       );
-      Alert.alert("Success", `${categoryName} kommentar gemt.`);
+      Alert.alert(
+        "Success",
+        `${categoryName || "Ukendt"} kommentar gemt.`
+      );
       onClose();
     } catch (error) {
       console.error("Fejl ved gemning af kommentar:", error);
@@ -78,14 +84,16 @@ const InfoPanelCommentModal: React.FC<InfoPanelCommentModalProps> = ({
 
   return (
     <View style={styles.modalContent}>
-      <Text style={styles.header}>{categoryName} Kommentar</Text>
+      <Text style={styles.header}>
+        {`${categoryName || "Ukendt"} Kommentar`}
+      </Text>
       <TextInput
         style={[
           styles.input,
           isEditable ? styles.editableInput : styles.readOnlyInput,
         ]}
         editable={isEditable}
-        value={comment}
+        value={comment || ""}
         onChangeText={setComment}
         multiline
       />

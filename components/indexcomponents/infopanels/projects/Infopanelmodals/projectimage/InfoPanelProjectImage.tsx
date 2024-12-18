@@ -36,6 +36,16 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
 }) => {
   const [imageURL, setImageURL] = useState<string | null>(null);
 
+  // Debugging for at tjekke, om props er modtaget korrekt
+  useEffect(() => {
+    console.log("Props modtaget i InfoPanelProjectImage:", {
+      projectId,
+      userId,
+      onUploadSuccess: typeof onUploadSuccess === "function",
+      onUploadFailure: typeof onUploadFailure === "function",
+    });
+  }, []);
+
   useEffect(() => {
     const fetchImage = async () => {
       try {
@@ -106,10 +116,14 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handleImageUpload}>
-        <Image
-          source={imageURL ? { uri: imageURL } : DEFAULT_IMAGE}
-          style={styles.image}
-        />
+        {imageURL ? (
+          <Image
+            source={{ uri: imageURL }}
+            style={styles.image}
+          />
+        ) : (
+          <Image source={DEFAULT_IMAGE} style={styles.image} />
+        )}
       </TouchableOpacity>
       <TouchableOpacity style={styles.closeButton} onPress={onClose}>
         <Text style={styles.closeButtonText}>Luk</Text>

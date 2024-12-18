@@ -28,7 +28,7 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
   projectId,
   category,
   onUploadSuccess,
-  onUploadFailure,
+  onUploadFailure = (error) => console.error("Upload fejl:", error), // Default fallback
   buttonLabel = "Vælg PDF",
 }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -36,17 +36,20 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
 
   const handlePickPdf = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: "application/pdf" });
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+      });
 
-      if (!result.canceled && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.length > 0) {
         const pdfUri = result.assets[0].uri;
         handleUploadPdf(pdfUri);
       } else {
-        Alert.alert("Info", "PDF-valg annulleret.");
+        Alert.alert("Info", "PDF-valg annulleret eller ugyldigt.");
       }
     } catch (error) {
       console.error("Fejl ved valg af PDF:", error);
-      onUploadFailure?.(error);
+      Alert.alert("Fejl", "Kunne ikke vælge PDF. Prøv igen.");
+      onUploadFailure(error);
     }
   };
 
@@ -55,8 +58,15 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
     setUploadProgress(0);
 
     try {
-      const pdfBlob = await (await fetch(pdfUri)).blob();
-      const pdfPath = FilePaths.pdf(userId, projectId, category); // `category` er nu korrekt typed
+      const pdfBlob = await fetch(pdfUri)
+        .then((res) => res.blob())
+        .catch((error) => {
+          console.error("Fejl ved hentning af PDF:", error);
+          Alert.alert("Fejl", "Kunne ikke hente PDF'en. Prøv igen.");
+          throw error;
+        });
+
+      const pdfPath = FilePaths.pdf(userId, projectId, category);
       const pdfRef = ref(storage, pdfPath);
 
       const uploadTask = uploadBytesResumable(pdfRef, pdfBlob);
@@ -69,17 +79,24 @@ const PdfUploader: React.FC<PdfUploaderProps> = ({
         },
         (error) => {
           console.error("Fejl under upload:", error);
-          onUploadFailure?.(error);
+          Alert.alert("Fejl", "Upload mislykkedes. Prøv igen.");
+          onUploadFailure(error);
         },
         async () => {
-          const downloadURL = await getDownloadURL(pdfRef);
-          Alert.alert("Succes", "PDF'en er uploadet.");
-          onUploadSuccess(downloadURL);
+          try {
+            const downloadURL = await getDownloadURL(pdfRef);
+            Alert.alert("Succes", "PDF'en er uploadet.");
+            onUploadSuccess(downloadURL);
+          } catch (error) {
+            console.error("Fejl ved hentning af download-URL:", error);
+            Alert.alert("Fejl", "Kunne ikke hente download-linket. Prøv igen.");
+            onUploadFailure(error);
+          }
         }
       );
     } catch (error) {
       console.error("Fejl ved upload af PDF:", error);
-      onUploadFailure?.(error);
+      onUploadFailure(error);
     } finally {
       setIsUploading(false);
     }
