@@ -320,7 +320,7 @@ export const styles = StyleSheet.create({
   prizeTagF5: {
     position: "absolute",
     bottom: 5,
-    right: 5,
+    right: 17,
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,

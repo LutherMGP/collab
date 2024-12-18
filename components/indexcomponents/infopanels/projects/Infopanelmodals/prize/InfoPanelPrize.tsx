@@ -18,6 +18,7 @@ type InfoPanelPrizeProps = {
   projectId: string;
   userId: string;
   onSave: (newDescription: string) => void;
+  isEditable: boolean; // Ny prop for redigeringstilstand
 };
 
 const InfoPanelPrize = ({
@@ -26,6 +27,7 @@ const InfoPanelPrize = ({
   projectId,
   userId,
   onSave,
+  isEditable,
 }: InfoPanelPrizeProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [description, setDescription] = useState(currentDescription || "");
@@ -57,25 +59,35 @@ const InfoPanelPrize = ({
 
   return (
     <View style={styles.modalContainer}>
-      <Text style={styles.modalTitle}>Indtast Transfer Method</Text>
-      <TextInput
-        style={styles.textInput}
-        placeholder="Beskriv overdragelsesmetode"
-        value={description}
-        onChangeText={setDescription}
-        editable={!isSaving} // Deaktiver, mens der gemmes
-        multiline
-      />
+      <Text style={styles.modalTitle}>
+        {isEditable ? "Rediger Transfer Method" : "Transfer Method"}
+      </Text>
+      {isEditable ? (
+        <TextInput
+          style={styles.textInput}
+          placeholder="Beskriv overdragelsesmetode"
+          value={description}
+          onChangeText={setDescription}
+          editable={!isSaving} // Deaktiver, mens der gemmes
+          multiline
+        />
+      ) : (
+        <Text style={styles.descriptionText}>
+          {currentDescription || "Ingen beskrivelse tilgængelig"}
+        </Text>
+      )}
       <View style={styles.buttonContainer}>
-        <Pressable
-          style={styles.saveButton}
-          onPress={handleSave}
-          disabled={isSaving}
-        >
-          <Text style={styles.saveButtonText}>
-            {isSaving ? "Gemmer..." : "Gem"}
-          </Text>
-        </Pressable>
+        {isEditable && (
+          <Pressable
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            <Text style={styles.saveButtonText}>
+              {isSaving ? "Gemmer..." : "Gem"}
+            </Text>
+          </Pressable>
+        )}
         <Pressable style={styles.closeButton} onPress={onClose}>
           <Text style={styles.closeButtonText}>Luk</Text>
         </Pressable>
@@ -107,6 +119,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlignVertical: "top",
     backgroundColor: "#f9f9f9",
+  },
+  descriptionText: {
+    width: "100%",
+    fontSize: 16,
+    textAlign: "center",
+    marginVertical: 20,
+    paddingHorizontal: 10,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    padding: 10,
   },
   buttonContainer: {
     flexDirection: "row",

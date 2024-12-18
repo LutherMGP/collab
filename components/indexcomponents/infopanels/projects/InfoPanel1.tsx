@@ -130,20 +130,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  // Funktion til at hente ikon baseret på overdragelsesmetode
-  const getTransferIcon = (method: string | undefined) => {
-    switch (method) {
-      case "Free Transfer":
-        return <AntDesign name="gift" size={20} color="green" />;
-      case "Trade Transfer":
-        return <AntDesign name="swap" size={20} color="blue" />;
-      case "Collaboration Transfer":
-        return <AntDesign name="team" size={20} color="purple" />;
-      default:
-        return <AntDesign name="swap" size={20} color="#0a7ea4" />;
-    }
-  };
-
   // Funktion til opdatering af transferMethod og pris
   const updateTransferMethod = (newMethod: string) => {
     // Opdater kun transferMethod i projektdata
@@ -341,6 +327,18 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     } catch (error) {
       console.error("Fejl ved skift af status:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
+    }
+  };
+
+  // Funktion til at håndtere "Prize"-feltet
+  const handlePrizePress = () => {
+    if (isEditEnabled) {
+      setIsPrizeModalVisible(true); // Åbn modal i redigeringstilstand
+    } else {
+      Alert.alert(
+        "Transfer Method",
+        projectData.transferMethod || "Ingen beskrivelse tilgængelig"
+      );
     }
   };
 
@@ -551,15 +549,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <Text style={baseStyles.text}>Terms & Condition</Text>
             </View>
 
-            {/* Prize feltet med onPress */}
-            <Pressable
-              style={baseStyles.prizeTagF5} // Ny style til placeringen af Prize
-              onPress={() => handlePress("Prize")}
-              accessibilityLabel="Transfer Method Button"
-            >
-              {getTransferIcon(projectData.transferMethod)}
-            </Pressable>
-
             {/* Comment-knap f5 */}
             <Pressable
               style={baseStyles.commentButtonf5}
@@ -567,6 +556,15 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             >
               <AntDesign name="message1" size={20} color="black" />
             </Pressable>
+          </Pressable>
+
+          {/* Ny Prize-knap */}
+          <Pressable
+            style={baseStyles.prizeTagF5}
+            onPress={handlePrizePress} // Brug den nye funktion
+            accessibilityLabel="Prize Button"
+          >
+            <AntDesign name="swap" size={20} color="#0a7ea4" />
           </Pressable>
         </View>
       </View>
@@ -680,11 +678,11 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
-              selectedOption={selectedOption}
-              setSelectedOption={setSelectedOption}
+              currentDescription={projectData.transferMethod || "Ingen beskrivelse tilgængelig"} // Standardbeskrivelse
               projectId={projectData.id}
               userId={userId || ""}
-              onSave={updateTransferMethod} // Forbind funktionen her
+              onSave={updateTransferMethod} // Gem ny beskrivelse
+              isEditable={isEditEnabled} // Brug toggleEdit til at styre redigering
             />
           </View>
         </View>
