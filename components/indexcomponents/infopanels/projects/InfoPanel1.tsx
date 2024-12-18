@@ -30,15 +30,6 @@ import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/proje
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/published/InfoPanelStyles";
-import { FilePaths } from "@/utils/filePaths";
-
-const FIREBASE_STORAGE_BUCKET = "snit-ba20b.appspot.com"; // Erstat med dit bucket-navn
-
-// Funktion til at konstruere statiske URL'er
-const constructStaticURL = (path: string): string => {
-  const encodedPath = encodeURIComponent(path);
-  return `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media&t=${Date.now()}`; // Cache-bypass med timestamp
-};
 
 type ProjectData = {
   id: string;
@@ -46,15 +37,11 @@ type ProjectData = {
   description?: string;
   status?: string;
   price?: number;
+  f8CoverImageLowRes?: string | null;
+  f5CoverImageLowRes?: string | null;
+  f3CoverImageLowRes?: string | null;
+  f2CoverImageLowRes?: string | null;
   projectImage?: string | null;
-  f8CoverImage?: string | null;
-  f8PDF?: string | null;
-  f5CoverImage?: string | null;
-  f5PDF?: string | null;
-  f3CoverImage?: string | null;
-  f3PDF?: string | null;
-  f2CoverImage?: string | null;
-  f2PDF?: string | null;
   userId?: string | null;
 };
 
@@ -110,10 +97,11 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           ...prev,
           name: data.name || "",
           description: data.description || "",
-          f8CoverImage: data.f8CoverImage || prev.f8CoverImage || null,
-          f5CoverImage: data.f5CoverImage || prev.f5CoverImage || null,
-          f3CoverImage: data.f3CoverImage || prev.f3CoverImage || null,
-          f2CoverImage: data.f2CoverImage || prev.f2CoverImage || null,
+          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
+          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
+          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
+          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
+          projectImage: data.projectImage || prev.projectImage || null,
           status: data.status || prev.status || "",
           price: data.price || prev.price || 0,
         }));
@@ -126,28 +114,7 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     }
   };
 
-  // Konstruer statiske URL'er baseret på faste stier
-  const projectImageURL = constructStaticURL(
-    FilePaths.projectImage(projectData.userId || "", projectData.id)
-  );
-
-  const f8CoverImageLowResURL = constructStaticURL(
-    FilePaths.coverImage(projectData.userId || "", projectData.id, "f8", "LowRes")
-  );
-
-  const f5CoverImageLowResURL = constructStaticURL(
-    FilePaths.coverImage(projectData.userId || "", projectData.id, "f5", "LowRes")
-  );
-
-  const f3CoverImageLowResURL = constructStaticURL(
-    FilePaths.coverImage(projectData.userId || "", projectData.id, "f3", "LowRes")
-  );
-
-  const f2CoverImageLowResURL = constructStaticURL(
-    FilePaths.coverImage(projectData.userId || "", projectData.id, "f2", "LowRes")
-  );
-
-  // Generisk håndtering af lang tryk
+  // Generisk håndtering af lang tryk (PDF on-demand, så pass null)
   const handleLongPress = async (url: string | null, fieldName: string) => {
     if (!url) {
       Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
@@ -370,8 +337,8 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImage && (
-            <Image source={{ uri: f8CoverImageLowResURL }} style={baseStyles.f8CoverImage} />
+          {projectData.f8CoverImageLowRes && (
+            <Image source={{ uri: projectData.f8CoverImageLowRes }} style={baseStyles.f8CoverImage} />
           )}
 
           {/* Tekst i f8 toppen */}
@@ -380,14 +347,14 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           </View>
 
           {/* Projektbilledet i det runde felt med onPress */}
-          {projectImageURL && (
+          {projectData.projectImage && (
             <Pressable
               style={baseStyles.projectImageContainer}
               onPress={() => handlePress("Project Image")}
               accessibilityLabel="Project Image Button"
             >
               <Image
-                source={{ uri: projectImageURL }}
+                source={{ uri: projectData.projectImage }}
                 style={baseStyles.projectImage} // Tilpas eventuelt denne style
               />
             </Pressable>
@@ -443,8 +410,8 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                 accessibilityLabel="F2 Button"
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
-                {projectData.f2CoverImage && (
-                  <Image source={{ uri: f2CoverImageLowResURL }} style={baseStyles.f2CoverImage} />
+                {projectData.f2CoverImageLowRes && (
+                  <Image source={{ uri: projectData.f2CoverImageLowRes }} style={baseStyles.f2CoverImage} />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -498,8 +465,8 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
-              {projectData.f3CoverImage && (
-                <Image source={{ uri: f3CoverImageLowResURL }} style={baseStyles.f3CoverImage} />
+              {projectData.f3CoverImageLowRes && (
+                <Image source={{ uri: projectData.f3CoverImageLowRes }} style={baseStyles.f3CoverImage} />
               )}
 
               {/* Tekst i f3 toppen */}
@@ -525,8 +492,8 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             accessibilityLabel="F5 Button"
           >
             {/* Vis billede, hvis det er tilgængeligt */}
-            {projectData.f5CoverImage && (
-              <Image source={{ uri: f5CoverImageLowResURL }} style={baseStyles.f5CoverImage} />
+            {projectData.f5CoverImageLowRes && (
+              <Image source={{ uri: projectData.f5CoverImageLowRes }} style={baseStyles.f5CoverImage} />
             )}
 
             {/* Tekst i f5 toppen */}
@@ -673,7 +640,7 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           <View style={styles.modalContent}>
             <InfoPanelProjectImage
               onClose={closeProjectImageModal}
-              projectImageUri={projectImageURL} // Brug statisk URL
+              projectImageUri={projectData.projectImage || ""}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
             />

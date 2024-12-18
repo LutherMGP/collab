@@ -1,7 +1,7 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanelProjects.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text } from "react-native";
+import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel1 from "@/components/indexcomponents/infopanels/projects/InfoPanel1";
@@ -34,7 +34,7 @@ const InfoPanelProjects = () => {
       (snapshot) => {
         const fetchedProjects = snapshot.docs.map((doc) => {
           const data = doc.data();
-          const documents = data.documents || {};
+          const assets = data.assets || {};
 
           return {
             id: doc.id,
@@ -42,25 +42,17 @@ const InfoPanelProjects = () => {
             name: data.name || "Uden navn",
             description: data.description || "Ingen beskrivelse",
             status: data.status || "Project",
-            price: data.price !== undefined ? data.price : 0, // Standardværdi for price
-            isFavorite: data.isFavorite || false,
-            toBePurchased: data.toBePurchased || false,
+            price: data.price !== undefined ? data.price : 0,
 
-            // F8 data
-            f8CoverImageLowRes: documents.f8CoverImageLowRes || null,
-            f8PDF: documents.f8PDF || null,
+            f8CoverImageLowRes: assets.f8CoverImageLowRes || null,
 
-            // F5 data
-            f5CoverImageLowRes: documents.f5CoverImageLowRes || null,
-            f5PDF: documents.f5PDF || null,
+            f5CoverImageLowRes: assets.f5CoverImageLowRes || null,
 
-            // F3 data
-            f3CoverImageLowRes: documents.f3CoverImageLowRes || null,
-            f3PDF: documents.f3PDF || null,
+            f3CoverImageLowRes: assets.f3CoverImageLowRes || null,
 
-            // F2 data
-            f2CoverImageLowRes: documents.f2CoverImageLowRes || null,
-            f2PDF: documents.f2PDF || null,
+            f2CoverImageLowRes: assets.f2CoverImageLowRes || null,
+
+            projectImage: assets.projectImage || null,
           } as ProjectData; // Matcher typen ProjectData
         });
 
@@ -102,5 +94,16 @@ const InfoPanelProjects = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  panelContainer: {
+    padding: 0,
+  },
+});
 
 export default InfoPanelProjects;

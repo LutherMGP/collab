@@ -9,10 +9,9 @@ export interface ProjectData {
   description: string;
   status: string;
   price: number;
-  isFavorite: boolean;
-  toBePurchased: boolean;
   
   // Felter for hver kategori tillader string, null eller undefined
+  projectImage?: string | null;
   f8CoverImageLowRes?: string | null;
   f8PDF?: string | null;
   f5CoverImageLowRes?: string | null;
