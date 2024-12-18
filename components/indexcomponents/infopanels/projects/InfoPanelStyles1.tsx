@@ -547,8 +547,7 @@ export const styles = StyleSheet.create({
   attachmentButton: {
     position: "absolute", // Gør det muligt at placere knappen præcist
     bottom: 5, // Juster afhængigt af afstanden fra bunden
-    left: 5, // Placer midt horisontalt i forhold til forælderen
-    transform: [{ translateX: -20 }], // Flyt tilbage med halvdelen af knappen bredde for at centrere
+    right: 5, // Placer midt horisontalt i forhold til forælderen
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
     padding: 8,
