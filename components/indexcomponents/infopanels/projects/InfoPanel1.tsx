@@ -335,10 +335,31 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     if (isEditEnabled) {
       setIsPrizeModalVisible(true); // Åbn modal i redigeringstilstand
     } else {
-      Alert.alert(
-        "Transfer Method",
-        projectData.transferMethod || "Ingen beskrivelse tilgængelig"
-      );
+      fetchTransferMethod(); // Hent data on-demand
+    }
+  };
+
+  // Funktion til at hente transferMethod fra Firestore
+  const fetchTransferMethod = async () => {
+    if (!userId || !projectData.id) {
+      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
+      return;
+    }
+  
+    try {
+      const docRef = doc(database, "users", userId, "projects", projectData.id);
+      const snapshot = await getDoc(docRef);
+  
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const transferMethod = data.transferMethod || "Ingen beskrivelse tilgængelig";
+        Alert.alert("Transfer Method", transferMethod);
+      } else {
+        Alert.alert("Fejl", "Projektdata blev ikke fundet.");
+      }
+    } catch (error) {
+      console.error("Fejl ved hentning af transferMethod:", error);
+      Alert.alert("Fejl", "Kunne ikke hente transferMethod.");
     }
   };
 
