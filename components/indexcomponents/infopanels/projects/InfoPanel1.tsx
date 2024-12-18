@@ -90,35 +90,27 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
-  
+
     setIsLoading(true);
-  
+
     try {
       // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
-  
       if (snapshot.exists()) {
-        const data = snapshot.data() as Omit<ProjectData, "id">;
-        const updatedProjectData: ProjectData = {
-          ...data,
-          id: projectData.id, // Brug eksisterende id
+        const data = snapshot.data();
+        setProjectData((prev) => ({
+          ...prev,
           name: data.name || "",
           description: data.description || "",
-          f8CoverImageLowRes: data.f8CoverImageLowRes || null,
-          f5CoverImageLowRes: data.f5CoverImageLowRes || null,
-          f3CoverImageLowRes: data.f3CoverImageLowRes || null,
-          f2CoverImageLowRes: data.f2CoverImageLowRes || null,
-          projectImage: data.projectImage || null,
-          status: data.status || "",
-          price: data.price || 0,
-        };
-  
-        // Opdater lokal state
-        setProjectData(updatedProjectData);
-  
-        // Notificér parent-komponenten om opdateringen
-        if (onUpdate) onUpdate(updatedProjectData);
+          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
+          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
+          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
+          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
+          projectImage: data.projectImage || prev.projectImage || null,
+          status: data.status || prev.status || "",
+          price: data.price || prev.price || 0,
+        }));
       }
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
@@ -353,11 +345,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (
             <Image
-              key={`${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`} // Dynamisk key
-              source={{
-                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`,
-              }}
-              style={baseStyles.f8CoverImage}
+                source={{
+                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                }}
+                style={baseStyles.f8CoverImage}
             />
           )}
 
