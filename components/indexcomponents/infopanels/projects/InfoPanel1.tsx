@@ -78,6 +78,70 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+    // Ny useEffect til at logge initialProjectData og synkronisere state
+    useEffect(() => {
+      console.log("Initial projectData:", initialProjectData); // Log her
+      setProjectData(initialProjectData);
+    }, [initialProjectData]);
+
+    // Testfunktion til at verificere data i Firestore
+    const testFirestore = async () => {
+      if (!userId || !projectData.id) return;
+  
+      const docRef = doc(database, "users", userId, "projects", projectData.id);
+      const snapshot = await getDoc(docRef);
+  
+      if (snapshot.exists()) {
+        console.log("Firestore data:", snapshot.data());
+      } else {
+        console.log("Dokumentet eksisterer ikke!");
+      }
+    };
+  
+    // Kør testen ved første indlæsning
+    useEffect(() => {
+      testFirestore();
+    }, []);
+
+    // Funktion til at opdatere transferMethod i Firestore
+    const updateTransferMethodInFirestore = async (newMethod: string) => {
+      if (!userId || !projectData?.id) {
+        console.error("Bruger-ID eller projekt-ID mangler.");
+        Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler. Tjek dine data.");
+        return;
+      }
+    
+      try {
+        const docRef = doc(database, "users", userId, "projects", projectData.id);
+    
+        // Start opdateringen
+        console.log("Opdaterer transferMethod i Firestore...");
+        await setDoc(docRef, { transferMethod: newMethod }, { merge: true });
+    
+        // Valider ændringen
+        const updatedSnapshot = await getDoc(docRef);
+        if (updatedSnapshot.exists()) {
+          const updatedData = updatedSnapshot.data();
+          console.log(`TransferMethod opdateret i Firestore: ${updatedData?.transferMethod}`);
+    
+          // Opdater lokal state
+          setProjectData((prev) => ({
+            ...prev,
+            transferMethod: updatedData?.transferMethod || newMethod, // Bevar konsistens med Firestore
+          }));
+          console.log("TransferMethod opdateret i lokal state:", updatedData?.transferMethod || newMethod);
+    
+          Alert.alert("Succes", "TransferMethod er opdateret.");
+        } else {
+          console.error("Dokumentet blev ikke opdateret korrekt.");
+          Alert.alert("Fejl", "Dokumentet blev ikke opdateret korrekt.");
+        }
+      } catch (error) {
+        console.error("Fejl ved opdatering af transferMethod:", error);
+        Alert.alert("Fejl", "Kunne ikke opdatere transferMethod. Tjek din forbindelse eller prøv igen.");
+      }
+    };
+
     // Tjek for manglende data
     if (!projectData || !projectData.id || !userId) {
       return (
@@ -97,54 +161,86 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
   };
 
-  // Funktion til at opdatere projektdata efter ændringer
-  const refreshProjectData = async () => {
-    if (!userId || !projectData.id) return;
-  
-    setIsLoading(true);
-  
-    try {
-      const docRef = doc(database, "users", userId, "projects", projectData.id);
-      const snapshot = await getDoc(docRef);
-  
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-  
-        setProjectData((prev) => ({
+// Funktion til at opdatere projektdata efter ændringer
+const refreshProjectData = async () => {
+  if (!userId || !projectData.id) {
+    console.error("Bruger-ID eller projekt-ID mangler."); // Log ved manglende ID'er
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const docRef = doc(database, "users", userId, "projects", projectData.id);
+    const snapshot = await getDoc(docRef);
+
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      console.log("Hentet data fra Firestore:", data); // Log hele dokumentets data
+
+      setProjectData((prev) => {
+        // Sammensæt opdaterede data
+        const updatedData = {
           ...prev,
-          transferMethod: data.transferMethod || prev.transferMethod || "", // Bevar eksisterende værdi
-          // Indlæs øvrige felter
+          transferMethod: data.transferMethod || "", // Brug altid data fra Firestore, hvis tilgængelig
           name: data.name || "",
           description: data.description || "",
-          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
-          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
-          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
-          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
-          projectImage: data.projectImage || prev.projectImage || null,
-          status: data.status || prev.status || "",
-        }));
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af projektdata:", error);
-      Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+          f8CoverImageLowRes: data.f8CoverImageLowRes || null,
+          f5CoverImageLowRes: data.f5CoverImageLowRes || null,
+          f3CoverImageLowRes: data.f3CoverImageLowRes || null,
+          f2CoverImageLowRes: data.f2CoverImageLowRes || null,
+          projectImage: data.projectImage || null,
+          status: data.status || "",
+        };
 
-  // Funktion til at hente ikon baseret på overdragelsesmetode
-  const getTransferIcon = (method: string | undefined) => {
-    switch (method) {
-      case "Free Transfer":
-        return <AntDesign name="gift" size={20} color="green" />;
-      case "Trade Transfer":
-        return <AntDesign name="swap" size={20} color="blue" />;
-      case "Collaboration Transfer":
-        return <AntDesign name="team" size={20} color="purple" />;
-      default:
-        return <AntDesign name="questioncircleo" size={20} color="gray" />;
+        console.group("Opdatering af projectData i state");
+        console.log("Tidligere projectData:", prev);
+        console.log("Hentet data fra Firestore:", data);
+        console.log("Opdateret projectData:", updatedData);
+        console.groupEnd();
+
+        return updatedData;
+      });
+    } else {
+      console.warn("Dokumentet findes ikke i Firestore."); // Log hvis dokument ikke findes
+      Alert.alert("Advarsel", "Projektet blev ikke fundet i Firestore.");
     }
-  };
+  } catch (error) {
+    console.error("Fejl ved opdatering af projektdata:", error); // Log fejl
+    Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Funktion til at hente ikon baseret på overdragelsesmetode
+const getTransferIcon = (method: string | undefined): JSX.Element => {
+  try {
+    if (!method) {
+      console.warn("Ingen transferMethod angivet, viser standardikon.");
+      return <AntDesign name="questioncircleo" size={20} color="gray" />;
+    }
+
+    const iconsMap = {
+      "Free Transfer": { name: "gift", color: "green" },
+      "Trade Transfer": { name: "swap", color: "blue" },
+      "Collaboration Transfer": { name: "team", color: "purple" },
+    } as const;
+
+    // Type Guard for at sikre, at method er en gyldig nøgle
+    if (method in iconsMap) {
+      const icon = iconsMap[method as keyof typeof iconsMap];
+      console.log(`Valgt transferMethod: ${method}`);
+      return <AntDesign name={icon.name} size={20} color={icon.color} />;
+    }
+
+    console.warn("Ukendt transferMethod:", method);
+    return <AntDesign name="questioncircleo" size={20} color="gray" />;
+  } catch (error) {
+    console.error("Fejl i getTransferIcon:", error);
+    return <AntDesign name="closecircleo" size={20} color="red" />;
+  }
+};
 
   const updateTransferMethod = async (newMethod: string) => {
     try {
