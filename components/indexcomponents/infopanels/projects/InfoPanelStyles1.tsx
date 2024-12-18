@@ -55,7 +55,7 @@ export const styles = StyleSheet.create({
   },
   projectImageContainer: {
     position: "absolute",
-    top: 5,
+    top: 4,
     left: 5,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",

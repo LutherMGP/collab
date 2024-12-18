@@ -252,22 +252,25 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
   // Render en enkelt vedhæftelse
   const renderAttachment = ({ item }: { item: Attachment }) => {
-    const fileName = item.url.split("/").pop() || ""; // Ekstraher filnavnet fra URL'en
-
+    const fileName = item.url?.split("/").pop() || "unknown_file";
+  
     return (
       <View style={styles.attachmentContainer}>
         {item.type === "videos" ? (
           <VideoAttachment url={item.url} />
         ) : (
           <Pressable
-            onPress={() => Linking.openURL(item.url)}
+            onPress={() => {
+              if (item.url) {
+                Linking.openURL(item.url);
+              } else {
+                Alert.alert("Fejl", "Ugyldig URL.");
+              }
+            }}
             style={styles.attachment}
           >
             {item.type === "images" ? (
-              <Image
-                source={{ uri: item.url }}
-                style={styles.attachmentImage}
-              />
+              <Image source={{ uri: item.url }} style={styles.attachmentImage} />
             ) : (
               <Image
                 source={require("@/assets/images/pdf_icon.png")}
@@ -276,12 +279,12 @@ const InfoPanelAttachment: React.FC<Props> = ({
             )}
           </Pressable>
         )}
-        {isEditEnabled && ( // Betinget rendering af Delete-knappen
+        {isEditEnabled && (
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => deleteFile(item.type, fileName)}
+            onPress={() => deleteFile(item.type, item.url || "unknown")}
           >
-            <Text style={styles.deleteText}>Delete</Text>
+            <Text style={styles.deleteText}>{fileName}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -321,9 +324,46 @@ const InfoPanelAttachment: React.FC<Props> = ({
       )}
       {isLoading && <ActivityIndicator size="large" />}
       <FlatList
-        data={attachments}
-        keyExtractor={(item) => item.url}
-        renderItem={renderAttachment}
+        data={attachments.filter((att) => att.url)}
+        keyExtractor={(item) => item.url || `${Date.now()}`}
+        renderItem={({ item }) => (
+          <View style={styles.attachmentContainer}>
+            {item.type === "videos" ? (
+              <VideoAttachment url={item.url} />
+            ) : (
+              <Pressable
+                onPress={() => {
+                  if (item.url) {
+                    Linking.openURL(item.url);
+                  } else {
+                    Alert.alert("Fejl", "Ugyldig URL.");
+                  }
+                }}
+                style={styles.attachment}
+              >
+                {item.type === "images" ? (
+                  <Image
+                    source={{ uri: item.url }}
+                    style={styles.attachmentImage}
+                  />
+                ) : (
+                  <Image
+                    source={require("@/assets/images/pdf_icon.png")}
+                    style={styles.attachmentImage}
+                  />
+                )}
+              </Pressable>
+            )}
+            {isEditEnabled && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => deleteFile(item.type, item.url || "unknown")}
+              >
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         numColumns={3}
       />
       <TouchableOpacity onPress={onClose} style={styles.closeButton}>

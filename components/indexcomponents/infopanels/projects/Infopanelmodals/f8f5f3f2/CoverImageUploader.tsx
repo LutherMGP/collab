@@ -64,7 +64,7 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
         quality: 1.0,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.length > 0) {
         const selectedImage = result.assets[0].uri;
 
         const { resizeWidth, resizeHeight, compress } = categoryImageConfig[category].lowRes;
