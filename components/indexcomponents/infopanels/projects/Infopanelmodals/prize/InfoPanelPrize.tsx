@@ -18,6 +18,7 @@ type InfoPanelPrizeProps = {
   setSelectedOption: (option: string) => void;
   projectId: string;
   userId: string;
+  onSave: (newMethod: string) => void;
 };
 
 const InfoPanelPrize = ({
@@ -26,6 +27,7 @@ const InfoPanelPrize = ({
   setSelectedOption,
   projectId,
   userId,
+  onSave, // Destrukturer onSave korrekt
 }: InfoPanelPrizeProps) => {
   const [isSaving, setIsSaving] = useState(false);
 
@@ -34,12 +36,16 @@ const InfoPanelPrize = ({
       Alert.alert("Valg mangler", "Vælg en overdragelsesmetode.");
       return;
     }
-
+  
     setIsSaving(true);
-
+  
     try {
       const projectRef = doc(database, "users", userId, "projects", projectId);
       await updateDoc(projectRef, { transferMethod: selectedOption });
+  
+      // Brug onSave til at opdatere i parent-komponenten
+      onSave(selectedOption);
+  
       Alert.alert("Overdragelsesmetode opdateret", "Valget er blevet gemt.");
       onClose();
     } catch (error) {
@@ -99,28 +105,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "white",
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 80,
   },
   iconRow: {
     flexDirection: "row",
     justifyContent: "space-around",
     width: "80%",
+    height: "20%",
     marginBottom: 20,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
+    paddingHorizontal: 20,
   },
   saveButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 10,
     flex: 1,
     marginRight: 5,
     alignItems: "center",
@@ -132,7 +140,7 @@ const styles = StyleSheet.create({
   closeButton: {
     backgroundColor: "#f44336",
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 10,
     flex: 1,
     marginLeft: 5,
     alignItems: "center",
