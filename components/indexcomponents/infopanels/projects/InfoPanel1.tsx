@@ -431,7 +431,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             onPress={handleDelete}
             accessibilityLabel="Delete Button"
           >
-            <AntDesign name="delete" size={20} color="red" />
+            <AntDesign name="delete" size={20} color="#0a7ea4" />
           </Pressable>
 
           {/* Comment-knap f8 */}
@@ -439,7 +439,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             style={baseStyles.commentButtonf8}
             onPress={() => handleOpenCommentModal("f8")}
           >
-            <AntDesign name="message1" size={20} color="black" />
+            <AntDesign name="message1" size={20} color="#0a7ea4" />
           </Pressable>
 
           {/* Attachment-knap */}
@@ -447,7 +447,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             style={baseStyles.attachmentButton}
             onPress={openAttachmentModal}
           >
-            <Entypo name="attachment" size={20} color="black" />
+            <Entypo name="attachment" size={20} color="#0a7ea4" />
           </Pressable>
         </Pressable>
       </View>
@@ -484,7 +484,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 style={baseStyles.commentButtonf2}
                 onPress={() => handleOpenCommentModal("f2")}
               >
-                <AntDesign name="message1" size={20} color="black" />
+                <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
@@ -497,7 +497,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   <AntDesign
                     name="edit" // Ikon ændret til "edit"
                     size={24}
-                    color={isEditEnabled ? "green" : "black"} // Dynamisk farve afhængigt af Edit-tilstanden
+                    color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
                   />
                 </Pressable>
               </View>
@@ -510,7 +510,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   <AntDesign
                     name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
                     size={24}
-                    color={projectData.status === "Published" ? "green" : "red"} // Dynamisk farve
+                    color={projectData.status === "Published" ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
                   />
                 </Pressable>
               </View>
@@ -543,7 +543,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 style={baseStyles.commentButtonf3}
                 onPress={() => handleOpenCommentModal("f3")}
               >
-                <AntDesign name="message1" size={20} color="black" />
+                <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
             </Pressable>
           </View>
@@ -575,7 +575,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               style={baseStyles.commentButtonf5}
               onPress={() => handleOpenCommentModal("f5")}
             >
-              <AntDesign name="message1" size={20} color="black" />
+              <AntDesign name="message1" size={20} color="#0a7ea4" />
             </Pressable>
           </Pressable>
 
