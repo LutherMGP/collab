@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, collection, setDoc } from "firebase/firestore";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
@@ -22,7 +21,6 @@ import { Asset } from "expo-asset";
 
 const NewProject: React.FC = () => {
   const { user } = useAuth();
-  const { profileImage } = useVisibility();
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -64,92 +62,123 @@ const NewProject: React.FC = () => {
     setIsCreating(true);
 
     try {
+      // Opret en ny projekt-reference
       const projectRef = doc(collection(database, "users", user, "projects"));
       console.log("Opretter nyt projekt med ID:", projectRef.id);
 
-      // Definer filer og deres destinationer
-      const filesToUpload = [
-        {
-          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageLowRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageLowRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f8/f8PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8PDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageLowRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageLowRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f5/f5PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5PDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageLowRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageLowRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f3/f3PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3PDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageHighRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageHighRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageLowRes.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageLowRes.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/attachment/images/attachmentImage.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/attachment/images/attachmentImage.jpg`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/attachment/pdf/attachmentPDF.pdf")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/data/attachment/pdf/attachmentPDF.pdf`,
-        },
-        {
-          asset: Asset.fromModule(require("@/assets/default/projectimage/projectImage.jpg")),
-          destinationPath: `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`,
-        },
-      ];
-
-      // Hent og upload hver fil
-      for (const file of filesToUpload) {
-        await file.asset.downloadAsync();
-        if (!file.asset.localUri) {
-          throw new Error(`Filen ${file.destinationPath} kunne ikke findes.`);
-        }
-        await uploadFileToStorage(file.asset.localUri, file.destinationPath);
-      }
-
-      // Projektdata
-      const projectData = {
+      // Initialiser projektdata med grundlæggende information
+      const projectData: any = {
         id: projectRef.id,
         name: name.trim(),
         description: description.trim(),
         createdAt: new Date().toISOString(),
         userId: user,
         status: "Project",
+        assets: {}, // Her samler vi download URL'erne under 'assets'
       };
 
+      // Definer filer og deres destinationer
+      const filesToUpload = [
+        // F8 Data
+        {
+          key: "f8CoverImageHighRes",
+          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageHighRes.jpg`,
+        },
+        {
+          key: "f8CoverImageLowRes",
+          asset: Asset.fromModule(require("@/assets/default/f8/f8CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8CoverImageLowRes.jpg`,
+        },
+        {
+          key: "f8PDF",
+          asset: Asset.fromModule(require("@/assets/default/f8/f8PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f8/f8PDF.pdf`,
+        },
+        // F5 Data
+        {
+          key: "f5CoverImageHighRes",
+          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageHighRes.jpg`,
+        },
+        {
+          key: "f5CoverImageLowRes",
+          asset: Asset.fromModule(require("@/assets/default/f5/f5CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5CoverImageLowRes.jpg`,
+        },
+        {
+          key: "f5PDF",
+          asset: Asset.fromModule(require("@/assets/default/f5/f5PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f5/f5PDF.pdf`,
+        },
+        // F3 Data
+        {
+          key: "f3CoverImageHighRes",
+          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageHighRes.jpg`,
+        },
+        {
+          key: "f3CoverImageLowRes",
+          asset: Asset.fromModule(require("@/assets/default/f3/f3CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3CoverImageLowRes.jpg`,
+        },
+        {
+          key: "f3PDF",
+          asset: Asset.fromModule(require("@/assets/default/f3/f3PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f3/f3PDF.pdf`,
+        },
+        // F2 Data
+        {
+          key: "f2CoverImageHighRes",
+          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageHighRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageHighRes.jpg`,
+        },
+        {
+          key: "f2CoverImageLowRes",
+          asset: Asset.fromModule(require("@/assets/default/f2/f2CoverImageLowRes.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2CoverImageLowRes.jpg`,
+        },
+        {
+          key: "f2PDF",
+          asset: Asset.fromModule(require("@/assets/default/f2/f2PDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/f2/f2PDF.pdf`,
+        },
+        // Attachment Data
+        {
+          key: "attachmentImage",
+          asset: Asset.fromModule(require("@/assets/default/attachment/images/attachmentImage.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/attachments/images/attachmentImage.jpg`,
+        },
+        {
+          key: "attachmentPDF",
+          asset: Asset.fromModule(require("@/assets/default/attachment/pdf/attachmentPDF.pdf")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/data/attachments/pdf/attachmentPDF.pdf`,
+        },
+        // Project Image
+        {
+          key: "projectImage",
+          asset: Asset.fromModule(require("@/assets/default/projectimage/projectImage.jpg")),
+          destinationPath: `users/${user}/projects/${projectRef.id}/projectimage/projectImage.jpg`,
+        },
+      ];
+
+      // Upload hver fil og hent downloadURL
+      for (const file of filesToUpload) {
+        // Download filen til lokal URI
+        await file.asset.downloadAsync();
+        if (!file.asset.localUri) {
+          throw new Error(`Filen ${file.destinationPath} kunne ikke findes.`);
+        }
+
+        // Upload filen til Firebase Storage
+        await uploadFileToStorage(file.asset.localUri, file.destinationPath);
+
+        // Hent download URL
+        const downloadURL = await getDownloadURL(ref(storage, file.destinationPath));
+        projectData.assets[file.key] = downloadURL; // Gem URL under 'assets'
+      }
+
+      // Gem projektdata i Firestore inklusive download URL'erne
       console.log("Gemmer projektdata i Firestore:", projectData);
       await setDoc(projectRef, projectData);
 
@@ -167,16 +196,14 @@ const NewProject: React.FC = () => {
 
   return (
     <View style={styles.createStoryContainer}>
+      {/* Statisk Project Image */}
       <Image
-        source={
-          profileImage
-            ? { uri: profileImage }
-            : require("@/assets/default/profileimage/profileImage.jpg")
-        }
+        source={require("@/assets/default/projectimage/projectImage.jpg")}
         style={styles.profileImg}
         contentFit="cover"
       />
 
+      {/* Add New Project Button */}
       <TouchableOpacity
         style={styles.iconContainer}
         onPress={() => setModalVisible(true)}
@@ -185,12 +212,14 @@ const NewProject: React.FC = () => {
         <Entypo name="plus" size={24} color="white" />
       </TouchableOpacity>
 
+      {/* New Project Text */}
       <View style={styles.createStoryTextContainer}>
         <Text style={[styles.createStoryText, { color: Colors.light.text }]}>
           New
         </Text>
       </View>
 
+      {/* Modal for Creating New Project */}
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -282,8 +311,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "80%",
     height: 40,
-    display: "flex",
-    borderColor: Colors.light.background,
   },
   createStoryText: {
     fontSize: 16,
@@ -333,8 +360,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 1,
     marginRight: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
     alignItems: "center",
     elevation: 4,
     shadowColor: "#000",
@@ -355,17 +380,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  disabledButton: {
-    backgroundColor: "#a0a0a0",
-  },
   buttonText: {
     color: "black",
     fontWeight: "600",
-  },
-  errorText: {
-    color: "red",
-    textAlign: "center",
-    marginBottom: 10,
   },
 });
 

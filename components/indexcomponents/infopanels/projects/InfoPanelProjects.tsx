@@ -17,15 +17,6 @@ const InfoPanelProjects = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  const config = {
-    showFavorite: false, // Favorit-ikonet
-    showPurchase: true,  // Køb-ikonet
-    showDelete: true,    // Slet-knappen
-    showEdit: true,      // Rediger-knappen
-    showSnit: true,      // PDF-filen vises ved long-press
-    showGuide: true,     // Guide-billede
-  };
-
   useEffect(() => {
     if (!user) return;
 
