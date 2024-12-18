@@ -1,6 +1,6 @@
 // @/components/indexcomponents/infopanels/projects/InfoPanel1.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -47,9 +47,10 @@ type ProjectData = {
 
 type InfoPanelProps = {
   projectData: ProjectData;
+  onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
+const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -74,7 +75,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Tilføj denne linje, hvis ikke allerede defineret
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Synchroniser local state med props
+  useEffect(() => {
+    setProjectData(initialProjectData);
+  }, [initialProjectData]);
 
   // Funktion til at togglere Edit-tilstand
   const toggleEdit = () => {
@@ -84,27 +90,35 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
-
+  
     setIsLoading(true);
-
+  
     try {
       // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
+  
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        setProjectData((prev) => ({
-          ...prev,
+        const data = snapshot.data() as Omit<ProjectData, "id">;
+        const updatedProjectData: ProjectData = {
+          ...data,
+          id: projectData.id, // Brug eksisterende id
           name: data.name || "",
           description: data.description || "",
-          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
-          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
-          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
-          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
-          projectImage: data.projectImage || prev.projectImage || null,
-          status: data.status || prev.status || "",
-          price: data.price || prev.price || 0,
-        }));
+          f8CoverImageLowRes: data.f8CoverImageLowRes || null,
+          f5CoverImageLowRes: data.f5CoverImageLowRes || null,
+          f3CoverImageLowRes: data.f3CoverImageLowRes || null,
+          f2CoverImageLowRes: data.f2CoverImageLowRes || null,
+          projectImage: data.projectImage || null,
+          status: data.status || "",
+          price: data.price || 0,
+        };
+  
+        // Opdater lokal state
+        setProjectData(updatedProjectData);
+  
+        // Notificér parent-komponenten om opdateringen
+        if (onUpdate) onUpdate(updatedProjectData);
       }
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
@@ -338,7 +352,13 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         >
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (
-            <Image source={{ uri: projectData.f8CoverImageLowRes }} style={baseStyles.f8CoverImage} />
+            <Image
+              key={`${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`} // Dynamisk key
+              source={{
+                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`,
+              }}
+              style={baseStyles.f8CoverImage}
+            />
           )}
 
           {/* Tekst i f8 toppen */}
@@ -354,7 +374,9 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               accessibilityLabel="Project Image Button"
             >
               <Image
-                source={{ uri: projectData.projectImage }}
+                source={{
+                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`, // Tilføj timestamp
+                }}
                 style={baseStyles.projectImage} // Tilpas eventuelt denne style
               />
             </Pressable>
@@ -411,7 +433,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
                 {projectData.f2CoverImageLowRes && (
-                  <Image source={{ uri: projectData.f2CoverImageLowRes }} style={baseStyles.f2CoverImage} />
+                  <Image
+                    source={{
+                      uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                    }}
+                    style={baseStyles.f2CoverImage}
+                />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -466,7 +493,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             >
               {/* Vis billede, hvis det er tilgængeligt */}
               {projectData.f3CoverImageLowRes && (
-                <Image source={{ uri: projectData.f3CoverImageLowRes }} style={baseStyles.f3CoverImage} />
+                <Image
+                  source={{
+                    uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                  }}
+                  style={baseStyles.f3CoverImage}
+              />
               )}
 
               {/* Tekst i f3 toppen */}
@@ -493,7 +525,12 @@ const InfoPanel1 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           >
             {/* Vis billede, hvis det er tilgængeligt */}
             {projectData.f5CoverImageLowRes && (
-              <Image source={{ uri: projectData.f5CoverImageLowRes }} style={baseStyles.f5CoverImage} />
+              <Image
+                source={{
+                  uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                }}
+                style={baseStyles.f5CoverImage}
+            />
             )}
 
             {/* Tekst i f5 toppen */}

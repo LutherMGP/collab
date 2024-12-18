@@ -1,7 +1,5 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
 
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
-
 import React, { useState, useEffect } from "react";
 import {
   View,
