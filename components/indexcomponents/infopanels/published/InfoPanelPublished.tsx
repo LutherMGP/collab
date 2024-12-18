@@ -1,38 +1,14 @@
 // @/components/indexcomponents/infopanels/published/InfoPanelPublished.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text } from "react-native";
-import {
-  collectionGroup,
-  query,
-  where,
-  onSnapshot,
-  getDoc,
-  doc,
-} from "firebase/firestore";
+import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel from "@/components/indexcomponents/infopanels/published/InfoPanel";
+import InfoPanel1 from "@/components/indexcomponents/infopanels/projects/InfoPanel1";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-
-type ProjectData = {
-  id: string;
-  image?: string;
-  overlayImage?: string;
-  projectImage?: string;
-  guideImage?: string;
-  previewUrl?: string;
-  name?: string;
-  comment?: string;
-  status?: string;
-  price?: number;
-  isFavorite?: boolean;
-  toBePurchased?: boolean;
-  guideId?: string | null;
-  projectId?: string | null;
-  userId?: string | null;
-};
+import { ProjectData } from "@/types/ProjectData"; // Import ProjectData-typen
 
 const InfoPanelPublished = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
@@ -41,102 +17,50 @@ const InfoPanelPublished = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  const config = {
-    showFavorite: false, // true: favorit-ikonet kan benyttes (F1A)
-    showPurchase: false, // true: purchase-ikonet kan benyttes (F1B)
-    showDelete: true, // true: slet-knappen kan benyttes (F8)
-    showEdit: true, // true: redigerings-knappen kan benyttes (F8)
-    showSnit: true, // true: pdf filen vises hvis der long-presses (F5)
-    showGuide: true, // true: Viser guide-billede (F3)
-    // Herunder bør altid alle 3 altid være true
-    longPressForPdf: true, // true: nødvendig for F3 og F5
-    checkPurchaseStatus: true, // true: henter køb-status fra Firestore
-    checkFavoriteStatus: true, // true: henter favorit-status fra Firestore
-  };
-
-  const fetchProjects = async (snapshot: any) => {
-    try {
-      const projectPromises = snapshot.docs.map(async (docSnap: any) => {
-        const projectData = {
-          id: docSnap.id,
-          ...docSnap.data(),
-        } as ProjectData;
-
-        const { projectId, guideId } = projectData;
-        const userId = docSnap.ref.parent.parent?.id || null;
-
-        // Filtrer for kun at inkludere projekter fra den nuværende bruger
-        if (userId !== user) return null;
-
-        let projectImage = null;
-        let guideImage = null;
-        let previewUrl = null;
-
-        // Hent project billede
-        if (projectId && userId) {
-          const projectDocRef = doc(
-            database,
-            "users",
-            userId,
-            "assets",
-            projectId
-          );
-          const projectDocSnap = await getDoc(projectDocRef);
-          if (projectDocSnap.exists()) {
-            projectImage = projectDocSnap.data().coverUrl || null;
-          }
-        }
-
-        // Hent guidebillede og preview
-        if (guideId && userId) {
-          const guideDocRef = doc(database, "users", userId, "assets", guideId);
-          const guideDocSnap = await getDoc(guideDocRef);
-          if (guideDocSnap.exists()) {
-            guideImage = guideDocSnap.data().coverUrl || null;
-            previewUrl = guideDocSnap.data().previewUrl || null;
-          }
-        }
-
-        return {
-          ...projectData,
-          projectImage,
-          guideImage,
-          previewUrl,
-          userId,
-        } as ProjectData;
-      });
-
-      const projectsWithImages = (await Promise.all(projectPromises)).filter(
-        Boolean
-      );
-      setProjects(projectsWithImages);
-      setError(null);
-    } catch (err) {
-      console.error("Fejl ved behandling af frigivne projekter:", err);
-      setError("Der opstod en fejl ved hentning af data. Prøv igen senere.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (!user) return;
   
-    const qPublished = query(
-      collectionGroup(database, "projects"), // Sørg for at navnet matcher
-      where("status", "==", "Published")
+    // Hent den aktuelle brugers "projects"-samling
+    const userProjectsCollection = collection(
+      database,
+      "users",
+      user,
+      "projects"
     );
+    const q = query(userProjectsCollection, where("status", "==", "Published"));
   
     const unsubscribe = onSnapshot(
-      qPublished,
-      async (snapshot) => {
-        console.log("Snapshot size:", snapshot.size); // Tjek antal resultater
-        snapshot.docs.forEach((doc) => console.log("Document data:", doc.data()));
-        await fetchProjects(snapshot);
+      q,
+      (snapshot) => {
+        const fetchedProjects = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          const assets = data.assets || {};
+  
+          return {
+            id: doc.id,
+            userId: user,
+            name: data.name || "Uden navn",
+            description: data.description || "Ingen beskrivelse",
+            status: data.status || "Project",
+            price: data.price !== undefined ? data.price : 0,
+            f8CoverImageLowRes: assets.f8CoverImageLowRes || null,
+            f5CoverImageLowRes: assets.f5CoverImageLowRes || null,
+            f3CoverImageLowRes: assets.f3CoverImageLowRes || null,
+            f2CoverImageLowRes: assets.f2CoverImageLowRes || null,
+            projectImage: assets.projectImage || null,
+  
+            // Tilføj en fallback-værdi for transferMethod
+            transferMethod: data.transferMethod || "Standard metode", // Tilføjet fallback
+          } as ProjectData; // Matcher typen ProjectData
+        });
+  
+        setProjects(fetchedProjects);
+        setError(null);
+        setIsLoading(false);
       },
       (err) => {
-        console.error("Fejl ved hentning af frigivne projekter:", err);
-        setError("Der opstod en fejl ved hentning af data.");
+        console.error("Fejl ved hentning af projekter:", err);
+        setError("Kunne ikke hente projekter. Prøv igen senere.");
         setIsLoading(false);
       }
     );
@@ -163,10 +87,21 @@ const InfoPanelPublished = () => {
   return (
     <View>
       {projects.map((project) => (
-        <InfoPanel key={project.id} projectData={project} config={config} />
+        <InfoPanel1 key={project.id} projectData={project} />
       ))}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  panelContainer: {
+    padding: 0,
+  },
+});
 
 export default InfoPanelPublished;
