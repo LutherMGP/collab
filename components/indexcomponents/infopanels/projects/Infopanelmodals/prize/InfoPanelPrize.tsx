@@ -4,53 +4,52 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   StyleSheet,
   Alert,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 type InfoPanelPrizeProps = {
   onClose: () => void;
-  selectedOption: string | null;
-  setSelectedOption: (option: string) => void;
+  currentDescription: string | null; // Beskrivelse hentet fra projektdata
   projectId: string;
   userId: string;
-  onSave: (newMethod: string) => void;
+  onSave: (newDescription: string) => void;
 };
 
 const InfoPanelPrize = ({
   onClose,
-  selectedOption,
-  setSelectedOption,
+  currentDescription,
   projectId,
   userId,
-  onSave, // Destrukturer onSave korrekt
+  onSave,
 }: InfoPanelPrizeProps) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [description, setDescription] = useState(currentDescription || "");
 
   const handleSave = async () => {
-    if (!selectedOption) {
-      Alert.alert("Valg mangler", "Vælg en overdragelsesmetode.");
+    if (!description.trim()) {
+      Alert.alert("Beskrivelse mangler", "Indtast venligst en beskrivelse.");
       return;
     }
-  
+
     setIsSaving(true);
-  
+
     try {
       const projectRef = doc(database, "users", userId, "projects", projectId);
-      await updateDoc(projectRef, { transferMethod: selectedOption });
-  
-      // Brug onSave til at opdatere i parent-komponenten
-      onSave(selectedOption);
-  
-      Alert.alert("Overdragelsesmetode opdateret", "Valget er blevet gemt.");
+      await updateDoc(projectRef, { transferMethod: description });
+
+      // Opdater i parent-komponenten
+      onSave(description);
+
+      Alert.alert("Overdragelsesmetode opdateret", "Beskrivelsen er blevet gemt.");
       onClose();
     } catch (error) {
-      console.error("Fejl ved gemning af metode:", error);
-      Alert.alert("Fejl", "Kunne ikke gemme valget. Prøv igen senere.");
+      console.error("Fejl ved gemning af beskrivelse:", error);
+      Alert.alert("Fejl", "Kunne ikke gemme beskrivelsen. Prøv igen senere.");
     } finally {
       setIsSaving(false);
     }
@@ -58,30 +57,15 @@ const InfoPanelPrize = ({
 
   return (
     <View style={styles.modalContainer}>
-      <Text style={styles.modalTitle}>Vælg overdragelsesmetode</Text>
-      <View style={styles.iconRow}>
-        <Pressable onPress={() => setSelectedOption("Free Transfer")}>
-          <AntDesign
-            name="gift"
-            size={40}
-            color={selectedOption === "Free Transfer" ? "green" : "gray"}
-          />
-        </Pressable>
-        <Pressable onPress={() => setSelectedOption("Trade Transfer")}>
-          <AntDesign
-            name="swap"
-            size={40}
-            color={selectedOption === "Trade Transfer" ? "blue" : "gray"}
-          />
-        </Pressable>
-        <Pressable onPress={() => setSelectedOption("Collaboration Transfer")}>
-          <AntDesign
-            name="team"
-            size={40}
-            color={selectedOption === "Collaboration Transfer" ? "purple" : "gray"}
-          />
-        </Pressable>
-      </View>
+      <Text style={styles.modalTitle}>Indtast Transfer Method</Text>
+      <TextInput
+        style={styles.textInput}
+        placeholder="Beskriv overdragelsesmetode"
+        value={description}
+        onChangeText={setDescription}
+        editable={!isSaving} // Deaktiver, mens der gemmes
+        multiline
+      />
       <View style={styles.buttonContainer}>
         <Pressable
           style={styles.saveButton}
@@ -106,24 +90,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
+    padding: 20,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 80,
-  },
-  iconRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "80%",
-    height: "20%",
     marginBottom: 20,
+  },
+  textInput: {
+    width: "100%",
+    height: 100,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 16,
+    textAlignVertical: "top",
+    backgroundColor: "#f9f9f9",
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: 20,
+    marginTop: 20,
   },
   saveButton: {
     backgroundColor: "#4CAF50",
