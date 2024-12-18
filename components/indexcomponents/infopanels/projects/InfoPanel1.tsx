@@ -36,7 +36,7 @@ type ProjectData = {
   name?: string;
   description?: string;
   status?: string;
-  price?: number;
+  transferMethod?: string;
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
   f3CoverImageLowRes?: string | null;
@@ -100,9 +100,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
-
+  
     setIsLoading(true);
-
+  
     try {
       // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
@@ -119,7 +119,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
           projectImage: data.projectImage || prev.projectImage || null,
           status: data.status || prev.status || "",
-          price: data.price || prev.price || 0,
+          transferMethod: data.transferMethod || prev.transferMethod || "",
         }));
       }
     } catch (error) {
@@ -128,6 +128,29 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Funktion til at hente ikon baseret på overdragelsesmetode
+  const getTransferIcon = (method: string | undefined) => {
+    switch (method) {
+      case "Free Transfer":
+        return <AntDesign name="gift" size={40} color="green" />;
+      case "Trade Transfer":
+        return <AntDesign name="swap" size={40} color="blue" />;
+      case "Collaboration Transfer":
+        return <AntDesign name="team" size={40} color="purple" />;
+      default:
+        return <AntDesign name="questioncircleo" size={40} color="gray" />;
+    }
+  };
+
+  // Funktion til opdatering af transferMethod og pris
+  const updateTransferMethod = (newMethod: string) => {
+    // Opdater kun transferMethod i projektdata
+    setProjectData((prev) => ({
+      ...prev,
+      transferMethod: newMethod, // Opdater metoden
+    }));
   };
 
   // Generisk håndtering af lang tryk (PDF on-demand, så pass null)
@@ -385,13 +408,11 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
           {/* Prize feltet med onPress */}
           <Pressable
-            style={baseStyles.priceTag}
+            style={baseStyles.priceTag} // Tilpas eller opret en ny style, hvis nødvendigt
             onPress={() => handlePress("Prize")}
-            accessibilityLabel="Prize Button"
+            accessibilityLabel="Transfer Method Button"
           >
-            <Text style={baseStyles.priceText}>
-              {projectData.price ? `${projectData.price} kr.` : "Uden pris"}
-            </Text>
+            {getTransferIcon(projectData.transferMethod)}
           </Pressable>
 
           {/* Delete-knap */}
@@ -659,10 +680,11 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
-              selectedOption={selectedOption} // Send den aktuelle værdi
-              setSelectedOption={setSelectedOption} // Send funktionen til opdatering
+              selectedOption={selectedOption}
+              setSelectedOption={setSelectedOption}
               projectId={projectData.id}
               userId={userId || ""}
+              onSave={updateTransferMethod} // Forbind funktionen her
             />
           </View>
         </View>
