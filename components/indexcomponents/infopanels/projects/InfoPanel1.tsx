@@ -29,7 +29,7 @@ import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/proje
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "@/components/indexcomponents/infopanels/published/InfoPanelStyles";
+import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
 
 type ProjectData = {
   id: string;
@@ -134,13 +134,13 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const getTransferIcon = (method: string | undefined) => {
     switch (method) {
       case "Free Transfer":
-        return <AntDesign name="gift" size={40} color="green" />;
+        return <AntDesign name="gift" size={20} color="green" />;
       case "Trade Transfer":
-        return <AntDesign name="swap" size={40} color="blue" />;
+        return <AntDesign name="swap" size={20} color="blue" />;
       case "Collaboration Transfer":
-        return <AntDesign name="team" size={40} color="purple" />;
+        return <AntDesign name="team" size={20} color="purple" />;
       default:
-        return <AntDesign name="questioncircleo" size={40} color="gray" />;
+        return <AntDesign name="questioncircleo" size={20} color="gray" />;
     }
   };
 
@@ -406,15 +406,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             </Pressable>
           )}
 
-          {/* Prize feltet med onPress */}
-          <Pressable
-            style={baseStyles.priceTag} // Tilpas eller opret en ny style, hvis nødvendigt
-            onPress={() => handlePress("Prize")}
-            accessibilityLabel="Transfer Method Button"
-          >
-            {getTransferIcon(projectData.transferMethod)}
-          </Pressable>
-
           {/* Delete-knap */}
           <Pressable
             style={baseStyles.deleteIconContainer}
@@ -552,13 +543,22 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
                 }}
                 style={baseStyles.f5CoverImage}
-            />
+              />
             )}
 
             {/* Tekst i f5 toppen */}
             <View style={baseStyles.textTag}>
               <Text style={baseStyles.text}>Terms & Condition</Text>
             </View>
+
+            {/* Prize feltet med onPress */}
+            <Pressable
+              style={baseStyles.prizeTagF5} // Ny style til placeringen af Prize
+              onPress={() => handlePress("Prize")}
+              accessibilityLabel="Transfer Method Button"
+            >
+              {getTransferIcon(projectData.transferMethod)}
+            </Pressable>
 
             {/* Comment-knap f5 */}
             <Pressable

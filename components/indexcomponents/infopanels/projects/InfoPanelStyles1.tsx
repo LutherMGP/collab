@@ -317,6 +317,21 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 10,
   },
+  prizeTagF5: {
+    position: "absolute",
+    bottom: 5,
+    right: 5,
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Tilføj skygge for bedre design
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   textTag: {
     position: "absolute", // Placer den relativt til containeren
     top: 5, // Placering tæt på toppen
@@ -532,7 +547,7 @@ export const styles = StyleSheet.create({
   attachmentButton: {
     position: "absolute", // Gør det muligt at placere knappen præcist
     bottom: 5, // Juster afhængigt af afstanden fra bunden
-    left: "50%", // Placer midt horisontalt i forhold til forælderen
+    left: 5, // Placer midt horisontalt i forhold til forælderen
     transform: [{ translateX: -20 }], // Flyt tilbage med halvdelen af knappen bredde for at centrere
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
     borderRadius: 20, // Rund knap
