@@ -140,7 +140,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       case "Collaboration Transfer":
         return <AntDesign name="team" size={20} color="purple" />;
       default:
-        return <AntDesign name="questioncircleo" size={20} color="gray" />;
+        return <AntDesign name="swap" size={20} color="#0a7ea4" />;
     }
   };
 
