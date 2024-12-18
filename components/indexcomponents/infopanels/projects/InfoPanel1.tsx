@@ -33,10 +33,10 @@ import { styles as baseStyles } from "components/indexcomponents/infopanels/proj
 
 type ProjectData = {
   id: string;
-  name?: string;
-  description?: string;
-  status?: string;
-  transferMethod?: string;
+  name: string; // Default-værdi kan være en tom streng
+  description: string;
+  status: string;
+  transferMethod: string;
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
   f3CoverImageLowRes?: string | null;
