@@ -19,7 +19,7 @@ const InfoPanelProjects = () => {
 
   useEffect(() => {
     if (!user) return;
-
+  
     // Hent den aktuelle brugers "projects"-samling
     const userProjectsCollection = collection(
       database,
@@ -28,14 +28,14 @@ const InfoPanelProjects = () => {
       "projects"
     );
     const q = query(userProjectsCollection, where("status", "==", "Project"));
-
+  
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         const fetchedProjects = snapshot.docs.map((doc) => {
           const data = doc.data();
           const assets = data.assets || {};
-
+  
           return {
             id: doc.id,
             userId: user,
@@ -43,19 +43,17 @@ const InfoPanelProjects = () => {
             description: data.description || "Ingen beskrivelse",
             status: data.status || "Project",
             price: data.price !== undefined ? data.price : 0,
-
             f8CoverImageLowRes: assets.f8CoverImageLowRes || null,
-
             f5CoverImageLowRes: assets.f5CoverImageLowRes || null,
-
             f3CoverImageLowRes: assets.f3CoverImageLowRes || null,
-
             f2CoverImageLowRes: assets.f2CoverImageLowRes || null,
-
             projectImage: assets.projectImage || null,
+  
+            // Tilføj en fallback-værdi for transferMethod
+            transferMethod: data.transferMethod || "Standard metode", // Tilføjet fallback
           } as ProjectData; // Matcher typen ProjectData
         });
-
+  
         setProjects(fetchedProjects);
         setError(null);
         setIsLoading(false);
@@ -66,7 +64,7 @@ const InfoPanelProjects = () => {
         setIsLoading(false);
       }
     );
-
+  
     return () => unsubscribe();
   }, [user]);
 
