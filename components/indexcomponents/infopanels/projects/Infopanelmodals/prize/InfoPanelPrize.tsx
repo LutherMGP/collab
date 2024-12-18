@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/infopanelmodals/InfoPanelPrize.tsx
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/prize/InfoPanelPrize.tsx
 
 import React, { useState } from "react";
 import {

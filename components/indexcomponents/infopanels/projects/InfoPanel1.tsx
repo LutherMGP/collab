@@ -28,6 +28,7 @@ import InfoPanelPrize from "@/components/indexcomponents/infopanels/projects/Inf
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/projectimage/InfoPanelProjectImage";
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
+import InfoPanelCircular from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
 
@@ -76,6 +77,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
+  const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
     // Tjek for manglende data
@@ -550,10 +552,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             {/* Ny knap for cirkulær økonomi */}
             <Pressable
               style={baseStyles.circularEconomyButton}
-              onPress={() => Alert.alert("Cirkulær Økonomi", "Ingen handling tilføjet endnu.")}
+              onPress={() => setIsCircularModalVisible(true)} // Åbn modal
               accessibilityLabel="Circular Economy Button"
             >
-              <AntDesign name="sync" size={20} color="#0a7ea4" /> {/* Ikon der indikerer cirkulær økonomi */}
+              <AntDesign name="sync" size={20} color="#0a7ea4" />
             </Pressable>
           </View>
         </View>
@@ -793,6 +795,32 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               projectId={projectData.id}
               onClose={closeAttachmentModal}
               isEditEnabled={isEditEnabled} // Pass isEditEnabled
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Circular Economy Modal */}
+      <Modal
+        visible={isCircularModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCircularModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <InfoPanelCircular
+              onClose={() => setIsCircularModalVisible(false)}
+              currentDescription={projectData.circularEconomy || ""}
+              projectId={projectData.id}
+              userId={userId || ""}
+              onSave={(newDescription) => {
+                setProjectData((prev) => ({
+                  ...prev,
+                  circularEconomy: newDescription,
+                }));
+              }}
+              isEditable={isEditEnabled}
             />
           </View>
         </View>
