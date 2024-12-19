@@ -15,8 +15,8 @@ import { storage } from "@/firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 
-const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
-const PDF_ICON = require("@/assets/images/pdf_icon.png");
+const DEFAULT_IMAGE = require("@/assets/default/error/errorImage.jpg");
+const PDF_ICON = require("@/assets/default/error/errorPDF.pdf");
 
 interface InfoPanelBaseProps {
   projectId: string;
