@@ -28,7 +28,7 @@ export const categoryImageConfig: Record<Category, ImageConfigFull> = {
     lowRes: {
       resizeWidth: 1024,
       resizeHeight: 1024,
-      compress: 1.0,
+      compress: 0.9,
     },
     highRes: {
       resizeWidth: 1024,
@@ -40,7 +40,7 @@ export const categoryImageConfig: Record<Category, ImageConfigFull> = {
     lowRes: {
       resizeWidth: 640,
       resizeHeight: 640,
-      compress: 1.0,
+      compress: 0.9,
     },
     highRes: {
       resizeWidth: 1024,
@@ -52,7 +52,7 @@ export const categoryImageConfig: Record<Category, ImageConfigFull> = {
     lowRes: {
       resizeWidth: 384,
       resizeHeight: 384,
-      compress: 1.0,
+      compress: 0.9,
     },
     highRes: {
       resizeWidth: 1024,
@@ -64,7 +64,7 @@ export const categoryImageConfig: Record<Category, ImageConfigFull> = {
     lowRes: {
       resizeWidth: 256,
       resizeHeight: 256,
-      compress: 1,
+      compress: 0.9,
     },
     highRes: {
       resizeWidth: 1024,
