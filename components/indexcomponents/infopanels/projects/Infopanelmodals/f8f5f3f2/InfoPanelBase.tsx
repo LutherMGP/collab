@@ -1,5 +1,6 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
 
+import * as ImageManipulator from "expo-image-manipulator";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -14,9 +15,10 @@ import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import { categoryImageConfig, Category } from "@/constants/ImageConfig";
 
-const DEFAULT_IMAGE = require("@/assets/images/blomst.webp");
-const PDF_ICON = require("@/assets/images/pdf_icon.png");
+const DEFAULT_IMAGE = require("@/assets/default/error/errorImage.jpg");
+const PDF_ICON = require("@/assets/default/error/errorPDF.pdf");
 
 interface InfoPanelBaseProps {
   projectId: string;
@@ -33,7 +35,8 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
   categoryName,
   onClose,
 }) => {
-  const [imageURL, setImageURL] = useState<string | null>(null);
+  const [imageURL, setImageURL] = useState<string | null>(null); // LowRes URL
+  const [highResImageURL, setHighResImageURL] = useState<string | null>(null); // HighRes URL
   const [pdfURL, setPdfURL] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -44,15 +47,18 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
 
   const refreshData = async () => {
     try {
-      const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+      const lowResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+      const highResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
       const pdfPath = `users/${userId}/projects/${projectId}/data/${category}/${category}PDF.pdf`;
 
-      const [updatedImageURL, updatedPdfURL] = await Promise.all([
-        getDownloadURL(ref(storage, imagePath)).catch(() => null),
+      const [updatedLowResURL, updatedHighResURL, updatedPdfURL] = await Promise.all([
+        getDownloadURL(ref(storage, lowResImagePath)).catch(() => null),
+        getDownloadURL(ref(storage, highResImagePath)).catch(() => null),
         getDownloadURL(ref(storage, pdfPath)).catch(() => null),
       ]);
 
-      setImageURL(updatedImageURL);
+      setImageURL(updatedLowResURL);
+      setHighResImageURL(updatedHighResURL);
       setPdfURL(updatedPdfURL);
     } catch (error) {
       console.error("Fejl ved opdatering af data:", error);
@@ -72,33 +78,66 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.8, // Reduceret kvalitet for LowRes
+        quality: 1.0, // Original kvalitet for input
       });
-  
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImageUri = result.assets[0].uri;
-        const imageBlob = await (await fetch(selectedImageUri)).blob();
-  
-        // Stier til LowRes og HighRes
+
+        // Hent dynamisk konfiguration for den aktuelle kategori
+        const config = categoryImageConfig[category as Category];
+        if (!config) {
+          throw new Error(`Ingen billedkonfiguration fundet for kategori: ${category}`);
+        }
+
+        let lowResBlob: Blob | null = null;
+        let highResBlob: Blob | null = null;
+
+        // Behandling for LowRes billede
+        if (category === "f8") {
+          // Ingen billedbehandling for f8 LowRes
+          lowResBlob = await (await fetch(selectedImageUri)).blob();
+        } else {
+          // Billedbehandling for f5, f3, og f2
+          const lowResImage = await ImageManipulator.manipulateAsync(
+            selectedImageUri,
+            [{ resize: { width: config.lowRes.resizeWidth, height: config.lowRes.resizeHeight } }],
+            { compress: config.lowRes.compress, format: ImageManipulator.SaveFormat.JPEG }
+          );
+          lowResBlob = await (await fetch(lowResImage.uri)).blob();
+        }
+
+        // Ingen billedbehandling for HighRes billede
+        highResBlob = await (await fetch(selectedImageUri)).blob();
+
+        // Stier til Firebase Storage
         const lowResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const highResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
-  
-        // Reference til LowRes og HighRes
+
+        // Firebase Storage referencer
         const lowResImageRef = ref(storage, lowResImagePath);
         const highResImageRef = ref(storage, highResImagePath);
-  
-        // Upload LowRes
-        await uploadBytesResumable(lowResImageRef, imageBlob);
-        console.log("LowRes billede uploadet:", lowResImagePath);
-  
-        // Upload HighRes
-        await uploadBytesResumable(highResImageRef, imageBlob);
-        console.log("HighRes billede uploadet:", highResImagePath);
-  
-        // Opdater LowRes download-URL til visning
-        const downloadURL = await getDownloadURL(lowResImageRef);
-        setImageURL(downloadURL);
-  
+
+        // Upload LowRes billede
+        if (lowResBlob) {
+          await uploadBytesResumable(lowResImageRef, lowResBlob);
+          console.log("LowRes billede uploadet:", lowResImagePath);
+
+          // Opdater LowRes download-URL til visning
+          const downloadURL = await getDownloadURL(lowResImageRef);
+          setImageURL(downloadURL);
+        }
+
+        // Upload HighRes billede
+        if (highResBlob) {
+          await uploadBytesResumable(highResImageRef, highResBlob);
+          console.log("HighRes billede uploadet:", highResImagePath);
+
+          // Opdater HighRes download-URL til visning
+          const highResDownloadURL = await getDownloadURL(highResImageRef);
+          setHighResImageURL(highResDownloadURL);
+        }
+
         handleUploadSuccess();
       }
     } catch (error) {
@@ -143,9 +182,9 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
         <>
-          {/* Billede */}
+          {/* HighRes Billede */}
           <TouchableOpacity style={styles.imageContainer} onPress={handleImageUpload}>
-            <Image source={imageURL ? { uri: imageURL } : DEFAULT_IMAGE} style={styles.image} />
+            <Image source={highResImageURL ? { uri: highResImageURL } : DEFAULT_IMAGE} style={styles.image} />
           </TouchableOpacity>
 
           {/* PDF */}

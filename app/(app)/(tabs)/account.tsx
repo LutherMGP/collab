@@ -14,7 +14,6 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
   ref,
@@ -28,7 +27,6 @@ import * as ImageManipulator from "expo-image-manipulator";
 
 export default function AccountScreen() {
   const { signOut, user, updateUserProfile } = useAuth();
-  const { setProfileImage } = useVisibility(); // Hent setProfileImage fra konteksten
 
   const backgroundColor = useThemeColor({}, "background");
   const borderColor = useThemeColor({}, "border");
@@ -157,9 +155,8 @@ export default function AccountScreen() {
         { merge: true }
       );
 
-      // Opdater lokal state og global kontekst
+      // Opdater lokal state
       setProfileImageState(uniqueUrl);
-      setProfileImage(uniqueUrl); // Opdater global kontekst
       console.log("Nyt profilbillede uploadet og gemt:", uniqueUrl);
     } catch (error) {
       console.error("Fejl ved upload af profilbillede:", error);

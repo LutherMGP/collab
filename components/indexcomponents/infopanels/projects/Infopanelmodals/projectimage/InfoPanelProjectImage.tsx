@@ -69,11 +69,11 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
         allowsEditing: true,
         quality: 1.0,
       });
-
+  
       if (!result.canceled && result.assets.length > 0) {
         const selectedImageUri = result.assets[0].uri;
-
-        // Brug `projectImageConfig` til resizing og komprimering
+  
+        // Resizer og komprimer billedet
         const resizedImage = await ImageManipulator.manipulateAsync(
           selectedImageUri,
           [
@@ -89,27 +89,25 @@ const InfoPanelProjectImage: React.FC<InfoPanelProjectImageProps> = ({
             format: ImageManipulator.SaveFormat.JPEG,
           }
         );
-
+  
         const imageBlob = await (await fetch(resizedImage.uri)).blob();
-        const imagePath = FilePaths.projectImage(userId, projectId);
+        const imagePath = `users/${userId}/projects/${projectId}/projectimage/projectImage.jpg`;
         const imageRef = ref(storage, imagePath);
-
+  
         await uploadBytesResumable(imageRef, imageBlob);
-
+  
         const downloadURL = await getDownloadURL(imageRef);
-
-        // Kald `onUploadSuccess` med downloadURL
+  
+        // Kald onUploadSuccess med den nye download-URL
         onUploadSuccess(downloadURL);
-
         setImageURL(downloadURL);
+        Alert.alert("Succes", "Billedet er blevet opdateret.");
       } else {
         Alert.alert("Info", "Billedvalg annulleret.");
       }
     } catch (error) {
       console.error("Fejl ved upload af billede:", error);
-
-      // Kald `onUploadFailure` med fejlen
-      onUploadFailure(error);
+      onUploadFailure(error); // Håndter fejl ved upload
     }
   };
 
