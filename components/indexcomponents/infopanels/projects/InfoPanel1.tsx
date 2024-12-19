@@ -18,7 +18,8 @@ import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { ref, getDownloadURL } from "firebase/storage";
+import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
 import InfoPanelF5 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF5";
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF3";
@@ -31,6 +32,7 @@ import InfoPanelAttachment from "@/components/indexcomponents/infopanels/project
 import InfoPanelCircular from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
+import { FilePaths } from "@/utils/filePaths";
 
 type CircularEconomyData = {
   waterUsage: { value: number; description: string };
@@ -148,23 +150,28 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   };
 
   // Generisk håndtering af lang tryk (PDF on-demand, så pass null)
-  const handleLongPress = async (url: string | null, fieldName: string) => {
-    if (!url) {
-      Alert.alert("Ingen PDF", `Der er ingen PDF knyttet til ${fieldName}.`);
+  const handleLongPress = async (pdfType: "f8PDF" | "f5PDF" | "f3PDF" | "f2PDF") => {
+    if (!userId || !projectData.id) {
+      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
       return;
     }
+  
     try {
-      await Linking.openURL(url);
+      // Generer stien til PDF'en baseret på typen
+      const category = pdfType.replace("PDF", "") as "f8" | "f5" | "f3" | "f2";
+      const pdfPath = FilePaths.pdf(userId, projectData.id, category);
+      const pdfRef = ref(storage, pdfPath);
+  
+      // Hent download-URL fra Firebase Storage
+      const downloadURL = await getDownloadURL(pdfRef);
+  
+      // Åbn PDF'en med iOS-vieweren
+      await Linking.openURL(downloadURL);
     } catch (error) {
-      console.error(`Fejl ved åbning af ${fieldName} PDF:`, error);
-      Alert.alert("Fejl", `Der opstod en fejl under åbning af ${fieldName} PDF.`);
+      console.error(`Fejl ved åbning af PDF for ${pdfType}:`, error);
+      Alert.alert("Fejl", `Kunne ikke hente PDF for ${pdfType}. Prøv igen.`);
     }
   };
-
-  const handleLongPressF8 = () => handleLongPress(null, "Specification (F8)"); // PDF hentes on-demand
-  const handleLongPressF5 = () => handleLongPress(null, "Terms & Conditions (F5)"); // PDF hentes on-demand
-  const handleLongPressF3 = () => handleLongPress(null, "Sustainability Report (F3)"); // PDF hentes on-demand
-  const handleLongPressF2 = () => handleLongPress(null, "Partnership Agreement (F2)"); // PDF hentes on-demand
 
   const handleDelete = () => {
     // Always show Delete button since config.showDelete is removed
@@ -200,8 +207,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   };
 
   // Generisk handlePress funktion med conditional
-  const handlePress = (button: string) => {
+  const handlePress = async (button: string) => {
     if (isEditEnabled) {
+      // Åbn modal, hvis Edit er aktiveret
       switch (button) {
         case "F8":
           setIsF8ModalVisible(true);
@@ -215,20 +223,21 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         case "F2":
           setIsF2ModalVisible(true);
           break;
-        case "Name & Comment":
-          setIsNameCommentModalVisible(true);
-          break;
-        case "Prize":
-          setIsPrizeModalVisible(true);
-          break;
-        case "Project Image":
-          setIsProjectImageModalVisible(true);
-          break;
         default:
           Alert.alert("Knappen blev trykket", `Du trykkede på: ${button}`);
       }
     } else {
-      Alert.alert("Edit-tilstand", "Edit er ikke aktiveret.");
+      // Vis HighRes-billede, hvis Edit er deaktiveret
+      try {
+        const category = button.replace("F", "f") as "f8" | "f5" | "f3" | "f2";
+        const highResPath = FilePaths.coverImage(userId, projectData.id, category, "HighRes");
+        const highResRef = ref(storage, highResPath);
+        const highResURL = await getDownloadURL(highResRef);
+        await Linking.openURL(highResURL); // Åbner billedet i iOS-vieweren
+      } catch (error) {
+        console.error(`Fejl ved hentning af HighRes-billede for ${button}:`, error);
+        Alert.alert("Fejl", `Kunne ikke hente HighRes-billede for ${button}.`);
+      }
     }
   };
 
@@ -398,8 +407,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
-          onLongPress={handleLongPressF8} // Longpress forbliver uændret
+          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
+          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
           accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
@@ -468,7 +477,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <Pressable
                 style={baseStyles.F2}
                 onPress={() => handlePress("F2")}
-                onLongPress={handleLongPressF2} // Longpress forbliver uændret
+                onLongPress={() => handleLongPress("f2PDF")}
                 accessibilityLabel="F2 Button"
               >
                 {/* Vis billede, hvis det er tilgængeligt */}
@@ -528,7 +537,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <Pressable
               style={baseStyles.F3}
               onPress={() => handlePress("F3")}
-              onLongPress={handleLongPressF3} // Longpress forbliver uændret
+              onLongPress={() => handleLongPress("f3PDF")}
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
@@ -569,7 +578,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <Pressable
             style={[baseStyles.F5, { right: rightMargin }]}
             onPress={() => handlePress("F5")}
-            onLongPress={handleLongPressF5} // Longpress forbliver uændret
+            onLongPress={() => handleLongPress("f5PDF")}
             accessibilityLabel="F5 Button"
           >
             {/* Vis billede, hvis det er tilgængeligt */}

@@ -116,51 +116,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 'AssetManager' Tab */}
-      <Tabs.Screen
-        name="assetmanager"
-        options={{
-          href: null, // Skjuler fanen fra fanebjælken
-          // href: isAdmin || isDesigner ? undefined : null, // Skjuler fanen for 'Bruger', viser for 'Admin' og 'Designer’
-          title: "Files",
-          tabBarLabel: "Assets",
-          tabBarIcon: ({ color }) => (
-            <Ionicons
-              size={28}
-              name="cloud-upload"
-              color={color}
-              style={{ marginBottom: -3 }}
-            />
-          ),
-          headerLeft: () => (
-            <Image
-              source={
-                colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
-              }
-              style={{ width: 70, height: 30, marginLeft: 14 }}
-            />
-          ),
-          headerRight: () => (
-            <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_assetmanager" asChild>
-                <Pressable>
-                  {({ pressed }) => (
-                    <FontAwesome
-                      name="info-circle"
-                      size={28}
-                      color={Colors[colorScheme ?? "light"].text}
-                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                    />
-                  )}
-                </Pressable>
-              </Link>
-            </View>
-          ),
-        }}
-      />
-
       {/* 'Cart' Tab */}
       <Tabs.Screen
         name="cart"
@@ -293,58 +248,6 @@ export default function TabLayout() {
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>
               <Link href="/modal_account" asChild>
-                <Pressable>
-                  {({ pressed }) => (
-                    <FontAwesome
-                      name="info-circle"
-                      size={28}
-                      color={Colors[colorScheme ?? "light"].text}
-                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                    />
-                  )}
-                </Pressable>
-              </Link>
-            </View>
-          ),
-        }}
-      />
-
-      {/* 'template' Tab */}
-      <Tabs.Screen
-        name="template"
-        options={{
-          href: null, // Skjuler fanen fra fanebjælken
-          title: "Headline",
-          tabBarLabel: "Template",
-          tabBarIcon: ({ color, focused }) => {
-            const iconColor =
-              isDesigner && focused
-                ? Colors.light.designer
-                : isAdmin && focused
-                ? Colors.light.admin
-                : color;
-            return (
-              <FontAwesome
-                size={32}
-                name="question"
-                color={iconColor}
-                style={{ marginBottom: -3 }}
-              />
-            );
-          },
-          headerLeft: () => (
-            <Image
-              source={
-                colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
-              }
-              style={{ width: 70, height: 30, marginLeft: 14 }}
-            />
-          ),
-          headerRight: () => (
-            <View style={{ flexDirection: "row" }}>
-              <Link href="/modal_template" asChild>
                 <Pressable>
                   {({ pressed }) => (
                     <FontAwesome
