@@ -429,17 +429,23 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Projektbilledet i det runde felt med onPress */}
           {projectData.projectImage && (
             <Pressable
-              style={baseStyles.projectImageContainer}
-              onPress={() => handlePress("Project Image")}
-              accessibilityLabel="Project Image Button"
-            >
-              <Image
-                source={{
-                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`, // Tilføj timestamp
-                }}
-                style={baseStyles.projectImage} // Tilpas eventuelt denne style
-              />
-            </Pressable>
+            style={[
+              baseStyles.projectImageContainer,
+              { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
+            ]}
+            onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
+            accessibilityLabel="Project Image Button"
+            disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
+          >
+            <Image
+              source={{
+                uri: projectData.projectImage
+                  ? `${projectData.projectImage}?timestamp=${Date.now()}`
+                  : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+              }}
+              style={baseStyles.projectImage} // Tilføj dine styles her
+            />
+          </Pressable>
           )}
 
           {/* Delete-knap */}
@@ -748,7 +754,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               onClose={closeProjectImageModal}
               projectId={projectData.id}
               userId={userId || ""}
-              category="projectImage" // Tilføj denne linje
+              category="projectImage"
               onUploadSuccess={(downloadURL) => {
                 console.log("Upload successful:", downloadURL);
                 setProjectData((prev) => ({
