@@ -8,6 +8,9 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
@@ -18,7 +21,7 @@ type InfoPanelPrizeProps = {
   projectId: string;
   userId: string;
   onSave: (newDescription: string) => void;
-  isEditable: boolean; // Ny prop for redigeringstilstand
+  isEditable: boolean; // Angiver om redigering er aktiveret
 };
 
 const InfoPanelPrize = ({
@@ -32,6 +35,7 @@ const InfoPanelPrize = ({
   const [isSaving, setIsSaving] = useState(false);
   const [description, setDescription] = useState(currentDescription || "");
 
+  // Funktion til at gemme beskrivelsen
   const handleSave = async () => {
     if (!description.trim()) {
       Alert.alert("Beskrivelse mangler", "Indtast venligst en beskrivelse.");
@@ -47,7 +51,7 @@ const InfoPanelPrize = ({
       // Opdater i parent-komponenten
       onSave(description);
 
-      Alert.alert("Overdragelsesmetode opdateret", "Beskrivelsen er blevet gemt.");
+      Alert.alert("Opdateret", "Overdragelsesmetoden er blevet gemt.");
       onClose();
     } catch (error) {
       console.error("Fejl ved gemning af beskrivelse:", error);
@@ -58,88 +62,93 @@ const InfoPanelPrize = ({
   };
 
   return (
-    <View style={styles.modalContainer}>
-      <Text style={styles.modalTitle}>
-        {isEditable ? "Rediger Transfer Method" : "Transfer Method"}
-      </Text>
-      {isEditable ? (
-        <TextInput
-          style={styles.textInput}
-          placeholder="Beskriv overdragelsesmetode"
-          value={description}
-          onChangeText={setDescription}
-          editable={!isSaving} // Deaktiver, mens der gemmes
-          multiline
-        />
-      ) : (
-        <Text style={styles.descriptionText}>
-          {currentDescription || "Ingen beskrivelse tilgængelig"}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.title}>
+          {isEditable ? "Rediger Transfer Method" : "Transfer Method"}
         </Text>
-      )}
-      <View style={styles.buttonContainer}>
-        {isEditable && (
-          <Pressable
-            style={styles.saveButton}
-            onPress={handleSave}
-            disabled={isSaving}
-          >
-            <Text style={styles.saveButtonText}>
-              {isSaving ? "Gemmer..." : "Gem"}
-            </Text>
-          </Pressable>
+
+        {isEditable ? (
+          <TextInput
+            style={styles.input}
+            placeholder="Beskriv overdragelsesmetode"
+            value={description}
+            onChangeText={setDescription}
+            editable={!isSaving}
+            multiline
+          />
+        ) : (
+          <Text style={styles.readOnlyText}>
+            {currentDescription || "Ingen beskrivelse tilgængelig"}
+          </Text>
         )}
-        <Pressable style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeButtonText}>Luk</Text>
-        </Pressable>
-      </View>
-    </View>
+
+        <View style={styles.buttonContainer}>
+          {isEditable && (
+            <Pressable
+              style={styles.saveButton}
+              onPress={handleSave}
+              disabled={isSaving}
+            >
+              <Text style={styles.saveButtonText}>
+                {isSaving ? "Gemmer..." : "Gem"}
+              </Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.closeButtonText}>Luk</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "white",
-    padding: 20,
   },
-  modalTitle: {
-    fontSize: 20,
+  scrollContainer: {
+    padding: 20,
+    flexGrow: 1,
+  },
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+    textAlign: "center",
   },
-  textInput: {
-    width: "100%",
-    height: 100,
+  input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
     fontSize: 16,
     textAlignVertical: "top",
     backgroundColor: "#f9f9f9",
+    minHeight: 100,
   },
-  descriptionText: {
-    width: "100%",
+  readOnlyText: {
     fontSize: 16,
-    textAlign: "center",
     marginVertical: 20,
-    paddingHorizontal: 10,
     backgroundColor: "#f5f5f5",
-    borderRadius: 10,
     padding: 10,
+    borderRadius: 8,
+    textAlign: "center",
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
     marginTop: 20,
   },
   saveButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 8,
     flex: 1,
     marginRight: 5,
     alignItems: "center",
@@ -151,7 +160,7 @@ const styles = StyleSheet.create({
   closeButton: {
     backgroundColor: "#f44336",
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 8,
     flex: 1,
     marginLeft: 5,
     alignItems: "center",
