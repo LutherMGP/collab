@@ -1,5 +1,6 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/f8f5f3f2/InfoPanelBase.tsx
 
+import * as ImageManipulator from "expo-image-manipulator";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -14,6 +15,7 @@ import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import { categoryImageConfig, Category } from "@/constants/ImageConfig";
 
 const DEFAULT_IMAGE = require("@/assets/default/error/errorImage.jpg");
 const PDF_ICON = require("@/assets/default/error/errorPDF.pdf");
@@ -72,27 +74,49 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.8, // Reduceret kvalitet for LowRes
+        quality: 1.0, // Original kvalitet for input
       });
   
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImageUri = result.assets[0].uri;
-        const imageBlob = await (await fetch(selectedImageUri)).blob();
   
-        // Stier til LowRes og HighRes
+        // Hent dynamisk konfiguration for den aktuelle kategori
+        const config = categoryImageConfig[category as Category];
+        if (!config) {
+          throw new Error(`Ingen billedkonfiguration fundet for kategori: ${category}`);
+        }
+  
+        // LowRes behandling
+        const lowResImage = await ImageManipulator.manipulateAsync(
+          selectedImageUri,
+          [{ resize: { width: config.lowRes.resizeWidth, height: config.lowRes.resizeHeight } }],
+          { compress: config.lowRes.compress, format: ImageManipulator.SaveFormat.JPEG }
+        );
+  
+        // HighRes behandling
+        const highResImage = await ImageManipulator.manipulateAsync(
+          selectedImageUri,
+          [{ resize: { width: config.highRes?.resizeWidth ?? 1024, height: config.highRes?.resizeHeight ?? 1024 } }],
+          { compress: config.highRes?.compress ?? 1.0, format: ImageManipulator.SaveFormat.JPEG }
+        );
+  
+        // Konverter billeder til Blob
+        const lowResBlob = await (await fetch(lowResImage.uri)).blob();
+        const highResBlob = await (await fetch(highResImage.uri)).blob();
+  
+        // Stier til Firebase Storage
         const lowResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
         const highResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
   
-        // Reference til LowRes og HighRes
+        // Firebase Storage referencer
         const lowResImageRef = ref(storage, lowResImagePath);
         const highResImageRef = ref(storage, highResImagePath);
   
-        // Upload LowRes
-        await uploadBytesResumable(lowResImageRef, imageBlob);
+        // Upload billeder
+        await uploadBytesResumable(lowResImageRef, lowResBlob);
         console.log("LowRes billede uploadet:", lowResImagePath);
   
-        // Upload HighRes
-        await uploadBytesResumable(highResImageRef, imageBlob);
+        await uploadBytesResumable(highResImageRef, highResBlob);
         console.log("HighRes billede uploadet:", highResImagePath);
   
         // Opdater LowRes download-URL til visning

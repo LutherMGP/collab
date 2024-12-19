@@ -26,50 +26,50 @@ export const projectImageConfig: ImageConfig = {
 export const categoryImageConfig: Record<Category, ImageConfigFull> = {
   f8: {
     lowRes: {
-      resizeWidth: screenWidth,
-      resizeHeight: screenWidth,
-      compress: 0.6,
+      resizeWidth: 1024,
+      resizeHeight: 1024,
+      compress: 1.0,
     },
     highRes: {
-      resizeWidth: 2 * screenWidth,
-      resizeHeight: 2 * screenWidth,
-      compress: 0.9,
+      resizeWidth: 1024,
+      resizeHeight: 1024,
+      compress: 1.0,
     },
   },
   f5: {
     lowRes: {
-      resizeWidth: (5 / 8) * screenWidth,
-      resizeHeight: (5 / 8) * screenWidth,
-      compress: 0.6,
+      resizeWidth: 640,
+      resizeHeight: 640,
+      compress: 1.0,
     },
     highRes: {
-      resizeWidth: (5 / 4) * screenWidth,
-      resizeHeight: (5 / 4) * screenWidth,
-      compress: 0.9,
+      resizeWidth: 1024,
+      resizeHeight: 1024,
+      compress: 1.0,
     },
   },
   f3: {
     lowRes: {
-      resizeWidth: (3 / 8) * screenWidth,
-      resizeHeight: (3 / 8) * screenWidth,
-      compress: 0.6,
+      resizeWidth: 384,
+      resizeHeight: 384,
+      compress: 1.0,
     },
     highRes: {
-      resizeWidth: (3 / 4) * screenWidth,
-      resizeHeight: (3 / 4) * screenWidth,
-      compress: 0.9,
+      resizeWidth: 1024,
+      resizeHeight: 1024,
+      compress: 1.0,
     },
   },
   f2: {
     lowRes: {
-      resizeWidth: (2 / 8) * screenWidth,
-      resizeHeight: (2 / 8) * screenWidth,
-      compress: 0.6,
+      resizeWidth: 256,
+      resizeHeight: 256,
+      compress: 1,
     },
     highRes: {
-      resizeWidth: (2 / 4) * screenWidth,
-      resizeHeight: (2 / 4) * screenWidth,
-      compress: 0.9,
+      resizeWidth: 1024,
+      resizeHeight: 1024,
+      compress: 1.0,
     },
   },
 };
