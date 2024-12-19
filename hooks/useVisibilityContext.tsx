@@ -3,12 +3,9 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface VisibilityContextType {
-  isInfoPanelProjectsVisible: boolean;
-  isInfoPanelPublishedVisible: boolean;
+  activePanel: "projects" | "published" | "catalog" | "favorites" | null;
   showPanel: (
-    panel:
-      | "projects"
-      | "published"
+    panel: "projects" | "published" | "catalog" | "favorites"
   ) => void;
   hideAllPanels: () => void;
 }
@@ -32,29 +29,24 @@ interface VisibilityProviderProps {
 export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   children,
 }) => {
-  const [isInfoPanelProjectsVisible, setIsInfoPanelProjectsVisible] =
-    useState(false);
-  const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
-    useState(false);
+  const [activePanel, setActivePanel] = useState<
+    "projects" | "published" | "catalog" | "favorites" | null
+  >(null);
+
   const showPanel = (
-    panel:
-      | "projects"
-      | "published"
+    panel: "projects" | "published" | "catalog" | "favorites"
   ) => {
-    setIsInfoPanelProjectsVisible(panel === "projects");
-    setIsInfoPanelPublishedVisible(panel === "published");
+    setActivePanel(panel); // Kun én panel kan være aktiv ad gangen
   };
 
   const hideAllPanels = () => {
-    setIsInfoPanelProjectsVisible(false);
-    setIsInfoPanelPublishedVisible(false);
+    setActivePanel(null);
   };
 
   return (
     <VisibilityContext.Provider
       value={{
-        isInfoPanelProjectsVisible,
-        isInfoPanelPublishedVisible,
+        activePanel,
         showPanel,
         hideAllPanels,
       }}
