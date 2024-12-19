@@ -86,6 +86,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
+  const [lastDoubleClickTime, setLastDoubleClickTime] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
     // Tjek for manglende data
@@ -170,6 +171,37 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     } catch (error) {
       console.error(`Fejl ved åbning af PDF for ${pdfType}:`, error);
       Alert.alert("Fejl", `Kunne ikke hente PDF for ${pdfType}. Prøv igen.`);
+    }
+  };
+
+  // Generisk håndtering af DoubleClick (åbner HighRes-billeder)
+  const handlePressWithDoubleClick = async (
+    type: "f8HighRes" | "f5HighRes" | "f3HighRes" | "f2HighRes"
+  ) => {
+    if (isEditEnabled) {
+      Alert.alert("Edit-tilstand", "HighRes-visning er deaktiveret i Edit-tilstand.");
+      return;
+    }
+  
+    const doubleClickDelay = 300; // Tidsramme for dobbeltklik
+    const currentTime = Date.now();
+  
+    if (lastDoubleClickTime && currentTime - lastDoubleClickTime < doubleClickDelay) {
+      // Dobbeltklik detekteret
+      setLastDoubleClickTime(null); // Nulstil dobbeltklik-tid
+      try {
+        const category = type.replace("HighRes", "") as "f8" | "f5" | "f3" | "f2";
+        const highResPath = FilePaths.coverImage(userId, projectData.id, category, "HighRes");
+        const highResRef = ref(storage, highResPath);
+        const highResURL = await getDownloadURL(highResRef);
+        await Linking.openURL(highResURL);
+      } catch (error) {
+        console.error(`Fejl ved hentning af HighRes-billede for ${type}:`, error);
+        Alert.alert("Fejl", `Kunne ikke hente HighRes-billede for ${type}.`);
+      }
+    } else {
+      // Enkeltklik registreret
+      setLastDoubleClickTime(currentTime);
     }
   };
 
@@ -407,7 +439,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           style={baseStyles.F8}
           onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
           onLongPress={() => handleLongPress("f8PDF")}
-          accessibilityLabel="F8 Button"
+          onPressIn={() => handlePressWithDoubleClick("f8HighRes")}
+          accessible={false} // Dette deaktiverer tilgængelighed
+          // accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (
