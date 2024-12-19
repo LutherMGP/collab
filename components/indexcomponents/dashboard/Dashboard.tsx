@@ -8,6 +8,8 @@ import NewProject from "@/components/indexcomponents/dashboard/NewProject";
 import { useAuth } from "@/hooks/useAuth";
 import Projects from "@/components/indexcomponents/dashboard/Projects";
 import Published from "@/components/indexcomponents/dashboard/Published";
+import Catalog from "@/components/indexcomponents/dashboard/Catalog";
+import Favorites from "@/components/indexcomponents/dashboard/Favorites";
 
 const Snit = () => {
   const theme = useColorScheme() || "light";
@@ -31,6 +33,12 @@ const Snit = () => {
 
       {/* Viser kun Published, hvis brugerens rolle er 'Designer' eller 'Admin' */}
       {(userRole === "Designer" || userRole === "Admin") && <Published />}
+
+      {/* Viser kun Catalog, hvis brugerens rolle er 'Bruger','Designer' eller 'Admin' eller */}
+      {(userRole === "Designer" || userRole === "Admin" || userRole === "Bruger") && <Catalog />}
+
+      {/* Viser kun Favorites, hvis brugerens rolle er 'Bruger','Designer' eller 'Admin' eller */}
+      {(userRole === "Designer" || userRole === "Admin" || userRole === "Bruger") && <Favorites />}        
     </ScrollView>
   );
 };

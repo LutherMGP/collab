@@ -3,9 +3,16 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface VisibilityContextType {
-  activePanel: "projects" | "published" | "catalog" | "favorites" | null;
+  isInfoPanelProjectsVisible: boolean;
+  isInfoPanelPublishedVisible: boolean;
+  isInfoPanelCatalogVisible: boolean;
+  isInfoPanelFavoritesVisible: boolean;
   showPanel: (
-    panel: "projects" | "published" | "catalog" | "favorites"
+    panel:
+      | "projects"
+      | "published"
+      | "catalog"
+      | "favorites"
   ) => void;
   hideAllPanels: () => void;
 }
@@ -29,24 +36,41 @@ interface VisibilityProviderProps {
 export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   children,
 }) => {
-  const [activePanel, setActivePanel] = useState<
-    "projects" | "published" | "catalog" | "favorites" | null
-  >(null);
-
+  const [isInfoPanelProjectsVisible, setIsInfoPanelProjectsVisible] =
+    useState(false);
+  const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
+    useState(false);
+  const [isInfoPanelCatalogVisible, setIsInfoPanelCatalogVisible] =
+  useState(false);
+  const [isInfoPanelFavoritesVisible, setIsInfoPanelFavoritesVisible] =
+  useState(false);  
   const showPanel = (
-    panel: "projects" | "published" | "catalog" | "favorites"
+    panel:
+      | "projects"
+      | "published"
+      | "catalog"
+      | "favorites"
   ) => {
-    setActivePanel(panel); // Kun én panel kan være aktiv ad gangen
+    setIsInfoPanelProjectsVisible(panel === "projects");
+    setIsInfoPanelPublishedVisible(panel === "published");
+    setIsInfoPanelCatalogVisible(panel === "catalog");
+    setIsInfoPanelFavoritesVisible(panel === "favorites");
   };
 
   const hideAllPanels = () => {
-    setActivePanel(null);
+    setIsInfoPanelProjectsVisible(false);
+    setIsInfoPanelPublishedVisible(false);
+    setIsInfoPanelCatalogVisible(false);
+    setIsInfoPanelFavoritesVisible(false);
   };
 
   return (
     <VisibilityContext.Provider
       value={{
-        activePanel,
+        isInfoPanelProjectsVisible,
+        isInfoPanelPublishedVisible,
+        isInfoPanelCatalogVisible,
+        isInfoPanelFavoritesVisible,
         showPanel,
         hideAllPanels,
       }}
