@@ -16,6 +16,7 @@ import Dashboard from "@/components/indexcomponents/dashboard/Dashboard";
 import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage";
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
+import InfoPanelCatalog from "components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   getDoc,
@@ -35,12 +36,14 @@ const Index = () => {
   const {
     isInfoPanelProjectsVisible,
     isInfoPanelPublishedVisible,
+    isInfoPanelCatalogVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
   const shouldShowWelcomeMessage = !(
     isInfoPanelProjectsVisible ||
-    isInfoPanelPublishedVisible
+    isInfoPanelPublishedVisible ||
+    isInfoPanelCatalogVisible
   );
 
   useEffect(() => {
@@ -109,6 +112,13 @@ const Index = () => {
       {isInfoPanelPublishedVisible && (
         <View style={styles.infoPanelPublishedContainer}>
           <InfoPanelPublished />
+        </View>
+      )}
+
+      {/* Render InfoPanelCatalog kun hvis synlig */}
+      {isInfoPanelCatalogVisible && (
+        <View style={styles.infoPanelProductsContainer}>
+          <InfoPanelCatalog />
         </View>
       )}
     </Animated.ScrollView>
