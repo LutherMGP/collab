@@ -1,6 +1,6 @@
 // @/components/indexcomponents/dashboard/NewProject.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, collection, setDoc } from "firebase/firestore";
+import { doc, collection, setDoc, onSnapshot } from "firebase/firestore";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { storage, database } from "@/firebaseConfig";
 import { Entypo } from "@expo/vector-icons";
@@ -25,6 +25,23 @@ const NewProject: React.FC = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  
+  // Lyt til ændringer i Firestore for at hente det opdaterede profilbillede
+  useEffect(() => {
+    if (!user) return;
+  
+    const userDocRef = doc(database, "users", user);
+  
+    const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setProfileImage(data.profileImage || null); // Sæt det opdaterede profilbillede
+      }
+    });
+  
+    return () => unsubscribe(); // Ryd op, når komponenten unmountes
+  }, [user]);
 
   /**
    * Funktion til at uploade en fil til Firebase Storage
@@ -196,9 +213,13 @@ const NewProject: React.FC = () => {
 
   return (
     <View style={styles.createStoryContainer}>
-      {/* Statisk Project Image */}
+      {/* Dynamisk Project Image */}
       <Image
-        source={require("@/assets/default/projectimage/projectImage.jpg")}
+        source={
+          profileImage
+            ? { uri: profileImage }
+            : require("@/assets/default/projectimage/projectImage.jpg")
+        }
         style={styles.profileImg}
         contentFit="cover"
       />
