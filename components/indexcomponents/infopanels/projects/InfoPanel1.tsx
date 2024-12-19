@@ -86,7 +86,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
-  const [lastDoubleClickTime, setLastDoubleClickTime] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
     // Tjek for manglende data
@@ -174,37 +173,6 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  // Generisk håndtering af DoubleClick (åbner HighRes-billeder)
-  const handlePressWithDoubleClick = async (
-    type: "f8HighRes" | "f5HighRes" | "f3HighRes" | "f2HighRes"
-  ) => {
-    if (isEditEnabled) {
-      Alert.alert("Edit-tilstand", "HighRes-visning er deaktiveret i Edit-tilstand.");
-      return;
-    }
-  
-    const doubleClickDelay = 300; // Tidsramme for dobbeltklik
-    const currentTime = Date.now();
-  
-    if (lastDoubleClickTime && currentTime - lastDoubleClickTime < doubleClickDelay) {
-      // Dobbeltklik detekteret
-      setLastDoubleClickTime(null); // Nulstil dobbeltklik-tid
-      try {
-        const category = type.replace("HighRes", "") as "f8" | "f5" | "f3" | "f2";
-        const highResPath = FilePaths.coverImage(userId, projectData.id, category, "HighRes");
-        const highResRef = ref(storage, highResPath);
-        const highResURL = await getDownloadURL(highResRef);
-        await Linking.openURL(highResURL);
-      } catch (error) {
-        console.error(`Fejl ved hentning af HighRes-billede for ${type}:`, error);
-        Alert.alert("Fejl", `Kunne ikke hente HighRes-billede for ${type}.`);
-      }
-    } else {
-      // Enkeltklik registreret
-      setLastDoubleClickTime(currentTime);
-    }
-  };
-
   const handleDelete = () => {
     // Always show Delete button since config.showDelete is removed
     Alert.alert(
@@ -239,8 +207,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   };
 
   // Generisk handlePress funktion med conditional
-  const handlePress = (button: string) => {
+  const handlePress = async (button: string) => {
     if (isEditEnabled) {
+      // Åbn modal, hvis Edit er aktiveret
       switch (button) {
         case "F8":
           setIsF8ModalVisible(true);
@@ -254,20 +223,21 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         case "F2":
           setIsF2ModalVisible(true);
           break;
-        case "Name & Comment":
-          setIsNameCommentModalVisible(true);
-          break;
-        case "Prize":
-          setIsPrizeModalVisible(true);
-          break;
-        case "Project Image":
-          setIsProjectImageModalVisible(true);
-          break;
         default:
           Alert.alert("Knappen blev trykket", `Du trykkede på: ${button}`);
       }
     } else {
-      Alert.alert("Edit-tilstand", "Edit er ikke aktiveret.");
+      // Vis HighRes-billede, hvis Edit er deaktiveret
+      try {
+        const category = button.replace("F", "f") as "f8" | "f5" | "f3" | "f2";
+        const highResPath = FilePaths.coverImage(userId, projectData.id, category, "HighRes");
+        const highResRef = ref(storage, highResPath);
+        const highResURL = await getDownloadURL(highResRef);
+        await Linking.openURL(highResURL); // Åbner billedet i iOS-vieweren
+      } catch (error) {
+        console.error(`Fejl ved hentning af HighRes-billede for ${button}:`, error);
+        Alert.alert("Fejl", `Kunne ikke hente HighRes-billede for ${button}.`);
+      }
     }
   };
 
@@ -437,11 +407,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Åbner modal hvis Edit er aktiveret
-          onLongPress={() => handleLongPress("f8PDF")}
-          onPressIn={() => handlePressWithDoubleClick("f8HighRes")}
-          accessible={false} // Dette deaktiverer tilgængelighed
-          // accessibilityLabel="F8 Button"
+          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
+          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
+          accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (

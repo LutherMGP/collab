@@ -15,6 +15,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "@/firebaseConfig";
 import { categoryImageConfig, Category } from "@/constants/ImageConfig";
+import { FilePaths } from "@/utils/filePaths";
 
 type SelectedImageUris = {
   lowRes: string;
@@ -107,21 +108,50 @@ const CoverImageUploader: React.FC<CoverImageUploaderProps> = ({
       const { lowRes, highRes } = selectedImageUris;
 
       const uploadWithProgress = async (uri: string, path: string, progressBase: number) => {
-        const blob = await (await fetch(uri)).blob();
-        const fileRef = ref(storage, path);
-        const uploadTask = uploadBytesResumable(fileRef, blob);
-
-        uploadTask.on("state_changed", (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 50 + progressBase;
-          setUploadProgress(progress);
-        });
-
-        await uploadTask;
-        return getDownloadURL(fileRef);
+        try {
+          console.log(`Starter upload for: ${path}`); // Debug log for upload start
+      
+          const response = await fetch(uri);
+          console.log(`Fetch for: ${uri} fuldført. Status: ${response.status}`); // Debug log for fetch
+      
+          const blob = await response.blob();
+          console.log(`Blob genereret for: ${path}, Blob størrelse: ${blob.size}`); // Debug log for blob
+      
+          const fileRef = ref(storage, path);
+          console.log(`Firebase storage ref oprettet for: ${path}`); // Debug log for Firebase reference
+      
+          const uploadTask = uploadBytesResumable(fileRef, blob);
+          console.log(`UploadTask startet for: ${path}`); // Debug log for upload task
+      
+          uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+              const progress =
+                (snapshot.bytesTransferred / snapshot.totalBytes) * 50 + progressBase;
+              console.log(
+                `Upload progress for: ${path}, Overført: ${snapshot.bytesTransferred}, Total: ${snapshot.totalBytes}, Progress: ${progress}%`
+              ); // Debug log for upload progress
+              setUploadProgress(progress);
+            },
+            (error) => {
+              console.error(`Fejl under upload for: ${path}`, error); // Log upload fejl
+            }
+          );
+      
+          await uploadTask;
+          console.log(`Upload færdig for: ${path}`); // Debug log for upload færdig
+      
+          const downloadURL = await getDownloadURL(fileRef);
+          console.log(`Download URL hentet for: ${path}, URL: ${downloadURL}`); // Debug log for download URL
+          return downloadURL;
+        } catch (error) {
+          console.error(`Fejl under uploadWithProgress for: ${path}`, error); // Log generel fejl
+          throw error; // Sørg for, at fejlen kan håndteres af den kaldende funktion
+        }
       };
 
-      const lowResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
-      const highResPath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
+      const lowResPath = FilePaths.coverImage(userId, projectId, category, "LowRes");
+      const highResPath = FilePaths.coverImage(userId, projectId, category, "HighRes");
 
       const lowResURL = await uploadWithProgress(lowRes, lowResPath, 0);
       const highResURL = await uploadWithProgress(highRes, highResPath, 50);

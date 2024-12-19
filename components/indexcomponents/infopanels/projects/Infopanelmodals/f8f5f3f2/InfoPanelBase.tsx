@@ -72,20 +72,33 @@ const InfoPanelBase: React.FC<InfoPanelBaseProps> = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.8,
+        quality: 0.8, // Reduceret kvalitet for LowRes
       });
-
+  
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImageUri = result.assets[0].uri;
         const imageBlob = await (await fetch(selectedImageUri)).blob();
-
-        const imagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
-        const imageRef = ref(storage, imagePath);
-
-        await uploadBytesResumable(imageRef, imageBlob);
-        const downloadURL = await getDownloadURL(imageRef);
-
+  
+        // Stier til LowRes og HighRes
+        const lowResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageLowRes.jpg`;
+        const highResImagePath = `users/${userId}/projects/${projectId}/data/${category}/${category}CoverImageHighRes.jpg`;
+  
+        // Reference til LowRes og HighRes
+        const lowResImageRef = ref(storage, lowResImagePath);
+        const highResImageRef = ref(storage, highResImagePath);
+  
+        // Upload LowRes
+        await uploadBytesResumable(lowResImageRef, imageBlob);
+        console.log("LowRes billede uploadet:", lowResImagePath);
+  
+        // Upload HighRes
+        await uploadBytesResumable(highResImageRef, imageBlob);
+        console.log("HighRes billede uploadet:", highResImagePath);
+  
+        // Opdater LowRes download-URL til visning
+        const downloadURL = await getDownloadURL(lowResImageRef);
         setImageURL(downloadURL);
+  
         handleUploadSuccess();
       }
     } catch (error) {

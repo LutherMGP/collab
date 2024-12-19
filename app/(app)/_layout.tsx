@@ -11,10 +11,6 @@ export default function AppEntry() {
         options={{ headerShown: false, presentation: "modal" }}
       />
       <Stack.Screen
-        name="modal_assetmanager"
-        options={{ headerShown: false, presentation: "modal" }}
-      />
-      <Stack.Screen
         name="modal_admin"
         options={{ headerShown: false, presentation: "modal" }}
       />
