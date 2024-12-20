@@ -11,7 +11,6 @@ import {
   onSnapshot,
   where,
   getDocs,
-  clearIndexedDbPersistence,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
@@ -20,22 +19,9 @@ const Catalog = () => {
   const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } = useVisibility();
   const [totalCount, setTotalCount] = useState(0); // Total antal projekter
 
-  // Funktion til at rydde Firestore-cache
-  const clearCache = async () => {
-    try {
-      await clearIndexedDbPersistence(database);
-      console.log("Cache ryddet");
-    } catch (e) {
-      console.error("Kunne ikke rydde cache", e);
-    }
-  };
-
   // Logik: Tæller antallet af projekter fra andre brugere, der IKKE er markeret som favoritter 
   // af den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
-
-    clearCache(); // Ryder cache, før data hentes
-
     if (!user) return;
   
     const fetchNonFavoriteProjectsCount = () => {
