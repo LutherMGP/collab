@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 12.6.2",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "DEVELOPER_MODE": "true",
+        "NODE_ENV": "development",
+        "DEVELOPER_EMAILS": "luthermp@me.com,luthermp@icloud.com"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "DEVELOPER_MODE": "true",
+        "NODE_ENV": "production",
+        "DEVELOPER_EMAILS": "luthermp@me.com,luthermp@icloud.com"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "DEVELOPER_MODE": "true",
+        "DEVELOPER_EMAILS": "luthermp@me.com,luthermp@icloud.com",
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

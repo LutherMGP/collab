@@ -10,7 +10,6 @@ import Projects from "@/components/indexcomponents/dashboard/Projects";
 import Published from "@/components/indexcomponents/dashboard/Published";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Favorites from "@/components/indexcomponents/dashboard/Favorites";
-import Provider from "@/components/indexcomponents/dashboard/Provider";
 
 const Dashboard = () => {
   const theme = useColorScheme() || "light";

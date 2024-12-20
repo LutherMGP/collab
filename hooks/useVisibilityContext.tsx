@@ -41,9 +41,19 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   const [isInfoPanelPublishedVisible, setIsInfoPanelPublishedVisible] =
     useState(false);
   const [isInfoPanelCatalogVisible, setIsInfoPanelCatalogVisible] =
-  useState(false);
+    useState(false);
   const [isInfoPanelFavoritesVisible, setIsInfoPanelFavoritesVisible] =
-  useState(false);  
+    useState(false);
+
+  // Logfunktion
+  const logVisibilityChange = (panel: string | null) => {
+    if (panel) {
+      console.log(`Visibility changed: ${panel} is now visible.`);
+    } else {
+      console.log("All panels are now hidden.");
+    }
+  };
+
   const showPanel = (
     panel:
       | "projects"
@@ -55,6 +65,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelPublishedVisible(panel === "published");
     setIsInfoPanelCatalogVisible(panel === "catalog");
     setIsInfoPanelFavoritesVisible(panel === "favorites");
+    logVisibilityChange(panel); // Log hvilken panel der blev aktiveret
   };
 
   const hideAllPanels = () => {
@@ -62,6 +73,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelPublishedVisible(false);
     setIsInfoPanelCatalogVisible(false);
     setIsInfoPanelFavoritesVisible(false);
+    logVisibilityChange(null); // Log at alle panels er skjult
   };
 
   return (
