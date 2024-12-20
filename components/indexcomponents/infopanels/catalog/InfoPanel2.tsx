@@ -19,6 +19,7 @@ import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
+import { useRouter } from "expo-router";
 
 type ProjectData = {
   id: string;
@@ -53,6 +54,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditEnabled, setIsEditEnabled] = useState(false);
+  const router = useRouter();
 
   // Synkroniser med Firestore for at hente favoritstatus
   useEffect(() => {
@@ -114,50 +116,111 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     setProjectData(initialProjectData);
   }, [initialProjectData]);
 
-  // Funktion til at skifte status fra og til published
+  // Funktion til at skifte status fra og til application (Rolle: Bruger sendes til cart.tsx forinden)
   const handleStatusToggle = async () => {
     try {
       if (!userId || !projectData.id) {
         throw new Error("Bruger-ID eller projekt-ID mangler.");
       }
-
-      const isCurrentlyPublished = projectData.status === "Published";
-      const newStatus = isCurrentlyPublished ? "Project" : "Published";
-
-      // Bekræftelse før statusændring
-      Alert.alert(
-        isCurrentlyPublished ? "Fjern Publicering" : "Bekræft Publicering",
-        isCurrentlyPublished
-          ? "Vil du ændre status til 'Project'? Dette vil gøre projektet privat igen."
-          : "Vil du ændre status til 'Published'? Projektet bliver synligt for andre.",
-        [
-          {
-            text: "Annuller",
-            style: "cancel",
-          },
-          {
-            text: isCurrentlyPublished ? "Gør Privat" : "Publicer",
-            style: "default",
-            onPress: async () => {
-              try {
-                const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-                await setDoc(projectDocRef, { status: newStatus }, { merge: true });
-
-                Alert.alert(
-                  "Status Opdateret",
-                  newStatus === "Published"
-                    ? "Projektet er nu publiceret."
-                    : "Projektet er nu tilbage som kladde."
-                );
-
-                setProjectData((prev) => ({ ...prev, status: newStatus })); // Opdater lokalt
-              } catch (error) {
-                console.error("Fejl ved opdatering af status:", error);
-                Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
-              }
+  
+      // Hent brugerens rolle
+      const userDocRef = doc(database, "users", userId);
+      const userSnap = await getDoc(userDocRef);
+      const userRole = userSnap.exists() ? userSnap.data().role : null;
+  
+      if (!userRole) {
+        Alert.alert(
+          "Ugyldig rolle",
+          "Din rolle er ikke angivet. Kontakt administratoren for hjælp."
+        );
+        return;
+      }
+  
+      // Rolle: Bruger
+      if (userRole === "Bruger") {
+        Alert.alert(
+          "Opgrader til Designer",
+          "For at deltage i denne fase skal du opgradere din konto til Designer. Vil du fortsætte?",
+          [
+            { text: "Annuller", style: "cancel" },
+            {
+              text: "Fortsæt",
+              style: "default",
+              onPress: () => {
+                router.push("/(app)/(tabs)/cart"); // Naviger til CartScreen
+              },
             },
-          },
-        ]
+          ]
+        );
+        return;
+      }
+  
+      // Rolle: Designer eller Admin
+      if (userRole === "Designer" || userRole === "Admin") {
+        const isCurrentlyApplication = projectData.status === "Application";
+        const newStatus = isCurrentlyApplication ? "Project" : "Application";
+  
+        Alert.alert(
+          isCurrentlyApplication
+            ? "Fjern fra Application-fase"
+            : "Bekræft Application-fase",
+          isCurrentlyApplication
+            ? "Vil du ændre status til 'Project'? Dette vil gøre projektet privat igen."
+            : "Vil du ændre status til 'Application'? Projektet vil være tilgængeligt for ansøgninger.",
+          [
+            { text: "Annuller", style: "cancel" },
+            {
+              text: isCurrentlyApplication ? "Gør Privat" : "Gå til Application",
+              style: "default",
+              onPress: async () => {
+                try {
+                  // Kontrollér, at nødvendige data er gyldige
+                  if (!projectData.userId || !projectData.id) {
+                    throw new Error("Bruger-ID eller projekt-ID mangler.");
+                  }
+              
+                  // Opret reference til Firestore dokumentet
+                  const projectDocRef = doc(
+                    database,
+                    "users",
+                    projectData.userId,
+                    "projects",
+                    projectData.id
+                  );
+              
+                  // Opdater status i Firestore
+                  await setDoc(
+                    projectDocRef,
+                    { status: newStatus },
+                    { merge: true }
+                  );
+              
+                  Alert.alert(
+                    "Status Opdateret",
+                    newStatus === "Application"
+                      ? "Projektet er nu i Application-fasen."
+                      : "Projektet er nu tilbage som kladde."
+                  );
+              
+                  // Opdater lokalt state
+                  setProjectData((prev) => ({ ...prev, status: newStatus }));
+                } catch (error) {
+                  console.error("Fejl ved opdatering af status:", error);
+                  Alert.alert(
+                    "Fejl",
+                    "Kunne ikke opdatere status. Prøv igen senere."
+                  );
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+  
+      Alert.alert(
+        "Ugyldig handling",
+        "Denne handling er ikke tilladt for din rolle."
       );
     } catch (error) {
       console.error("Fejl ved skift af status:", error);
