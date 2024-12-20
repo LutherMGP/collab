@@ -27,7 +27,6 @@ import InfoPanelF2 from "@/components/indexcomponents/infopanels/catalog/Infopan
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/namecomment/InfoPanelNameComment";
 import InfoPanelPrize from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/prize/InfoPanelPrize";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelCircular from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
@@ -81,7 +80,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isNameCommentModalVisible, setIsNameCommentModalVisible] = useState(false);
   const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] = useState(false);
-  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -243,16 +241,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     refreshProjectData(); // Opdater data, inkl. billed-URL
   };
 
-  const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
-    setActiveCategory(category);
-    setIsCommentModalVisible(true);
-  };
-
-  const handleCloseCommentModal = () => {
-    setActiveCategory(null);
-    setIsCommentModalVisible(false);
-  };
-
   // Funktion til at skifte status fra og til published
   const handleStatusToggle = async () => {
     try {
@@ -404,14 +392,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             />
           </Pressable>
           )}
-
-          {/* Comment-knap f8 */}
-          <Pressable
-            style={baseStyles.commentButtonf8}
-            onPress={() => handleOpenCommentModal("f8")}
-          >
-            <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
         </Pressable>
       </View>
 
@@ -440,14 +420,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 <View style={baseStyles.textTag}>
                   <Text style={baseStyles.text}>Agreement</Text>
                 </View>
-              </Pressable>
-
-              {/* Comment-knap f2 */}
-              <Pressable
-                style={baseStyles.commentButtonf2}
-                onPress={() => handleOpenCommentModal("f2")}
-              >
-                <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
@@ -500,14 +472,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <View style={baseStyles.textTag}>
                 <Text style={baseStyles.text}>Sustainability</Text>
               </View>
-
-              {/* Comment-knap F3 */}
-              <Pressable
-                style={baseStyles.commentButtonf3}
-                onPress={() => handleOpenCommentModal("f3")}
-              >
-                <AntDesign name="message1" size={20} color="#0a7ea4" />
-              </Pressable>
             </Pressable>
 
             {/* Ny knap for cirkulær økonomi */}
@@ -541,14 +505,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <View style={baseStyles.textTag}>
               <Text style={baseStyles.text}>Terms & Condition</Text>
             </View>
-
-            {/* Comment-knap f5 */}
-            <Pressable
-              style={baseStyles.commentButtonf5}
-              onPress={() => handleOpenCommentModal("f5")}
-            >
-              <AntDesign name="message1" size={20} color="#0a7ea4" />
-            </Pressable>
           </Pressable>
 
           {/* Ny Prize-knap */}
@@ -710,37 +666,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
         </View>
       </Modal>
-
-      {/* Modal-komponenten for comments */}
-      {activeCategory && (
-        <Modal
-          visible={isCommentModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={handleCloseCommentModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <InfoPanelCommentModal
-                projectId={projectData.id}
-                userId={userId || ""}
-                category={activeCategory} // Dette er nu sikkert
-                categoryName={
-                  activeCategory === "f8"
-                    ? "Specification"
-                    : activeCategory === "f5"
-                    ? "Terms & Conditions"
-                    : activeCategory === "f3"
-                    ? "Sustainability Report"
-                    : "Partnership Agreement"
-                }
-                onClose={handleCloseCommentModal}
-                isEditable={isEditEnabled}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
 
       {/* Circular Economy Modal */}
       <Modal
