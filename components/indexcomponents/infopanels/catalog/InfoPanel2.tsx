@@ -222,9 +222,9 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   accessibilityLabel="Edit Button"
                 >
                   <AntDesign
-                    name="edit" // Ikon ændret til "edit"
+                    name={isEditEnabled ? "heart" : "hearto"}
                     size={24}
-                    color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
+                    color={isEditEnabled ? "#0a7ea4" : "#0a7ea4"}
                   />
                 </Pressable>
               </View>
