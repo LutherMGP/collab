@@ -178,7 +178,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                   if (!projectData.userId || !projectData.id) {
                     throw new Error("Bruger-ID eller projekt-ID mangler.");
                   }
-              
+  
                   // Opret reference til Firestore dokumentet
                   const projectDocRef = doc(
                     database,
@@ -187,21 +187,43 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     "projects",
                     projectData.id
                   );
-              
+  
                   // Opdater status i Firestore
                   await setDoc(
                     projectDocRef,
                     { status: newStatus },
                     { merge: true }
                   );
-              
+  
                   Alert.alert(
                     "Status Opdateret",
                     newStatus === "Application"
                       ? "Projektet er nu i Application-fasen."
                       : "Projektet er nu tilbage som kladde."
                   );
-              
+  
+                  // Hvis projektet ændres til "Application", gem ansøgningsdata
+                  if (newStatus === "Application") {
+                    const applicationDocRef = doc(
+                      database,
+                      "applications",
+                      `${projectData.id}_${userId}`
+                    );
+  
+                    await setDoc(applicationDocRef, {
+                      projectId: projectData.id,
+                      applicantId: userId,
+                      ownerId: projectData.userId,
+                      status: "Application",
+                      createdAt: new Date().toISOString(),
+                    });
+  
+                    Alert.alert(
+                      "Ansøgning Registreret",
+                      "Projektet er nu tilgængeligt for ansøgninger."
+                    );
+                  }
+  
                   // Opdater lokalt state
                   setProjectData((prev) => ({ ...prev, status: newStatus }));
                 } catch (error) {
