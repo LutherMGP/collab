@@ -442,7 +442,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
         <Pressable
-          style={baseStyles.F8}
+          style={[baseStyles.F8, { zIndex: 1 }]} // Sikrer F8 har lavere zIndex
           onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
           onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
           accessibilityLabel="F8 Button"
@@ -502,31 +502,33 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               </Text>
             </View>
           )}
+        </Pressable>
 
-          {/* Delete-knap */}
-          <Pressable
-            style={baseStyles.deleteIconContainer}
-            onPress={handleDelete}
-            accessibilityLabel="Delete Button"
-          >
-            <AntDesign name="delete" size={20} color="#0a7ea4" />
-          </Pressable>
+        {/* Attachment-knap flyttet uden for F8 Pressable */}
+        <Pressable
+          style={[baseStyles.attachmentButton, styles.buttonOverlay]}
+          onPress={openAttachmentModal}
+          accessibilityLabel="Attachment Button"
+        >
+          <Entypo name="attachment" size={20} color="#0a7ea4" />
+        </Pressable>
 
-          {/* Comment-knap f8 */}
-          <Pressable
-            style={baseStyles.commentButtonf8}
-            onPress={() => handleOpenCommentModal("f8")}
-          >
-            <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
+        {/* Delete-knap */}
+        <Pressable
+          style={[baseStyles.deleteIconContainer, styles.buttonOverlay]}
+          onPress={handleDelete}
+          accessibilityLabel="Delete Button"
+        >
+          <AntDesign name="delete" size={20} color="#0a7ea4" />
+        </Pressable>
 
-          {/* Attachment-knap */}
-          <Pressable
-            style={baseStyles.attachmentButton}
-            onPress={openAttachmentModal}
-          >
-            <Entypo name="attachment" size={20} color="#0a7ea4" />
-          </Pressable>
+        {/* Comment-knap f8 */}
+        <Pressable
+          style={[baseStyles.commentButtonf8, styles.buttonOverlay]}
+          onPress={() => handleOpenCommentModal("f8")}
+          accessibilityLabel="Comment Button F8"
+        >
+          <AntDesign name="message1" size={20} color="#0a7ea4" />
         </Pressable>
       </View>
 
@@ -536,7 +538,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={baseStyles.topSide}>
             <View style={baseStyles.f2leftTop}>
               <Pressable
-                style={baseStyles.F2}
+                style={[baseStyles.F2, { zIndex: 1 }]} // Sikrer F2 har lavere zIndex
                 onPress={() => handlePress("F2")}
                 onLongPress={() => handleLongPress("f2PDF")}
                 accessibilityLabel="F2 Button"
@@ -559,8 +561,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
               {/* Comment-knap f2 */}
               <Pressable
-                style={baseStyles.commentButtonf2}
+                style={[baseStyles.commentButtonf2, styles.buttonOverlay]}
                 onPress={() => handleOpenCommentModal("f2")}
+                accessibilityLabel="Comment Button F2"
               >
                 <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
@@ -568,7 +571,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <View style={baseStyles.rightTop}>
               <View style={baseStyles.f1topHalf}>
                 <Pressable
-                  style={baseStyles.F1A}
+                  style={[baseStyles.F1A, styles.buttonOverlay]}
                   onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
                   accessibilityLabel="Edit Button"
                 >
@@ -581,7 +584,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
-                  style={baseStyles.F1B}
+                  style={[baseStyles.F1B, styles.buttonOverlay]}
                   onPress={handleStatusToggle} // Kalder funktionen for at skifte status
                   accessibilityLabel="Status Toggle Button"
                 >
@@ -596,7 +599,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
           <View style={baseStyles.f3bottomSide}>
             <Pressable
-              style={baseStyles.F3}
+              style={[baseStyles.F3, { zIndex: 1 }]} // Sikrer F3 har lavere zIndex
               onPress={() => handlePress("F3")}
               onLongPress={() => handleLongPress("f3PDF")}
               accessibilityLabel="F3 Button"
@@ -618,8 +621,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
               {/* Comment-knap F3 */}
               <Pressable
-                style={baseStyles.commentButtonf3}
+                style={[baseStyles.commentButtonf3, styles.buttonOverlay]}
                 onPress={() => handleOpenCommentModal("f3")}
+                accessibilityLabel="Comment Button F3"
               >
                 <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
@@ -627,7 +631,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
             {/* Ny knap for cirkulær økonomi */}
             <Pressable
-              style={baseStyles.circularEconomyButton}
+              style={[baseStyles.circularEconomyButton, styles.buttonOverlay]}
               onPress={() => setIsCircularModalVisible(true)} // Åbn modal
               accessibilityLabel="Circular Economy Button"
             >
@@ -637,7 +641,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         </View>
         <View style={baseStyles.f5Side}>
           <Pressable
-            style={[baseStyles.F5, { right: rightMargin }]}
+            style={[baseStyles.F5, { right: rightMargin, zIndex: 1 }]} // Sikrer F5 har lavere zIndex
             onPress={() => handlePress("F5")}
             onLongPress={() => handleLongPress("f5PDF")}
             accessibilityLabel="F5 Button"
@@ -659,8 +663,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
             {/* Comment-knap f5 */}
             <Pressable
-              style={baseStyles.commentButtonf5}
+              style={[baseStyles.commentButtonf5, styles.buttonOverlay]}
               onPress={() => handleOpenCommentModal("f5")}
+              accessibilityLabel="Comment Button F5"
             >
               <AntDesign name="message1" size={20} color="#0a7ea4" />
             </Pressable>
@@ -668,7 +673,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
           {/* Ny Prize-knap */}
           <Pressable
-            style={baseStyles.prizeTagF5}
+            style={[baseStyles.prizeTagF5, styles.buttonOverlay]}
             onPress={handlePrizePress} // Brug den nye funktion
             accessibilityLabel="Prize Button"
           >
@@ -923,6 +928,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
+  },
+  buttonOverlay: {
+    zIndex: 10,
+    elevation: 10,
   },
 });
 
