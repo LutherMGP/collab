@@ -25,7 +25,6 @@ import InfoPanelF5 from "@/components/indexcomponents/infopanels/catalog/Infopan
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF3";
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF2";
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/namecomment/InfoPanelNameComment";
-import InfoPanelPrize from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/prize/InfoPanelPrize";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/projectimage/InfoPanelProjectImage";
 import InfoPanelCircular from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
@@ -78,7 +77,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isF3ModalVisible, setIsF3ModalVisible] = useState(false);
   const [isF2ModalVisible, setIsF2ModalVisible] = useState(false);
   const [isNameCommentModalVisible, setIsNameCommentModalVisible] = useState(false);
-  const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
@@ -230,11 +228,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     refreshProjectData();
   };
 
-  const closePrizeModal = () => {
-    setIsPrizeModalVisible(false);
-    refreshProjectData();
-  };
-
   const closeProjectImageModal = () => {
     setIsProjectImageModalVisible(false);
     setRefreshKey((prevKey) => prevKey + 1); // Tving opdatering
@@ -289,15 +282,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     } catch (error) {
       console.error("Fejl ved skift af status:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
-    }
-  };
-
-  // Funktion til at håndtere "Prize"-feltet
-  const handlePrizePress = () => {
-    if (isEditEnabled) {
-      setIsPrizeModalVisible(true); // Åbn modal i redigeringstilstand
-    } else {
-      fetchTransferMethod(); // Hent data on-demand
     }
   };
 
@@ -506,15 +490,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <Text style={baseStyles.text}>Terms & Condition</Text>
             </View>
           </Pressable>
-
-          {/* Ny Prize-knap */}
-          <Pressable
-            style={baseStyles.prizeTagF5}
-            onPress={handlePrizePress} // Brug den nye funktion
-            accessibilityLabel="Prize Button"
-          >
-            <AntDesign name="swap" size={20} color="#0a7ea4" />
-          </Pressable>
         </View>
       </View>
 
@@ -611,27 +586,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               comment={projectData.description || "Ingen kommentar"}
               projectId={projectData.id} // Tilføj projectId hvis nødvendigt
               userId={userId || ""} // Tilføj userId hvis nødvendigt
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Prize Modal */}
-      <Modal
-        visible={isPrizeModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closePrizeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelPrize
-              onClose={closePrizeModal}
-              currentDescription={projectData.transferMethod || "Ingen beskrivelse tilgængelig"} // Standardbeskrivelse
-              projectId={projectData.id}
-              userId={userId || ""}
-              onSave={updateTransferMethod} // Gem ny beskrivelse
-              isEditable={isEditEnabled} // Brug toggleEdit til at styre redigering
             />
           </View>
         </View>
