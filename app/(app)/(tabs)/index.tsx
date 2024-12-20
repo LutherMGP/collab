@@ -17,11 +17,10 @@ import WelcomeMessage from "@/components/indexcomponents/welcome/WelcomeMessage"
 import InfoPanelProjects from "@/components/indexcomponents/infopanels/projects/InfoPanelProjects";
 import InfoPanelPublished from "@/components/indexcomponents/infopanels/published/InfoPanelPublished";
 import InfoPanelCatalog from "components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
+import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/InfoPanelFavorites";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
-  getDoc,
   doc,
-  collectionGroup,
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -37,13 +36,15 @@ const Index = () => {
     isInfoPanelProjectsVisible,
     isInfoPanelPublishedVisible,
     isInfoPanelCatalogVisible,
+    isInfoPanelFavoritesVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
   const shouldShowWelcomeMessage = !(
     isInfoPanelProjectsVisible ||
     isInfoPanelPublishedVisible ||
-    isInfoPanelCatalogVisible
+    isInfoPanelCatalogVisible ||
+    isInfoPanelFavoritesVisible 
   );
 
   useEffect(() => {
@@ -117,8 +118,15 @@ const Index = () => {
 
       {/* Render InfoPanelCatalog kun hvis synlig */}
       {isInfoPanelCatalogVisible && (
-        <View style={styles.infoPanelProductsContainer}>
+        <View style={styles.infoPanelCatalogContainer}>
           <InfoPanelCatalog />
+        </View>
+      )}
+
+      {/* Render InfoPanelFavorites kun hvis synlig */}
+      {isInfoPanelFavoritesVisible && (
+        <View style={styles.infoPanelFavoritesContainer}>
+          <InfoPanelFavorites />
         </View>
       )}
     </Animated.ScrollView>
@@ -157,7 +165,13 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelProductsContainer: {
+  infoPanelCatalogContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelFavoritesContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,

@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/InfoPanelCatalog.tsx
+// @/components/indexcomponents/infopanels/projects/InfoPanelFavorites.tsx
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
@@ -10,29 +10,29 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { ProjectData } from "@/types/ProjectData";
 
-const InfoPanelCatalog = () => {
+const InfoPanelFavorites = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  // Logik: Tæller antallet af projekter fra andre brugere, der IKKE er markeret som favoritter 
-  // af den aktuelle bruger. Kun projekter med status "Project" inkluderes.
+  // Logik: Tæller antallet af projekter fra andre brugere, der matcher projekter i favoritlisten 
+  // for den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
 
-    const fetchNonFavoriteProjects = async () => {
+    const fetchFavoriteProjects = async () => {
       setIsLoading(true);
       try {
-        // Hent brugerens favoritter
+        // Hent brugerens favoritprojekter
         const favoritesCollection = collection(database, "users", user, "favorites");
         const favoritesSnapshot = await getDocs(favoritesCollection);
 
         // Skab en liste over favoritprojekt-ID'er
         const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
 
-        // Hent projekter fra andre brugere, ekskluder favoritter
+        // Hent projekter fra andre brugere, der matcher favorit-ID'er
         const usersCollection = collection(database, "users");
         const fetchedProjects: ProjectData[] = [];
 
@@ -48,7 +48,7 @@ const InfoPanelCatalog = () => {
 
           const projectsSnapshot = await getDocs(projectsQuery);
           projectsSnapshot.forEach((projectDoc) => {
-            if (!favoriteProjectIds.includes(projectDoc.id)) {
+            if (favoriteProjectIds.includes(projectDoc.id)) {
               const data = projectDoc.data();
               const assets = data.assets || {};
 
@@ -73,14 +73,14 @@ const InfoPanelCatalog = () => {
         setProjects(fetchedProjects);
         setError(null);
       } catch (err) {
-        console.error("Fejl ved hentning af ikke-favoritprojekter:", err);
+        console.error("Fejl ved hentning af favoritprojekter:", err);
         setError("Kunne ikke hente projekter. Prøv igen senere.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchNonFavoriteProjects();
+    fetchFavoriteProjects();
   }, [user]);
 
   if (isLoading) {
@@ -119,4 +119,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InfoPanelCatalog;
+export default InfoPanelFavorites;
