@@ -22,14 +22,13 @@ export type InfoPanelCircularProps = {
 // Definer typen for projektdata
 export interface ProjectData {
   id: string; // Projektets ID
-  userId: string; // Brugerens ID
+  userId: string | null; // Brugerens ID (nu tillader null)
   name: string; // Projektets navn
   description: string; // Projektets beskrivelse
   status: "Project" | "Published"; // Begrænsede værdier for status
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
 
-  // Felter for hver kategori tillader string, null eller undefined
   projectImage?: string | null;
   f8CoverImageLowRes?: string | null;
   f8PDF?: string | null;
@@ -40,6 +39,5 @@ export interface ProjectData {
   f2CoverImageLowRes?: string | null;
   f2PDF?: string | null;
 
-  // Felt til cirkulær økonomi data
   circularEconomy?: CircularEconomyData; // Valgfrit felt
 }

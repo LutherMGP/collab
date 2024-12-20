@@ -2,52 +2,32 @@
 
 import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { fetchProjects } from "firebase/DataFetcher";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  CollectionReference,
-  DocumentData,
-} from "firebase/firestore";
-import { database } from "@/firebaseConfig";
 
 const Projects = () => {
   const { user } = useAuth();
   const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
     useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Samlet antal projekter
-  const [publishedCount, setPublishedCount] = useState(0); // Antal publicerede projekter
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
-    const projectCollection = collection(
-      database,
-      "users",
+    const unsubscribe = fetchProjects(
       user,
-      "projects"
-    ) as CollectionReference<DocumentData>;
+      [],
+      (projects) => {
+        setTotalCount(projects.length);
+      },
+      (err) => {
+        console.error("Fejl ved hentning af projekter:", err);
+      }
+    );
 
-    // Forespørgsel for ALLE projekter
-    const allProjectsQuery = query(projectCollection);
-    const unsubscribeAll = onSnapshot(allProjectsQuery, (querySnapshot) => {
-      setTotalCount(querySnapshot.size);
-    });
-
-    // Forespørgsel for projekter med status "Published"
-    const publishedQuery = query(projectCollection, where("status", "==", "Published"));
-    const unsubscribePublished = onSnapshot(publishedQuery, (querySnapshot) => {
-      setPublishedCount(querySnapshot.size);
-    });
-
-    return () => {
-      unsubscribeAll();
-      unsubscribePublished();
-    };
+    return () => unsubscribe();
   }, [user]);
 
   const handlePress = () => {
@@ -58,8 +38,6 @@ const Projects = () => {
     }
   };
 
-  const unPublishedCount = totalCount - publishedCount; // Fratræk Published projekter
-
   return (
     <View style={styles.container}>
       <Image
@@ -67,8 +45,6 @@ const Projects = () => {
         style={styles.profileImg}
         resizeMode="cover"
       />
-
-      {/* Tæller-knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
@@ -76,9 +52,8 @@ const Projects = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{unPublishedCount || 0}</Text>
+        <Text style={styles.countText}>{totalCount || 0}</Text>
       </TouchableOpacity>
-
       <View style={styles.textContainer}>
         <Text style={styles.text}>Projects</Text>
       </View>

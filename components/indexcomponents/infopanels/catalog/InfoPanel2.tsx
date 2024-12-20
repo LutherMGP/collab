@@ -179,7 +179,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     throw new Error("Bruger-ID eller projekt-ID mangler.");
                   }
   
-                  // Opret reference til Firestore dokumentet
+                  // Opret reference til Firestore dokumentet for projektet
                   const projectDocRef = doc(
                     database,
                     "users",
@@ -206,8 +206,12 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                   if (newStatus === "Application") {
                     const applicationDocRef = doc(
                       database,
+                      "users",
+                      projectData.userId,
+                      "projects",
+                      projectData.id,
                       "applications",
-                      `${projectData.id}_${userId}`
+                      userId
                     );
   
                     await setDoc(applicationDocRef, {

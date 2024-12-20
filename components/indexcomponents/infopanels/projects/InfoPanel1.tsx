@@ -88,18 +88,20 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-    // Tjek for manglende data
-    if (!projectData || !projectData.id || !userId) {
-      return (
-        <View style={baseStyles.container}>
-          <Text>Data mangler. Tjek dine props.</Text>
-        </View>
-      );
-    }
+  // Tjek for manglende data
+  if (!projectData || !projectData.id || !userId) {
+    return (
+      <View style={baseStyles.container}>
+        <Text>Data mangler. Tjek dine props.</Text>
+      </View>
+    );
+  }
 
   // Synchroniser local state med props
   useEffect(() => {
     setProjectData(initialProjectData);
+    // Fetch project image whenever initialProjectData changes
+    fetchProjectImage(initialProjectData);
   }, [initialProjectData]);
 
   // Funktion til at togglere Edit-tilstand
@@ -107,9 +109,35 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
   };
 
-  // Funktion til at opdatere projektdata efter ændringer
+  // Funktion til at hente projectImage fra Firebase Storage
+  const fetchProjectImage = async (project: ProjectData) => {
+    if (!userId || !project.id) {
+      console.error("Bruger-ID eller projekt-ID mangler til at hente projektbillede.");
+      return;
+    }
+
+    const imagePath = `users/${userId}/projects/${project.id}/projectimage/projectImage.jpg`;
+    const imageRef = ref(storage, imagePath);
+
+    try {
+      const downloadURL = await getDownloadURL(imageRef);
+      console.log("Download URL for projectImage:", downloadURL);
+      setProjectData((prev) => ({
+        ...prev,
+        projectImage: downloadURL,
+      }));
+    } catch (error) {
+      console.error("Fejl ved hentning af projektbillede:", error);
+      // Hvis der opstår en fejl, behøver vi ikke opdatere projectImage, så fallback vises
+    }
+  };
+
   const refreshProjectData = async () => {
-    if (!userId || !projectData.id) return;
+    if (!userId || !projectData.id) {
+      console.error("Bruger-ID eller projekt-ID mangler.");
+      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
+      return;
+    }
   
     setIsLoading(true);
   
@@ -117,20 +145,28 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
+  
       if (snapshot.exists()) {
         const data = snapshot.data();
+        console.log("Hentede projektdata fra Firestore:", data); // Debug-log
+  
         setProjectData((prev) => ({
           ...prev,
-          name: data.name || "",
-          description: data.description || "",
+          name: data.name || prev.name || "Uden navn",
+          description: data.description || prev.description || "",
           f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
           f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
           f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
           f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
-          projectImage: data.projectImage || prev.projectImage || null,
-          status: data.status || prev.status || "",
+          status: data.status || prev.status || "Project", // Default status som "Project"
           transferMethod: data.transferMethod || prev.transferMethod || "",
         }));
+
+        // Hent projektbillede efter Firestore data er opdateret
+        fetchProjectImage(data as ProjectData);
+      } else {
+        console.warn("Projektdata eksisterer ikke i Firestore.");
+        Alert.alert("Fejl", "Projektdata kunne ikke findes.");
       }
     } catch (error) {
       console.error("Fejl ved opdatering af projektdata:", error);
@@ -414,10 +450,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (
             <Image
-                source={{
-                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                }}
-                style={baseStyles.f8CoverImage}
+              source={{
+                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+              }}
+              style={baseStyles.f8CoverImage}
             />
           )}
 
@@ -426,26 +462,45 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <Text style={baseStyles.text}>Specification</Text>
           </View>
 
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectData.projectImage && (
+          {/* Projektbilledet i det runde felt med fallback */}
+          {projectData.projectImage ? (
             <Pressable
-            style={[
-              baseStyles.projectImageContainer,
-              { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-            ]}
-            onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
-            accessibilityLabel="Project Image Button"
-            disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
-          >
-            <Image
-              source={{
-                uri: projectData.projectImage
-                  ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                  : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+              style={baseStyles.projectImageContainer} // Fjernet dynamisk opacity-styling
+              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
+              accessibilityLabel="Project Image Button"
+              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
+            >
+              <Image
+                source={{
+                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`, // Undgå caching ved at tilføje timestamp
+                }}
+                style={baseStyles.projectImage} // Behold eksisterende styles
+                onError={(error) => {
+                  console.error("Fejl ved indlæsning af projektbillede:", error.nativeEvent.error);
+                }} // Log fejl hvis billedet ikke indlæses
+              />
+            </Pressable>
+          ) : (
+            <View
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 25, // Gør den rund
+                width: 50, // Diameter
+                height: 50, // Diameter
+                backgroundColor: "#e0e0e0", // Neutral baggrundsfarve
               }}
-              style={baseStyles.projectImage} // Tilføj dine styles her
-            />
-          </Pressable>
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#a0a0a0", // Grå farve for at signalere placeholder-tekst
+                  textAlign: "center",
+                }}
+              >
+                Ingen billede
+              </Text>
+            </View>
           )}
 
           {/* Delete-knap */}
@@ -493,7 +548,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                       uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
                     }}
                     style={baseStyles.f2CoverImage}
-                />
+                  />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -533,7 +588,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   <AntDesign
                     name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
                     size={24}
-                    color={projectData.status === "Published" ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+                    color="#0a7ea4" // Ensfarvet
                   />
                 </Pressable>
               </View>
