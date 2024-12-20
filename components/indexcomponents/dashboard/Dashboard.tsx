@@ -11,7 +11,7 @@ import Published from "@/components/indexcomponents/dashboard/Published";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Favorites from "@/components/indexcomponents/dashboard/Favorites";
 
-const Snit = () => {
+const Dashboard = () => {
   const theme = useColorScheme() || "light";
   const { userRole } = useAuth();
 
@@ -60,4 +60,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Snit;
+export default Dashboard;

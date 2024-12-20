@@ -1,51 +1,22 @@
 // @/app/(app)/(tabs)/cart.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   Modal,
   TextInput,
+  ScrollView,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  collection,
-  onSnapshot,
-  query,
-  where,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { useRouter } from "expo-router";
-
-type PurchaseItem = {
-  id: string;
-  projectId: string;
-  projectOwnerId: string;
-  purchased: boolean;
-  projectData?: ProjectData;
-};
-
-type ProjectData = {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  pdfPath: string;
-};
 
 const CartScreen = () => {
   const colorScheme = useColorScheme() || "light";
@@ -53,220 +24,68 @@ const CartScreen = () => {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [cartItems, setCartItems] = useState<PurchaseItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
+  const [isWelcomeModalVisible, setIsWelcomeModalVisible] = useState(false);
   const [paymentCode, setPaymentCode] = useState("");
-
-  useEffect(() => {
-    if (!user) {
-      console.warn("Bruger ikke logget ind.");
-      setIsLoading(false);
-      return;
-    }
-  
-    const purchasesRef = collection(database, "users", user, "purchases");
-    const q = query(purchasesRef, where("purchased", "==", false));
-  
-    const unsubscribe = onSnapshot(
-      q,
-      async (querySnapshot) => {
-        const purchases: PurchaseItem[] = [];
-  
-        for (const docSnap of querySnapshot.docs) {
-          const data = docSnap.data();
-          const projectId = data.projectId;
-          const projectOwnerId = data.projectOwnerId;
-  
-          if (!projectId || !projectOwnerId) {
-            console.warn(
-              `Purchase ${docSnap.id} har manglende projektId eller ejerId.`
-            );
-            continue;
-          }
-  
-          // Hent projektdata fra ejerens projekt
-          const projectDocRef = doc(
-            database,
-            "users",
-            projectOwnerId,
-            "projects",
-            projectId
-          );
-          const projectDocSnap = await getDoc(projectDocRef);
-  
-          let projectImageUrl = "";
-          if (projectDocSnap.exists()) {
-            // Hent billedet fra Firebase Storage
-            const storage = getStorage();
-            const imageRef = ref(
-              storage,
-              `users/${projectOwnerId}/projects/${projectId}/projectimage/projectImage.jpg`
-            );
-            try {
-              projectImageUrl = await getDownloadURL(imageRef);
-            } catch (error) {
-              console.warn(
-                `Billedet for projekt ${projectId} kunne ikke hentes:`,
-                error
-              );
-            }
-  
-            const projectData = projectDocSnap.data();
-            purchases.push({
-              id: docSnap.id,
-              projectId: projectId,
-              projectOwnerId: projectOwnerId,
-              purchased: data.purchased,
-              projectData: {
-                id: projectDocSnap.id,
-                name: projectData.name || "Uden navn",
-                price: projectData.price || 0,
-                image: projectImageUrl, // Tilføj det hentede billede
-                pdfPath: projectData.pdfPath || "",
-              },
-            });
-          } else {
-            console.warn(`Projekt dokumentet ${projectId} findes ikke.`);
-          }
-        }
-  
-        setCartItems(purchases);
-        setIsLoading(false);
-        setError(null);
-      },
-      (error) => {
-        console.error("Fejl ved hentning af køb:", error);
-        setError("Der opstod en fejl ved hentning af data.");
-        setIsLoading(false);
-      }
-    );
-  
-    return () => unsubscribe();
-  }, [user]);
-
-  const handleRemove = async (purchaseId: string) => {
-    if (!user) return;
-
-    try {
-      const purchaseDocRef = doc(
-        database,
-        "users",
-        user,
-        "purchases",
-        purchaseId
-      );
-      await deleteDoc(purchaseDocRef);
-      console.log(`Purchase ${purchaseId} fjernet fra kurven.`);
-    } catch (error) {
-      console.error("Fejl ved fjernelse af køb:", error);
-      Alert.alert("Fejl", "Der opstod en fejl ved fjernelse af købet.");
-    }
-  };
 
   const handleCheckout = () => {
     setIsPaymentModalVisible(true);
   };
 
   const handlePayment = async () => {
-    if (paymentCode === "Betaling") {
+    if (paymentCode === "Fiboconomy") {
       if (!user) {
         Alert.alert("Fejl", "Bruger ikke logget ind.");
         return;
       }
-  
+
       try {
-        // Ændring af brugerens rolle til 'Designer'
         const userDocRef = doc(database, "users", user);
         await updateDoc(userDocRef, { role: "Designer" });
-  
+
         console.log("Brugerens rolle ændret til Designer.");
-        Alert.alert("Succes", "Du er nu Designer og har adgang til alle projekter.");
-  
         setIsPaymentModalVisible(false);
         setPaymentCode("");
-        router.replace("/");
+        setIsWelcomeModalVisible(true); // Vis velkomstmodal
       } catch (error) {
         console.error("Fejl ved opdatering af brugerens rolle:", error);
         Alert.alert("Fejl", "Der opstod en fejl ved opdatering af din status.");
       }
     } else {
-      Alert.alert("Fejl", "Ugyldig betalingskode.");
+      Alert.alert("Fejl", "Ugyldig betalingskode. Prøv igen.");
     }
   };
 
+  const handleWelcomeClose = () => {
+    setIsWelcomeModalVisible(false);
+    router.replace("/"); // Naviger til index.tsx
+  };
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: themeColors.background }]}
-    >
-    <View style={styles.cartContainer}>
-      <View style={styles.subscriptionDetails}>
-        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
-          Du får adgang til circShare
-        </Text>
-        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
-          For 299 DKK pr. måned
-        </Text>
-        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
-        </Text>
-        <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
-          Abonnementet giver dig også mulighed for at tilføje og dele dine egne circShare's.
-        </Text>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={styles.cartContainer}>
+        {/* Abonnement detaljer */}
+        <View style={styles.subscriptionDetails}>
+          <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+            Du får adgang til circShare
+          </Text>
+          <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+            For 299 DKK pr. måned
+          </Text>
+          <Text style={[styles.subscriptionText, { color: themeColors.text }]}>
+            Abonnementet giver dig også mulighed for at tilføje og dele dine egne circShare's.
+          </Text>
+        </View>
       </View>
-      {isLoading ? (
-        <Text style={[styles.emptyCartText, { color: themeColors.text }]}>
-          Indlæser...
-        </Text>
-      ) : cartItems.length === 0 ? (
-        <Text style={[styles.emptyCartText, { color: themeColors.text }]}>
-          Din kurv er tom.
-        </Text>
-      ) : (
-        cartItems.map((item) => (
-          <View key={item.id} style={styles.cartItem}>
-            <Image
-              source={
-                item.projectData?.image
-                  ? { uri: item.projectData.image }
-                  : require("@/assets/images/join-full.png")
-              }
-              style={styles.cartImage}
-            />
-            <View style={styles.cartDetails}>
-              <Text style={[styles.itemTitle, { color: themeColors.text }]}>
-                {item.projectData?.name || "Uden navn"}
-              </Text>
-              {/* Prisen fjernes, så der ikke vises noget her */}
-            </View>
-            <TouchableOpacity
-              style={styles.requestButton}
-              onPress={() => Alert.alert("Funktion endnu ikke implementeret")}
-            >
-              <FontAwesome name="envelope" size={20} color="gray" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => handleRemove(item.id)}
-            >
-              <FontAwesome name="trash" size={20} color="gray" />
-            </TouchableOpacity>
-          </View>
-        ))
-      )}
-    </View>
 
       <TouchableOpacity
-        style={[
-          styles.checkoutButton,
-          cartItems.length === 0 ? styles.disabledButton : styles.activeButton,
-        ]}
-        disabled={cartItems.length === 0}
+        style={[styles.checkoutButton, styles.activeButton]}
         onPress={handleCheckout}
       >
         <Text style={styles.checkoutButtonText}>Gå til Betaling</Text>
       </TouchableOpacity>
 
+      {/* Betalingsmodal */}
       <Modal
         visible={isPaymentModalVisible}
         transparent={true}
@@ -275,20 +94,16 @@ const CartScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={[styles.modalTitle, { color: themeColors.text }]}>
-              Simuler Betaling
-            </Text>
-            <Text
-              style={[styles.modalDescription, { color: themeColors.text }]}
-            >
-              Indtast betalingskode for at gennemføre købet.
+            <Text style={[styles.modalTitle, { color: themeColors.text }]}>Simuler Betaling</Text>
+            <Text style={[styles.modalDescription, { color: themeColors.text }]}>
+              Indtast betalingskode: "Fiboconomy"
             </Text>
             <TextInput
               style={[
                 styles.input,
                 { borderColor: themeColors.icon, color: themeColors.text },
               ]}
-              placeholder="Betaling"
+              placeholder="Betalingskode"
               placeholderTextColor={themeColors.icon}
               value={paymentCode}
               onChangeText={setPaymentCode}
@@ -307,6 +122,29 @@ const CartScreen = () => {
                 <Text style={styles.modalButtonText}>Bekræft</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Velkomstmodal */}
+      <Modal
+        visible={isWelcomeModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleWelcomeClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={[styles.modalTitle, { color: themeColors.text }]}>Velkommen!</Text>
+            <Text style={[styles.modalDescription, { color: themeColors.text }]}>
+              Du er nu opgraderet til Designer. Du har adgang til alle funktioner.
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton]}
+              onPress={handleWelcomeClose}
+            >
+              <Text style={styles.modalButtonText}>Fortsæt</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -499,7 +337,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   modalButtonText: {
-    color: "#fff",
+    color: "white",
     fontWeight: "bold",
   },
 });

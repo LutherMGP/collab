@@ -19,11 +19,7 @@ import InfoPanelPublished from "@/components/indexcomponents/infopanels/publishe
 import InfoPanelCatalog from "components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
 import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/InfoPanelFavorites";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  doc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 const Index = () => {
   const theme = useColorScheme() || "light";
@@ -44,8 +40,28 @@ const Index = () => {
     isInfoPanelProjectsVisible ||
     isInfoPanelPublishedVisible ||
     isInfoPanelCatalogVisible ||
-    isInfoPanelFavoritesVisible 
+    isInfoPanelFavoritesVisible
   );
+
+  // Logger hvilken InfoPanel der er synlig
+  useEffect(() => {
+    if (isInfoPanelProjectsVisible) {
+      console.log("Projects panel er synligt.");
+    } else if (isInfoPanelPublishedVisible) {
+      console.log("Published panel er synligt.");
+    } else if (isInfoPanelCatalogVisible) {
+      console.log("Catalog panel er synligt.");
+    } else if (isInfoPanelFavoritesVisible) {
+      console.log("Favorites panel er synligt.");
+    } else {
+      console.log("Ingen paneler er synlige.");
+    }
+  }, [
+    isInfoPanelProjectsVisible,
+    isInfoPanelPublishedVisible,
+    isInfoPanelCatalogVisible,
+    isInfoPanelFavoritesVisible,
+  ]);
 
   useEffect(() => {
     if (user) {
@@ -80,7 +96,7 @@ const Index = () => {
         <Dashboard />
       </View>
 
-      {/* Separator linje efter Snit */}
+      {/* Separator linje efter Dashboard */}
       <View
         style={[styles.separator, { backgroundColor: Colors[theme].icon }]}
       />

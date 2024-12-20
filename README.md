@@ -39,10 +39,13 @@ Hvad er næste skridt?
 2. Klargøring til Produktion:
    Når du er klar til at frigive appen til produktion, kan du bygge den med:
 
-   step 1:
-   eas build --profile production --platform ios
+   step 1: (hvis det ikke allerede er gennemført)
+   npm install -g eas-cli
 
    step 2:
+   eas build --profile production --platform ios
+
+   step 3:
    eas submit --platform ios
 
    som vil skjule testknapperne for alle, inklusive dig.
