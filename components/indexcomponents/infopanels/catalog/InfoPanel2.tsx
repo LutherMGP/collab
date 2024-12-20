@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
@@ -22,7 +22,7 @@ import { styles as baseStyles } from "components/indexcomponents/infopanels/cata
 
 type ProjectData = {
   id: string;
-  name: string; // Default-værdi kan være en tom streng
+  name: string;
   description: string;
   status: string;
   f8CoverImageLowRes?: string | null;
@@ -270,13 +270,13 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handleStatusToggle}
-                  accessibilityLabel="Status Toggle Button"
+                  onPress={handleStatusToggle} // Bevarer funktionaliteten
+                  accessibilityLabel="Send Button" // Opdateret label
                 >
-                  <AntDesign
-                    name={projectData.status === "Published" ? "unlock" : "lock"}
+                  <FontAwesome
+                    name="send-o"
                     size={24}
-                    color={projectData.status === "Published" ? "#0a7ea4" : "#0a7ea4"}
+                    color="#0a7ea4"
                   />
                 </Pressable>
               </View>
