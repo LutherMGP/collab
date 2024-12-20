@@ -28,7 +28,6 @@ import InfoPanelNameComment from "@/components/indexcomponents/infopanels/catalo
 import InfoPanelPrize from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/prize/InfoPanelPrize";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/projectimage/InfoPanelProjectImage";
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/comment/InfoPanelCommentModal";
-import InfoPanelAttachment from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/attachment/InfoPanelAttachment";
 import InfoPanelCircular from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
@@ -84,7 +83,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] = useState(false);
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
-  const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -288,14 +286,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setIsCommentModalVisible(false);
   };
 
-  const openAttachmentModal = () => {
-    setIsAttachmentModalVisible(true);
-  };
-
-  const closeAttachmentModal = () => {
-    setIsAttachmentModalVisible(false);
-  };
-
   // Funktion til at skifte status fra og til published
   const handleStatusToggle = async () => {
     try {
@@ -463,14 +453,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             onPress={() => handleOpenCommentModal("f8")}
           >
             <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
-
-          {/* Attachment-knap */}
-          <Pressable
-            style={baseStyles.attachmentButton}
-            onPress={openAttachmentModal}
-          >
-            <Entypo name="attachment" size={20} color="#0a7ea4" />
           </Pressable>
         </Pressable>
       </View>
@@ -801,25 +783,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
         </Modal>
       )}
-
-      {/* Attachment Modal */}
-      <Modal
-        visible={isAttachmentModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeAttachmentModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelAttachment
-              userId={userId || ""}
-              projectId={projectData.id}
-              onClose={closeAttachmentModal}
-              isEditEnabled={isEditEnabled} // Pass isEditEnabled
-            />
-          </View>
-        </View>
-      </Modal>
 
       {/* Circular Economy Modal */}
       <Modal
