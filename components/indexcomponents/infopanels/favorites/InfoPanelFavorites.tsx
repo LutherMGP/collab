@@ -17,6 +17,8 @@ const InfoPanelFavorites = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
+  // Logik: Tæller antallet af projekter fra andre brugere, der matcher projekter i favoritlisten 
+  // for den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
 

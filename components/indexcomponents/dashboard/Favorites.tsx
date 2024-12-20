@@ -8,9 +8,8 @@ import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collection,
   query,
-  onSnapshot,
-  CollectionReference,
-  DocumentData,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
@@ -20,23 +19,46 @@ const Favorites = () => {
     useVisibility();
   const [totalCount, setTotalCount] = useState(0); // Total antal favoritter
 
+  // Logik: Tæller antallet af projekter fra andre brugere, der matcher projekter i favoritlisten 
+  // for den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
 
-    const projectCollection = collection(
-      database,
-      "users",
-      user,
-      "projects"
-    ) as CollectionReference<DocumentData>;
+    const fetchFavoriteProjectsCount = async () => {
+      try {
+        // Hent brugerens favoritter
+        const favoritesCollection = collection(database, "users", user, "favorites");
+        const favoritesSnapshot = await getDocs(favoritesCollection);
+        const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
 
-    // Forespørgsel for ALLE projekter (her kunne du eventuelt filtrere for favoritter, hvis nødvendigt)
-    const allProjectsQuery = query(projectCollection);
-    const unsubscribe = onSnapshot(allProjectsQuery, (querySnapshot) => {
-      setTotalCount(querySnapshot.size); // Opdaterer totalCount i realtid
-    });
+        // Hent projekter fra andre brugere, der matcher favoritter
+        const usersCollection = collection(database, "users");
+        let count = 0;
 
-    return () => unsubscribe(); // Unsubscribe når komponenten unmountes
+        const usersSnapshot = await getDocs(usersCollection);
+        for (const userDoc of usersSnapshot.docs) {
+          if (userDoc.id === user) continue; // Spring den aktuelle bruger over
+          const userProjectsCollection = collection(userDoc.ref, "projects");
+          const projectsQuery = query(
+            userProjectsCollection,
+            where("status", "==", "Project")
+          );
+
+          const projectsSnapshot = await getDocs(projectsQuery);
+          projectsSnapshot.forEach((projectDoc) => {
+            if (favoriteProjectIds.includes(projectDoc.id)) {
+              count++;
+            }
+          });
+        }
+
+        setTotalCount(count);
+      } catch (error) {
+        console.error("Fejl ved hentning af favoritprojekter:", error);
+      }
+    };
+
+    fetchFavoriteProjectsCount();
   }, [user]);
 
   const handlePress = () => {
