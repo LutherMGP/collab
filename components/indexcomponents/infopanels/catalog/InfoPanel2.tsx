@@ -25,19 +25,10 @@ import InfoPanelF5 from "@/components/indexcomponents/infopanels/catalog/Infopan
 import InfoPanelF3 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF3";
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF2";
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/namecomment/InfoPanelNameComment";
-import InfoPanelPrize from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/prize/InfoPanelPrize";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/comment/InfoPanelCommentModal";
-import InfoPanelAttachment from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/attachment/InfoPanelAttachment";
-import InfoPanelCircular from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
 import { FilePaths } from "@/utils/filePaths";
-
-type CircularEconomyData = {
-  waterUsage: { value: number; description: string };
-  CO2Emission: { value: number; description: string };
-};
 
 type ProjectData = {
   id: string;
@@ -45,7 +36,6 @@ type ProjectData = {
   description: string;
   status: string;
   transferMethod: string;
-  circularEconomy?: CircularEconomyData; 
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
   f3CoverImageLowRes?: string | null;
@@ -80,12 +70,7 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isF3ModalVisible, setIsF3ModalVisible] = useState(false);
   const [isF2ModalVisible, setIsF2ModalVisible] = useState(false);
   const [isNameCommentModalVisible, setIsNameCommentModalVisible] = useState(false);
-  const [isPrizeModalVisible, setIsPrizeModalVisible] = useState(false);
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] = useState(false);
-  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
-  const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
-  const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
     // Tjek for manglende data
@@ -173,39 +158,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  const handleDelete = () => {
-    // Always show Delete button since config.showDelete is removed
-    Alert.alert(
-      "Bekræft Sletning",
-      "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
-      [
-        { text: "Annuller", style: "cancel" },
-        {
-          text: "Slet",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (!userId || !projectData.id) {
-                Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log("userId:", userId, "projectData.id:", projectData.id);
-                return;
-              }
-
-              const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
-              console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
-            } catch (error) {
-              console.error("Fejl ved sletning af projekt:", error);
-              Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
   // Generisk handlePress funktion med conditional
   const handlePress = async (button: string) => {
     if (isEditEnabled) {
@@ -267,33 +219,10 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     refreshProjectData();
   };
 
-  const closePrizeModal = () => {
-    setIsPrizeModalVisible(false);
-    refreshProjectData();
-  };
-
   const closeProjectImageModal = () => {
     setIsProjectImageModalVisible(false);
     setRefreshKey((prevKey) => prevKey + 1); // Tving opdatering
     refreshProjectData(); // Opdater data, inkl. billed-URL
-  };
-
-  const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
-    setActiveCategory(category);
-    setIsCommentModalVisible(true);
-  };
-
-  const handleCloseCommentModal = () => {
-    setActiveCategory(null);
-    setIsCommentModalVisible(false);
-  };
-
-  const openAttachmentModal = () => {
-    setIsAttachmentModalVisible(true);
-  };
-
-  const closeAttachmentModal = () => {
-    setIsAttachmentModalVisible(false);
   };
 
   // Funktion til at skifte status fra og til published
@@ -344,39 +273,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     } catch (error) {
       console.error("Fejl ved skift af status:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
-    }
-  };
-
-  // Funktion til at håndtere "Prize"-feltet
-  const handlePrizePress = () => {
-    if (isEditEnabled) {
-      setIsPrizeModalVisible(true); // Åbn modal i redigeringstilstand
-    } else {
-      fetchTransferMethod(); // Hent data on-demand
-    }
-  };
-
-  // Funktion til at hente transferMethod fra Firestore
-  const fetchTransferMethod = async () => {
-    if (!userId || !projectData.id) {
-      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
-      return;
-    }
-  
-    try {
-      const docRef = doc(database, "users", userId, "projects", projectData.id);
-      const snapshot = await getDoc(docRef);
-  
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        const transferMethod = data.transferMethod || "Ingen beskrivelse tilgængelig";
-        Alert.alert("Transfer Method", transferMethod);
-      } else {
-        Alert.alert("Fejl", "Projektdata blev ikke fundet.");
-      }
-    } catch (error) {
-      console.error("Fejl ved hentning af transferMethod:", error);
-      Alert.alert("Fejl", "Kunne ikke hente transferMethod.");
     }
   };
 
@@ -447,31 +343,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             />
           </Pressable>
           )}
-
-          {/* Delete-knap */}
-          <Pressable
-            style={baseStyles.deleteIconContainer}
-            onPress={handleDelete}
-            accessibilityLabel="Delete Button"
-          >
-            <AntDesign name="delete" size={20} color="#0a7ea4" />
-          </Pressable>
-
-          {/* Comment-knap f8 */}
-          <Pressable
-            style={baseStyles.commentButtonf8}
-            onPress={() => handleOpenCommentModal("f8")}
-          >
-            <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
-
-          {/* Attachment-knap */}
-          <Pressable
-            style={baseStyles.attachmentButton}
-            onPress={openAttachmentModal}
-          >
-            <Entypo name="attachment" size={20} color="#0a7ea4" />
-          </Pressable>
         </Pressable>
       </View>
 
@@ -500,14 +371,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 <View style={baseStyles.textTag}>
                   <Text style={baseStyles.text}>Agreement</Text>
                 </View>
-              </Pressable>
-
-              {/* Comment-knap f2 */}
-              <Pressable
-                style={baseStyles.commentButtonf2}
-                onPress={() => handleOpenCommentModal("f2")}
-              >
-                <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
@@ -560,23 +423,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <View style={baseStyles.textTag}>
                 <Text style={baseStyles.text}>Sustainability</Text>
               </View>
-
-              {/* Comment-knap F3 */}
-              <Pressable
-                style={baseStyles.commentButtonf3}
-                onPress={() => handleOpenCommentModal("f3")}
-              >
-                <AntDesign name="message1" size={20} color="#0a7ea4" />
-              </Pressable>
-            </Pressable>
-
-            {/* Ny knap for cirkulær økonomi */}
-            <Pressable
-              style={baseStyles.circularEconomyButton}
-              onPress={() => setIsCircularModalVisible(true)} // Åbn modal
-              accessibilityLabel="Circular Economy Button"
-            >
-              <AntDesign name="sync" size={20} color="#0a7ea4" />
             </Pressable>
           </View>
         </View>
@@ -601,23 +447,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <View style={baseStyles.textTag}>
               <Text style={baseStyles.text}>Terms & Condition</Text>
             </View>
-
-            {/* Comment-knap f5 */}
-            <Pressable
-              style={baseStyles.commentButtonf5}
-              onPress={() => handleOpenCommentModal("f5")}
-            >
-              <AntDesign name="message1" size={20} color="#0a7ea4" />
-            </Pressable>
-          </Pressable>
-
-          {/* Ny Prize-knap */}
-          <Pressable
-            style={baseStyles.prizeTagF5}
-            onPress={handlePrizePress} // Brug den nye funktion
-            accessibilityLabel="Prize Button"
-          >
-            <AntDesign name="swap" size={20} color="#0a7ea4" />
           </Pressable>
         </View>
       </View>
@@ -720,27 +549,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         </View>
       </Modal>
 
-      {/* Prize Modal */}
-      <Modal
-        visible={isPrizeModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closePrizeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelPrize
-              onClose={closePrizeModal}
-              currentDescription={projectData.transferMethod || "Ingen beskrivelse tilgængelig"} // Standardbeskrivelse
-              projectId={projectData.id}
-              userId={userId || ""}
-              onSave={updateTransferMethod} // Gem ny beskrivelse
-              isEditable={isEditEnabled} // Brug toggleEdit til at styre redigering
-            />
-          </View>
-        </View>
-      </Modal>
-
       {/* Project Image Modal */}
       <Modal
         visible={isProjectImageModalVisible}
@@ -770,86 +578,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
         </View>
       </Modal>
-
-      {/* Modal-komponenten for comments */}
-      {activeCategory && (
-        <Modal
-          visible={isCommentModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={handleCloseCommentModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <InfoPanelCommentModal
-                projectId={projectData.id}
-                userId={userId || ""}
-                category={activeCategory} // Dette er nu sikkert
-                categoryName={
-                  activeCategory === "f8"
-                    ? "Specification"
-                    : activeCategory === "f5"
-                    ? "Terms & Conditions"
-                    : activeCategory === "f3"
-                    ? "Sustainability Report"
-                    : "Partnership Agreement"
-                }
-                onClose={handleCloseCommentModal}
-                isEditable={isEditEnabled}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {/* Attachment Modal */}
-      <Modal
-        visible={isAttachmentModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeAttachmentModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelAttachment
-              userId={userId || ""}
-              projectId={projectData.id}
-              onClose={closeAttachmentModal}
-              isEditEnabled={isEditEnabled} // Pass isEditEnabled
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Circular Economy Modal */}
-      <Modal
-        visible={isCircularModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsCircularModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelCircular
-              onClose={() => setIsCircularModalVisible(false)}
-              projectId={projectData.id}
-              userId={userId || ""}
-              onSave={(newData: CircularEconomyData) => {
-                setProjectData((prev) => ({
-                  ...prev,
-                  circularEconomy: newData, // Opdaterer hele circularEconomy-strukturen
-                }));
-              }}
-              isEditable={isEditEnabled}
-              currentData={projectData.circularEconomy || {
-                waterUsage: { value: 0, description: "" },
-                CO2Emission: { value: 0, description: "" },
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-
       <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
     </ScrollView>
   );
