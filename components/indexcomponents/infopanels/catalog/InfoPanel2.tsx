@@ -15,7 +15,7 @@ import {
 import { AntDesign } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
@@ -38,7 +38,7 @@ type InfoPanelProps = {
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
+const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -49,29 +49,65 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const [isEditEnabled, setIsEditEnabled] = useState(false);
 
-    // Tjek for manglende data
-    if (!projectData || !projectData.id || !userId) {
-      return (
-        <View style={baseStyles.container}>
-          <Text>Data mangler. Tjek dine props.</Text>
-        </View>
-      );
+  // Synkroniser med Firestore for at hente favoritstatus
+  useEffect(() => {
+    const fetchFavoriteStatus = async () => {
+      if (!userId || !projectData.id) return;
+      try {
+        const favoriteDocRef = doc(database, "users", userId, "favorites", projectData.id);
+        const docSnap = await getDoc(favoriteDocRef);
+        setIsFavorite(docSnap.exists()); // Hvis dokumentet findes, er projektet en favorit
+      } catch (error) {
+        console.error("Fejl ved hentning af favoritstatus:", error);
+      }
+    };
+  
+    fetchFavoriteStatus();
+  }, [userId, projectData.id]);
+
+  // Tjek for manglende data
+  if (!projectData || !projectData.id || !userId) {
+    return (
+      <View style={baseStyles.container}>
+        <Text>Data mangler. Tjek dine props.</Text>
+      </View>
+    );
+  }
+
+  // Håndtering af favoritknap
+  const handleFavoriteToggle = async () => {
+    if (!userId || !projectData.id) return;
+  
+    try {
+      const favoriteDocRef = doc(database, "users", userId, "favorites", projectData.id);
+      if (isFavorite) {
+        // Fjern fra favoritter
+        await deleteDoc(favoriteDocRef);
+        Alert.alert("Favorit fjernet", "Projektet er fjernet fra dine favoritter.");
+      } else {
+        // Tilføj til favoritter
+        await setDoc(favoriteDocRef, {
+          projectId: projectData.id,
+          ownerId: projectData.userId,
+        });
+        Alert.alert("Favorit tilføjet", "Projektet er tilføjet til dine favoritter.");
+      }
+      setIsFavorite(!isFavorite); // Opdater state lokalt
+    } catch (error) {
+      console.error("Fejl ved opdatering af favoritstatus:", error);
+      Alert.alert("Fejl", "Kunne ikke opdatere favoritstatus. Prøv igen.");
     }
+  };
 
   // Synchroniser local state med props
   useEffect(() => {
     setProjectData(initialProjectData);
   }, [initialProjectData]);
-
-  // Funktion til at togglere Edit-tilstand
-  const toggleEdit = () => {
-    setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
-  };
 
   // Funktion til at skifte status fra og til published
   const handleStatusToggle = async () => {
@@ -171,18 +207,17 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <Pressable
             style={[
               baseStyles.projectImageContainer,
-              { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
+              { opacity: isEditEnabled ? 1 : 1 },
             ]}
             accessibilityLabel="Project Image Button"
-            disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
           >
             <Image
               source={{
                 uri: projectData.projectImage
                   ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                  : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+                  : require("@/assets/default/projectimage/projectImage.jpg"),
               }}
-              style={baseStyles.projectImage} // Tilføj dine styles her
+              style={baseStyles.projectImage}
             />
           </Pressable>
           )}
@@ -202,7 +237,7 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 {projectData.f2CoverImageLowRes && (
                   <Image
                     source={{
-                      uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                      uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`,
                     }}
                     style={baseStyles.f2CoverImage}
                 />
@@ -218,26 +253,24 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <View style={baseStyles.f1topHalf}>
                 <Pressable
                   style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
-                  accessibilityLabel="Edit Button"
                 >
                   <AntDesign
-                    name="edit" // Ikon ændret til "edit"
+                    name={isEditEnabled ? "heart" : "hearto"}
                     size={24}
-                    color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
+                    color={isEditEnabled ? "#0a7ea4" : "#0a7ea4"}
                   />
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Kalder funktionen for at skifte status
+                  onPress={handleStatusToggle}
                   accessibilityLabel="Status Toggle Button"
                 >
                   <AntDesign
-                    name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
+                    name={projectData.status === "Published" ? "unlock" : "lock"}
                     size={24}
-                    color={projectData.status === "Published" ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+                    color={projectData.status === "Published" ? "#0a7ea4" : "#0a7ea4"}
                   />
                 </Pressable>
               </View>
@@ -252,7 +285,7 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               {projectData.f3CoverImageLowRes && (
                 <Image
                   source={{
-                    uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                    uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`,
                   }}
                   style={baseStyles.f3CoverImage}
                 />
@@ -274,7 +307,7 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             {projectData.f5CoverImageLowRes && (
               <Image
                 source={{
-                  uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                  uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`,
                 }}
                 style={baseStyles.f5CoverImage}
               />
