@@ -171,39 +171,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  const handleDelete = () => {
-    // Always show Delete button since config.showDelete is removed
-    Alert.alert(
-      "Bekræft Sletning",
-      "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
-      [
-        { text: "Annuller", style: "cancel" },
-        {
-          text: "Slet",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (!userId || !projectData.id) {
-                Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log("userId:", userId, "projectData.id:", projectData.id);
-                return;
-              }
-
-              const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
-              console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
-            } catch (error) {
-              console.error("Fejl ved sletning af projekt:", error);
-              Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
   // Generisk handlePress funktion med conditional
   const handlePress = async (button: string) => {
     if (isEditEnabled) {
@@ -437,15 +404,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             />
           </Pressable>
           )}
-
-          {/* Delete-knap */}
-          <Pressable
-            style={baseStyles.deleteIconContainer}
-            onPress={handleDelete}
-            accessibilityLabel="Delete Button"
-          >
-            <AntDesign name="delete" size={20} color="#0a7ea4" />
-          </Pressable>
 
           {/* Comment-knap f8 */}
           <Pressable
