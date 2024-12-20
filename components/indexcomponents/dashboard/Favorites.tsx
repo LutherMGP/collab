@@ -11,6 +11,7 @@ import {
   onSnapshot,
   where,
   getDocs,
+  clearIndexedDbPersistence,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
@@ -20,10 +21,22 @@ const Favorites = () => {
     useVisibility();
   const [totalCount, setTotalCount] = useState(0); // Total antal favoritter
 
+  // Funktion til at rydde Firestore-cache
+  const clearCache = async () => {
+    try {
+      await clearIndexedDbPersistence(database);
+      console.log("Cache ryddet");
+    } catch (e) {
+      console.error("Kunne ikke rydde cache", e);
+    }
+  };
+
   // Logik: Tæller antallet af projekter fra andre brugere, der matcher projekter i favoritlisten 
   // for den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
+
+    clearCache(); // Ryder cache, før data hentes
   
     const fetchFavoriteProjectsCount = () => {
       // Lyt til ændringer i favoritter
