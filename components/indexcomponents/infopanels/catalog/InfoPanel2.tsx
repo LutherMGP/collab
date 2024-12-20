@@ -26,15 +26,9 @@ import InfoPanelF3 from "@/components/indexcomponents/infopanels/catalog/Infopan
 import InfoPanelF2 from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/f8f5f3f2/InfoPanelF2";
 import InfoPanelNameComment from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/namecomment/InfoPanelNameComment";
 import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/projectimage/InfoPanelProjectImage";
-import InfoPanelCircular from "@/components/indexcomponents/infopanels/catalog/Infopanelmodals/circular/InfoPanelCircular";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
 import { FilePaths } from "@/utils/filePaths";
-
-type CircularEconomyData = {
-  waterUsage: { value: number; description: string };
-  CO2Emission: { value: number; description: string };
-};
 
 type ProjectData = {
   id: string;
@@ -42,7 +36,6 @@ type ProjectData = {
   description: string;
   status: string;
   transferMethod: string;
-  circularEconomy?: CircularEconomyData; 
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
   f3CoverImageLowRes?: string | null;
@@ -78,8 +71,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isF2ModalVisible, setIsF2ModalVisible] = useState(false);
   const [isNameCommentModalVisible, setIsNameCommentModalVisible] = useState(false);
   const [isProjectImageModalVisible, setIsProjectImageModalVisible] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
-  const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
     // Tjek for manglende data
@@ -285,30 +276,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  // Funktion til at hente transferMethod fra Firestore
-  const fetchTransferMethod = async () => {
-    if (!userId || !projectData.id) {
-      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
-      return;
-    }
-  
-    try {
-      const docRef = doc(database, "users", userId, "projects", projectData.id);
-      const snapshot = await getDoc(docRef);
-  
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        const transferMethod = data.transferMethod || "Ingen beskrivelse tilgængelig";
-        Alert.alert("Transfer Method", transferMethod);
-      } else {
-        Alert.alert("Fejl", "Projektdata blev ikke fundet.");
-      }
-    } catch (error) {
-      console.error("Fejl ved hentning af transferMethod:", error);
-      Alert.alert("Fejl", "Kunne ikke hente transferMethod.");
-    }
-  };
-
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
@@ -456,15 +423,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <View style={baseStyles.textTag}>
                 <Text style={baseStyles.text}>Sustainability</Text>
               </View>
-            </Pressable>
-
-            {/* Ny knap for cirkulær økonomi */}
-            <Pressable
-              style={baseStyles.circularEconomyButton}
-              onPress={() => setIsCircularModalVisible(true)} // Åbn modal
-              accessibilityLabel="Circular Economy Button"
-            >
-              <AntDesign name="sync" size={20} color="#0a7ea4" />
             </Pressable>
           </View>
         </View>
@@ -620,36 +578,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
         </View>
       </Modal>
-
-      {/* Circular Economy Modal */}
-      <Modal
-        visible={isCircularModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsCircularModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <InfoPanelCircular
-              onClose={() => setIsCircularModalVisible(false)}
-              projectId={projectData.id}
-              userId={userId || ""}
-              onSave={(newData: CircularEconomyData) => {
-                setProjectData((prev) => ({
-                  ...prev,
-                  circularEconomy: newData, // Opdaterer hele circularEconomy-strukturen
-                }));
-              }}
-              isEditable={isEditEnabled}
-              currentData={projectData.circularEconomy || {
-                waterUsage: { value: 0, description: "" },
-                CO2Emission: { value: 0, description: "" },
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-
       <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
     </ScrollView>
   );
