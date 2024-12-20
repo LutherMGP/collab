@@ -79,25 +79,30 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     );
   }
 
-  // Håndtering af favoritknap
   const handleFavoriteToggle = async () => {
-    if (!userId || !projectData.id) return;
+    if (!userId || !projectData.id) {
+      Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
+      return;
+    }
   
     try {
       const favoriteDocRef = doc(database, "users", userId, "favorites", projectData.id);
+  
       if (isFavorite) {
         // Fjern fra favoritter
         await deleteDoc(favoriteDocRef);
+        setIsFavorite(false); // Opdater state lokalt
         Alert.alert("Favorit fjernet", "Projektet er fjernet fra dine favoritter.");
       } else {
         // Tilføj til favoritter
         await setDoc(favoriteDocRef, {
           projectId: projectData.id,
           ownerId: projectData.userId,
+          addedAt: new Date().toISOString(), // Tilføj tidsstempel
         });
+        setIsFavorite(true); // Opdater state lokalt
         Alert.alert("Favorit tilføjet", "Projektet er tilføjet til dine favoritter.");
       }
-      setIsFavorite(!isFavorite); // Opdater state lokalt
     } catch (error) {
       console.error("Fejl ved opdatering af favoritstatus:", error);
       Alert.alert("Fejl", "Kunne ikke opdatere favoritstatus. Prøv igen.");
@@ -250,17 +255,18 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                >
-                  <AntDesign
-                    name={isEditEnabled ? "heart" : "hearto"}
-                    size={24}
-                    color={isEditEnabled ? "#0a7ea4" : "#0a7ea4"}
-                  />
-                </Pressable>
-              </View>
+            <View style={baseStyles.f1topHalf}>
+              <Pressable
+                style={baseStyles.F1A}
+                onPress={handleFavoriteToggle} // Tilføj en funktion til at håndtere tryk
+              >
+                <AntDesign
+                  name={isFavorite ? "heart" : "hearto"} // Opdater baseret på favoritstatus
+                  size={24}
+                  color={isFavorite ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve baseret på status
+                />
+              </Pressable>
+            </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
