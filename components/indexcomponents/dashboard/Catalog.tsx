@@ -24,38 +24,37 @@ const Catalog = () => {
   useEffect(() => {
     if (!user) return;
   
-    const fetchNonFavoriteProjectsCount = async () => {
-      try {
-        // Hent brugerens favoritter
-        const favoritesCollection = collection(database, "users", user, "favorites");
-        const favoritesSnapshot = await getDocs(favoritesCollection);
+    const fetchNonFavoriteProjectsCount = () => {
+      // Lyt til ændringer i favoritter
+      const favoritesCollection = collection(database, "users", user, "favorites");
+      const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
         const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
   
-        // Hent projekter fra andre brugere, ekskluder favoritter
+        // Lyt til projekter fra andre brugere
         const usersCollection = collection(database, "users");
-        const fetchedProjects = [];
-        const usersSnapshot = await getDocs(usersCollection);
+        const usersUnsubscribe = onSnapshot(usersCollection, async (usersSnapshot) => {
+          const fetchedProjects: string[] = [];
   
-        for (const userDoc of usersSnapshot.docs) {
-          if (userDoc.id === user) continue; // Spring den aktuelle bruger over
-          const userProjectsCollection = collection(userDoc.ref, "projects");
-          const projectsQuery = query(
-            userProjectsCollection,
-            where("status", "==", "Project")
-          );
+          for (const userDoc of usersSnapshot.docs) {
+            if (userDoc.id === user) continue; // Spring den aktuelle bruger over
+            const userProjectsCollection = collection(userDoc.ref, "projects");
+            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
   
-          const projectsSnapshot = await getDocs(projectsQuery);
-          projectsSnapshot.forEach((projectDoc) => {
-            if (!favoriteProjectIds.includes(projectDoc.id)) {
-              fetchedProjects.push(projectDoc.id);
-            }
-          });
-        }
+            const projectsSnapshot = await getDocs(projectsQuery);
+            projectsSnapshot.forEach((projectDoc) => {
+              if (!favoriteProjectIds.includes(projectDoc.id)) {
+                fetchedProjects.push(projectDoc.id);
+              }
+            });
+          }
   
-        setTotalCount(fetchedProjects.length);
-      } catch (error) {
-        console.error("Fejl ved hentning af ikke-favoritprojekter:", error);
-      }
+          setTotalCount(fetchedProjects.length);
+        });
+  
+        return () => usersUnsubscribe(); // Stop lytning på brugere
+      });
+  
+      return () => favoritesUnsubscribe(); // Stop lytning på favoritter
     };
   
     fetchNonFavoriteProjectsCount();
