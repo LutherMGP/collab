@@ -20,9 +20,7 @@ import InfoPanelCatalog from "components/indexcomponents/infopanels/catalog/Info
 import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/InfoPanelFavorites";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
-  getDoc,
   doc,
-  collectionGroup,
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -120,7 +118,7 @@ const Index = () => {
 
       {/* Render InfoPanelCatalog kun hvis synlig */}
       {isInfoPanelCatalogVisible && (
-        <View style={styles.infoPanelProductsContainer}>
+        <View style={styles.infoPanelCatalogContainer}>
           <InfoPanelCatalog />
         </View>
       )}
@@ -167,7 +165,13 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignSelf: "center",
   },
-  infoPanelProductsContainer: {
+  infoPanelCatalogContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelFavoritesContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
