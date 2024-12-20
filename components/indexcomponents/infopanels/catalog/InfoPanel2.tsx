@@ -53,7 +53,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isLoading, setIsLoading] = useState(false);
 
   const [isEditEnabled, setIsEditEnabled] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
     // Tjek for manglende data
     if (!projectData || !projectData.id || !userId) {
@@ -72,38 +71,6 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   // Funktion til at togglere Edit-tilstand
   const toggleEdit = () => {
     setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
-  };
-
-  // Funktion til at opdatere projektdata efter ændringer
-  const refreshProjectData = async () => {
-    if (!userId || !projectData.id) return;
-  
-    setIsLoading(true);
-  
-    try {
-      // Hent data fra Firestore
-      const docRef = doc(database, "users", userId, "projects", projectData.id);
-      const snapshot = await getDoc(docRef);
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setProjectData((prev) => ({
-          ...prev,
-          name: data.name || "",
-          description: data.description || "",
-          f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
-          f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
-          f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
-          f2CoverImageLowRes: data.f2CoverImageLowRes || prev.f2CoverImageLowRes || null,
-          projectImage: data.projectImage || prev.projectImage || null,
-          status: data.status || prev.status || "",
-        }));
-      }
-    } catch (error) {
-      console.error("Fejl ved opdatering af projektdata:", error);
-      Alert.alert("Fejl", "Kunne ikke opdatere projektdata.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   // Funktion til at skifte status fra og til published
@@ -188,7 +155,7 @@ const InfoPanel2 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {projectData.f8CoverImageLowRes && (
             <Image
                 source={{
-                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`,
                 }}
                 style={baseStyles.f8CoverImage}
             />
