@@ -419,10 +419,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (
             <Image
-                source={{
-                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                }}
-                style={baseStyles.f8CoverImage}
+              source={{
+                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+              }}
+              style={baseStyles.f8CoverImage}
             />
           )}
 
@@ -434,23 +434,23 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Projektbilledet i det runde felt med onPress */}
           {projectData.projectImage && (
             <Pressable
-            style={[
-              baseStyles.projectImageContainer,
-              { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-            ]}
-            onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
-            accessibilityLabel="Project Image Button"
-            disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
-          >
-            <Image
-              source={{
-                uri: projectData.projectImage
-                  ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                  : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
-              }}
-              style={baseStyles.projectImage} // Tilføj dine styles her
-            />
-          </Pressable>
+              style={[
+                baseStyles.projectImageContainer,
+                { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
+              ]}
+              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
+              accessibilityLabel="Project Image Button"
+              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
+            >
+              <Image
+                source={{
+                  uri: projectData.projectImage
+                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
+                    : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+                }}
+                style={baseStyles.projectImage} // Tilføj dine styles her
+              />
+            </Pressable>
           )}
 
           {/* Delete-knap */}
@@ -498,7 +498,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                       uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
                     }}
                     style={baseStyles.f2CoverImage}
-                />
+                  />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -616,7 +616,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             </Pressable>
           </Pressable>
 
-          {/* Ny Prize-knap */}
+          {/* Prize-knap */}
           <Pressable
             style={baseStyles.prizeTagF5}
             onPress={handlePrizePress} // Brug den nye funktion
@@ -625,13 +625,13 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <AntDesign name="swap" size={20} color="#0a7ea4" />
           </Pressable>
 
-          {/* Ny Legal-knap */}
+          {/* Legal-knap placeret nederst i midten */}
           <Pressable
             style={[baseStyles.legalTagF5, { alignSelf: "center", marginTop: 10 }]} // Placer centralt og justér margin
             onPress={() => setIsLegalModalVisible(true)} // Åbn modal
             accessibilityLabel="Legal Button"
           >
-            <AntDesign name="filetext1" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
+            <AntDesign name="copyright" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
           </Pressable>
         </View>
       </View>

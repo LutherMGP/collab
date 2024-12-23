@@ -349,11 +349,20 @@ export const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   legalTagF5: {
-    backgroundColor: "#f5f5f5",
-    padding: 10,
-    borderRadius: 50,
+    position: "absolute", // Absolut positionering for at placere knappen
+    bottom: 6, // Placerer knappen 6 pixels fra bunden af F5-feltet
+    left: "50%", // Flytter knappen til midten af F5-feltet i horisontal retning
+    transform: [{ translateX: -20 }], // Justerer knappen tilbage med halvdelen af dens bredde (40px inkl. padding)
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
+    borderRadius: 20, // Rund knap
+    padding: 8,
     justifyContent: "center",
     alignItems: "center",
+    elevation: 4, // Tilføjer skygge for bedre design (Android)
+    shadowColor: "#000", // Skygge for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   textTag: {
     position: "absolute", // Placer den relativt til containeren
