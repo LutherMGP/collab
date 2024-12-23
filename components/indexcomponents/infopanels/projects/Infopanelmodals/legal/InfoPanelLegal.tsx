@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Switch,
 } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
@@ -18,8 +19,7 @@ type InfoPanelLegalProps = {
   currentDescription: string | null;
   projectId: string;
   userId: string;
-  onSave: (newDescription: string) => void;
-  isEditable: boolean;
+  onSave: (newDescription: string, brandConsent: boolean) => void;
 };
 
 const InfoPanelLegal = ({
@@ -28,14 +28,22 @@ const InfoPanelLegal = ({
   projectId,
   userId,
   onSave,
-  isEditable,
 }: InfoPanelLegalProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [description, setDescription] = useState(currentDescription || "");
+  const [containsBrand, setContainsBrand] = useState(false);
+  const [brandConsent, setBrandConsent] = useState(false);
 
   const handleSave = async () => {
     if (!description.trim()) {
       Alert.alert("Beskrivelse mangler", "Indtast venligst en beskrivelse.");
+      return;
+    }
+    if (containsBrand && !brandConsent) {
+      Alert.alert(
+        "Advarsel",
+        "Projektet indeholder brandede motiver, men der er ikke givet samtykke. Vær opmærksom på juridiske konsekvenser."
+      );
       return;
     }
 
@@ -43,15 +51,19 @@ const InfoPanelLegal = ({
 
     try {
       const projectRef = doc(database, "users", userId, "projects", projectId);
-      await updateDoc(projectRef, { legalDescription: description });
+      await updateDoc(projectRef, {
+        legalDescription: description,
+        containsBrand,
+        brandConsent,
+      });
 
-      onSave(description);
+      onSave(description, brandConsent);
 
-      Alert.alert("Opdateret", "Juridisk beskrivelse er blevet gemt.");
+      Alert.alert("Opdateret", "Juridiske data er blevet gemt.");
       onClose();
     } catch (error) {
-      console.error("Fejl ved gemning af beskrivelse:", error);
-      Alert.alert("Fejl", "Kunne ikke gemme beskrivelsen. Prøv igen senere.");
+      console.error("Fejl ved gemning:", error);
+      Alert.alert("Fejl", "Kunne ikke gemme data. Prøv igen senere.");
     } finally {
       setIsSaving(false);
     }
@@ -63,37 +75,43 @@ const InfoPanelLegal = ({
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>
-          {isEditable ? "Rediger Juridisk Beskrivelse" : "Juridisk Beskrivelse"}
-        </Text>
-
-        {isEditable ? (
-          <TextInput
-            style={styles.input}
-            placeholder="Beskriv juridiske detaljer"
-            value={description}
-            onChangeText={setDescription}
-            editable={!isSaving}
-            multiline
+        <Text style={styles.title}>Rediger Juridiske Detaljer</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Beskriv juridiske detaljer"
+          value={description}
+          onChangeText={setDescription}
+          editable={!isSaving}
+          multiline
+        />
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Indeholder brandede motiver?</Text>
+          <Switch
+            value={containsBrand}
+            onValueChange={setContainsBrand}
+            disabled={isSaving}
           />
-        ) : (
-          <Text style={styles.readOnlyText}>
-            {currentDescription || "Ingen beskrivelse tilgængelig"}
-          </Text>
-        )}
-
-        <View style={styles.buttonContainer}>
-          {isEditable && (
-            <Pressable
-              style={styles.saveButton}
-              onPress={handleSave}
+        </View>
+        {containsBrand && (
+          <View style={styles.switchContainer}>
+            <Text style={styles.switchLabel}>Er der indhentet samtykke?</Text>
+            <Switch
+              value={brandConsent}
+              onValueChange={setBrandConsent}
               disabled={isSaving}
-            >
-              <Text style={styles.saveButtonText}>
-                {isSaving ? "Gemmer..." : "Gem"}
-              </Text>
-            </Pressable>
-          )}
+            />
+          </View>
+        )}
+        <View style={styles.buttonContainer}>
+          <Pressable
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            <Text style={styles.saveButtonText}>
+              {isSaving ? "Gemmer..." : "Gem"}
+            </Text>
+          </Pressable>
           <Pressable style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>Luk</Text>
           </Pressable>
@@ -117,14 +135,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     minHeight: 100,
   },
-  readOnlyText: {
-    fontSize: 16,
-    marginVertical: 20,
-    backgroundColor: "#f5f5f5",
-    padding: 10,
-    borderRadius: 8,
-    textAlign: "center",
+  switchContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 10,
   },
+  switchLabel: { fontSize: 16, fontWeight: "bold" },
   buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
   saveButton: {
     backgroundColor: "#4CAF50",
