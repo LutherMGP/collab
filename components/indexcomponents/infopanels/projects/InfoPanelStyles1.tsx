@@ -348,6 +348,13 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  legalTagF5: {
+    backgroundColor: "#f5f5f5",
+    padding: 10,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   textTag: {
     position: "absolute", // Placer den relativt til containeren
     top: 5, // Placering tæt på toppen
