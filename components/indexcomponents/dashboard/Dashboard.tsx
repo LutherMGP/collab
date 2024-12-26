@@ -10,6 +10,7 @@ import Projects from "@/components/indexcomponents/dashboard/Projects";
 import Published from "@/components/indexcomponents/dashboard/Published";
 import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Favorites from "@/components/indexcomponents/dashboard/Favorites";
+import Provider from "@/components/indexcomponents/dashboard/Provider";
 
 const Dashboard = () => {
   const theme = useColorScheme() || "light";
@@ -38,7 +39,10 @@ const Dashboard = () => {
       {(userRole === "Designer" || userRole === "Admin" || userRole === "Bruger") && <Catalog />}
 
       {/* Viser kun Favorites, hvis brugerens rolle er 'Bruger','Designer' eller 'Admin' eller */}
-      {(userRole === "Designer" || userRole === "Admin" || userRole === "Bruger") && <Favorites />}        
+      {(userRole === "Designer" || userRole === "Admin" || userRole === "Bruger") && <Favorites />} 
+
+      {/* Viser kun Provider, hvis brugerens rolle er 'Designer' eller 'Admin' */}
+      {(userRole === "Designer" || userRole === "Admin") && <Provider />}      
     </ScrollView>
   );
 };

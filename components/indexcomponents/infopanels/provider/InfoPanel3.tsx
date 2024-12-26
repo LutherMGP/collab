@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/InfoPanel2.tsx
+// @/components/indexcomponents/infopanels/provider/InfoPanel3.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
+import { styles as baseStyles } from "components/indexcomponents/infopanels/provider/InfoPanelStyles3";
 import { useRouter } from "expo-router";
 
 type ProjectData = {
@@ -39,7 +39,7 @@ type InfoPanelProps = {
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
+const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -420,4 +420,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InfoPanel2;
+export default InfoPanel3;

@@ -88,7 +88,7 @@ const Provider = () => {
       </TouchableOpacity>
 
       <View style={styles.textContainer}>
-        <Text style={styles.text}>Catalog</Text>
+        <Text style={styles.text}>Provider</Text>
       </View>
     </View>
   );

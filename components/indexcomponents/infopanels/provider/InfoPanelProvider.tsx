@@ -1,16 +1,16 @@
-// @/components/indexcomponents/infopanels/projects/InfoPanelFavorites.tsx
+// @/components/indexcomponents/infopanels/provider/InfoPanelProvider.tsx
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel2 from "@/components/indexcomponents/infopanels/catalog/InfoPanel2";
+import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPanel3";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { ProjectData } from "@/types/ProjectData";
 
-const InfoPanelFavorites = () => {
+const InfoPanelProvider = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ const InfoPanelFavorites = () => {
       const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
         const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
 
-        // Lyt til projekter fra andre brugere, der matcher favoritter
+        // Lyt til projekter fra andre brugere
         const usersCollection = collection(database, "users");
         const usersUnsubscribe = onSnapshot(usersCollection, (usersSnapshot) => {
           const fetchedProjects: ProjectData[] = [];
@@ -41,7 +41,7 @@ const InfoPanelFavorites = () => {
 
             onSnapshot(projectsQuery, (projectsSnapshot) => {
               projectsSnapshot.forEach((projectDoc) => {
-                if (favoriteProjectIds.includes(projectDoc.id)) {
+                if (!favoriteProjectIds.includes(projectDoc.id)) {
                   const data = projectDoc.data();
                   const assets = data.assets || {};
 
@@ -98,7 +98,7 @@ const InfoPanelFavorites = () => {
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel2 key={project.id} projectData={project} />
+        <InfoPanel3 key={project.id} projectData={project} />
       ))}
     </View>
   );
@@ -115,4 +115,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InfoPanelFavorites;
+export default InfoPanelProvider;
