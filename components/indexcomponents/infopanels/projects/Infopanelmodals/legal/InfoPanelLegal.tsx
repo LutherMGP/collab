@@ -1,3 +1,5 @@
+// @/components/indexcomponents/infopanels/projects/infopanelmodals/legal/InfoPanelLegal.tsx
+
 import React, { useState } from "react";
 import {
   View,
