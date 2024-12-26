@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPanel3";
 import { Colors } from "@/constants/Colors";
@@ -20,63 +20,55 @@ const InfoPanelProvider = () => {
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribeFavorites = () => {
-      setIsLoading(true);
+    const fetchUserProjectsWithApplications = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedProjects: ProjectData[] = [];
 
-      // Lyt til ændringer i favoritter
-      const favoritesCollection = collection(database, "users", user, "favorites");
-      const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-        const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
+        // Hent alle projekter for den nuværende bruger
+        const userProjectsCollection = collection(database, "users", user, "projects");
+        const projectsSnapshot = await getDocs(userProjectsCollection);
 
-        // Lyt til projekter fra andre brugere
-        const usersCollection = collection(database, "users");
-        const usersUnsubscribe = onSnapshot(usersCollection, (usersSnapshot) => {
-          const fetchedProjects: ProjectData[] = [];
+        for (const projectDoc of projectsSnapshot.docs) {
+          const projectData = projectDoc.data();
 
-          usersSnapshot.docs.forEach((userDoc) => {
-            if (userDoc.id === user) return; // Spring den aktuelle bruger over
+          // Hent ansøgninger i `applications` collection for hvert projekt
+          const applicationsCollection = collection(
+            userProjectsCollection,
+            projectDoc.id,
+            "applications"
+          );
+          const applicationsSnapshot = await getDocs(applicationsCollection);
 
-            const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
-
-            onSnapshot(projectsQuery, (projectsSnapshot) => {
-              projectsSnapshot.forEach((projectDoc) => {
-                if (!favoriteProjectIds.includes(projectDoc.id)) {
-                  const data = projectDoc.data();
-                  const assets = data.assets || {};
-
-                  fetchedProjects.push({
-                    id: projectDoc.id,
-                    userId: userDoc.id,
-                    name: data.name || "Uden navn",
-                    description: data.description || "Ingen beskrivelse",
-                    status: data.status || "Project",
-                    price: data.price !== undefined ? data.price : 0,
-                    f8CoverImageLowRes: assets.f8CoverImageLowRes || null,
-                    f5CoverImageLowRes: assets.f5CoverImageLowRes || null,
-                    f3CoverImageLowRes: assets.f3CoverImageLowRes || null,
-                    f2CoverImageLowRes: assets.f2CoverImageLowRes || null,
-                    projectImage: assets.projectImage || null,
-                    transferMethod: data.transferMethod || "Standard metode",
-                  });
-                }
-              });
-
-              setProjects(fetchedProjects);
-              setError(null);
-              setIsLoading(false);
+          // Hvis der er ansøgninger, tilføj projektet til listen
+          if (!applicationsSnapshot.empty) {
+            fetchedProjects.push({
+              id: projectDoc.id,
+              userId: user,
+              name: projectData.name || "Uden navn",
+              description: projectData.description || "Ingen beskrivelse",
+              status: projectData.status || "Project",
+              f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
+              f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
+              f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
+              f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
+              projectImage: projectData.assets?.projectImage || null,
+              price: projectData.price !== undefined ? projectData.price : 0,
+              transferMethod: projectData.transferMethod || "Standard metode",
             });
-          });
-        });
+          }
+        }
 
-        return usersUnsubscribe; // Afslut overvågning af brugerprojekter
-      });
-
-      return favoritesUnsubscribe; // Afslut overvågning af favoritter
+        setProjects(fetchedProjects);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Fejl ved hentning af brugerprojekter med ansøgninger:", err);
+        setError("Kunne ikke hente projekterne. Prøv igen senere.");
+        setIsLoading(false);
+      }
     };
 
-    const unsubscribe = unsubscribeFavorites();
-    return () => unsubscribe(); // Ryd op ved unmount
+    fetchUserProjectsWithApplications();
   }, [user]);
 
   if (isLoading) {

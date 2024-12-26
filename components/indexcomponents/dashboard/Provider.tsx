@@ -9,69 +9,78 @@ import {
   collection,
   query,
   onSnapshot,
-  where,
   getDocs,
+  CollectionReference,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Provider = () => {
   const { user } = useAuth();
-  const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } = useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Total antal projekter
+  const { isInfoPanelProviderVisible, showPanel, hideAllPanels } = useVisibility();
+  const [applicationCount, setApplicationCount] = useState(0); // Antal ansøgninger
 
-  // Logik: Tæller antallet af projekter fra andre brugere, der IKKE er markeret som favoritter 
-  // af den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
-  
-    const fetchNonFavoriteProjectsCount = () => {
-      // Lyt til ændringer i favoritter
-      const favoritesCollection = collection(database, "users", user, "favorites");
-      const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-        const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
-  
-        // Lyt til projekter fra andre brugere
-        const usersCollection = collection(database, "users");
-        const usersUnsubscribe = onSnapshot(usersCollection, async (usersSnapshot) => {
-          const fetchedProjects: string[] = [];
-  
-          for (const userDoc of usersSnapshot.docs) {
-            if (userDoc.id === user) continue; // Spring den aktuelle bruger over
-            const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
-  
-            const projectsSnapshot = await getDocs(projectsQuery);
-            projectsSnapshot.forEach((projectDoc) => {
-              if (!favoriteProjectIds.includes(projectDoc.id)) {
-                fetchedProjects.push(projectDoc.id);
-              }
-            });
-          }
-  
-          setTotalCount(fetchedProjects.length);
+
+    const fetchApplications = async () => {
+      try {
+        let totalApplications = 0;
+
+        // Hent alle projekter, som den aktuelle bruger ejer
+        const projectsCollection = collection(
+          database,
+          "users",
+          user,
+          "projects"
+        ) as CollectionReference;
+
+        const projectDocs = await getDocs(projectsCollection);
+
+        // Iterer gennem hvert projekt
+        const projectPromises = projectDocs.docs.map(async (projectDoc) => {
+          const projectId = projectDoc.id;
+
+          // Hent 'applications'-sub-collection for hvert projekt
+          const applicationsCollection = collection(
+            database,
+            "users",
+            user,
+            "projects",
+            projectId,
+            "applications"
+          ) as CollectionReference;
+
+          const applicationsSnapshot = await getDocs(applicationsCollection);
+
+          // Tilføj antallet af ansøgninger i dette projekt til den samlede tæller
+          totalApplications += applicationsSnapshot.size;
         });
-  
-        return () => usersUnsubscribe(); // Stop lytning på brugere
-      });
-  
-      return () => favoritesUnsubscribe(); // Stop lytning på favoritter
+
+        // Vent på, at alle forespørgsler er færdige
+        await Promise.all(projectPromises);
+
+        // Opdater state med det samlede antal ansøgninger
+        setApplicationCount(totalApplications);
+      } catch (error) {
+        console.error("Fejl ved hentning af ansøgninger:", error);
+      }
     };
-  
-    fetchNonFavoriteProjectsCount();
+
+    fetchApplications();
   }, [user]);
 
   const handlePress = () => {
-    if (isInfoPanelCatalogVisible) {
+    if (isInfoPanelProviderVisible) {
       hideAllPanels();
     } else {
-      showPanel("catalog");
+      showPanel("provider");
     }
   };
 
   return (
     <View style={styles.container}>
       <Image
-        source={require("@/assets/images/catalog.webp")}
+        source={require("@/assets/images/provider.webp")}
         style={styles.profileImg}
         resizeMode="cover"
       />
@@ -80,11 +89,11 @@ const Provider = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelCatalogVisible && styles.iconPressed,
+          isInfoPanelProviderVisible && styles.iconPressed,
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{totalCount || 0}</Text>
+        <Text style={styles.countText}>{applicationCount}</Text>
       </TouchableOpacity>
 
       <View style={styles.textContainer}>
@@ -93,6 +102,8 @@ const Provider = () => {
     </View>
   );
 };
+
+export default Provider;
 
 const styles = StyleSheet.create({
   container: {
@@ -158,5 +169,3 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
 });
-
-export default Provider;

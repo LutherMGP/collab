@@ -72,7 +72,7 @@ const Favorites = () => {
   return (
     <View style={styles.container}>
       <Image
-        source={require("@/assets/images/catalog.webp")} // Billede til favorites
+        source={require("@/assets/images/favorites.webp")} // Billede til favorites
         style={styles.profileImg}
         resizeMode="cover"
       />
