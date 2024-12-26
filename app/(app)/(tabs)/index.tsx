@@ -19,6 +19,7 @@ import InfoPanelPublished from "@/components/indexcomponents/infopanels/publishe
 import InfoPanelCatalog from "components/indexcomponents/infopanels/catalog/InfoPanelCatalog";
 import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/InfoPanelFavorites";
 import InfoPanelProvider from "@/components/indexcomponents/infopanels/provider/InfoPanelProvider";
+import InfoPanelApplicant from "@/components/indexcomponents/infopanels/applicant/InfoPanelApplicant";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
@@ -35,6 +36,7 @@ const Index = () => {
     isInfoPanelCatalogVisible,
     isInfoPanelFavoritesVisible,
     isInfoPanelProviderVisible,
+    isInfoPanelApplicantVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
@@ -43,7 +45,8 @@ const Index = () => {
     isInfoPanelPublishedVisible ||
     isInfoPanelCatalogVisible ||
     isInfoPanelFavoritesVisible ||
-    isInfoPanelProviderVisible
+    isInfoPanelProviderVisible ||
+    isInfoPanelApplicantVisible
   );
 
   // Logger hvilken InfoPanel der er synlig
@@ -57,7 +60,9 @@ const Index = () => {
     } else if (isInfoPanelFavoritesVisible) {
       console.log("Favorites panel er synligt.");
     } else if (isInfoPanelProviderVisible) {
-      console.log("Provider panel er synligt.");      
+      console.log("Provider panel er synligt.");
+    } else if (isInfoPanelApplicantVisible) {
+      console.log("Applicant panel er synligt.");              
     } else {
       console.log("Ingen paneler er synlige.");
     }
@@ -67,6 +72,7 @@ const Index = () => {
     isInfoPanelCatalogVisible,
     isInfoPanelFavoritesVisible,
     isInfoPanelProviderVisible,
+    isInfoPanelApplicantVisible,
   ]);
 
   useEffect(() => {
@@ -158,6 +164,13 @@ const Index = () => {
           <InfoPanelProvider />
         </View>
       )}
+
+      {/* Render InfoPanelApplicant kun hvis synlig */}
+      {isInfoPanelApplicantVisible && (
+        <View style={styles.infoPanelApplicantContainer}>
+          <InfoPanelApplicant />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };
@@ -207,6 +220,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   infoPanelProviderContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelApplicantContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
