@@ -54,7 +54,121 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditEnabled, setIsEditEnabled] = useState(false);
+  const [applicantComment, setApplicantComment] = useState<string | null>(null);
   const router = useRouter();
+
+  // Synkroniser med Firestore for at hente ansøgerens komment
+  useEffect(() => {
+    const fetchApplicantComment = async () => {
+      try {
+        const applicationsRef = collection(
+          database,
+          "users",
+          projectData.userId!,
+          "projects",
+          projectData.id,
+          "applications"
+        );
+  
+        const querySnapshot = await getDocs(applicationsRef);
+  
+        // Find ansøgningen fra den nuværende bruger
+        const applicantDoc = querySnapshot.docs.find(
+          (doc) => doc.id === currentUser
+        );
+  
+        if (applicantDoc) {
+          setApplicantComment(applicantDoc.data().comment || "Ingen kommentar.");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af ansøgerens kommentar:", error);
+      }
+    };
+  
+    fetchApplicantComment();
+  }, [projectData.userId, projectData.id, currentUser]);
+
+
+  // Håndter godkendelse af ansøger
+  const handleApproveApplicant = async () => {
+    try {
+      if (!projectData.userId || !projectData.id || !currentUser) {
+        throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
+      }
+  
+      // Opret `duediligence` collection og tilføj ansøgeren
+      const dueDiligenceRef = collection(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "duediligence"
+      );
+      const newDocRef = doc(dueDiligenceRef);
+      await setDoc(newDocRef, {
+        applicantId: currentUser,
+        createdAt: new Date().toISOString(),
+      });
+  
+      // Fjern ansøgningen fra `applications`
+      const applicationDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "applications",
+        currentUser
+      );
+      await deleteDoc(applicationDocRef);
+  
+      // Opdater projektets status til `DueDiligence`
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+      await setDoc(
+        projectDocRef,
+        { status: "DueDiligence" },
+        { merge: true }
+      );
+  
+      Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
+    } catch (error) {
+      console.error("Fejl ved godkendelse af ansøger:", error);
+      Alert.alert("Fejl", "Kunne ikke godkende ansøgeren. Prøv igen.");
+    }
+  };
+
+  // Håndter afvisning af ansøger
+  const handleRejectApplicant = async () => {
+    try {
+      if (!projectData.userId || !projectData.id || !currentUser) {
+        throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
+      }
+  
+      // Fjern ansøgningen
+      const applicationDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "applications",
+        currentUser
+      );
+      await deleteDoc(applicationDocRef);
+  
+      Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+    } catch (error) {
+      console.error("Fejl ved afvisning af ansøger:", error);
+      Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
+    }
+  };
 
   // Synkroniser med Firestore for at hente favoritstatus
   useEffect(() => {
@@ -255,45 +369,29 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
-        <Pressable
-          style={baseStyles.F8}
-          accessibilityLabel="F8 Button"
-        >
-          {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImageLowRes && (
-            <Image
+        <View style={baseStyles.F8}>
+          {/* Projektbilledet i det runde felt */}
+          {projectData.projectImage && (
+            <View style={baseStyles.projectImageContainer}>
+              <Image
                 source={{
-                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`,
+                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
                 }}
-                style={baseStyles.f8CoverImage}
-            />
+                style={baseStyles.projectImage}
+              />
+            </View>
           )}
 
-          {/* Tekst i f8 toppen */}
+          {/* Tekst i toppen */}
           <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Specification</Text>
+            <Text style={baseStyles.text}>Application</Text>
           </View>
 
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectData.projectImage && (
-            <Pressable
-            style={[
-              baseStyles.projectImageContainer,
-              { opacity: isEditEnabled ? 1 : 1 },
-            ]}
-            accessibilityLabel="Project Image Button"
-          >
-            <Image
-              source={{
-                uri: projectData.projectImage
-                  ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                  : require("@/assets/default/projectimage/projectImage.jpg"),
-              }}
-              style={baseStyles.projectImage}
-            />
-          </Pressable>
-          )}
-        </Pressable>
+          {/* Vis ansøgerens kommentar */}
+          <Text style={baseStyles.commentText}>
+            {applicantComment || "Ingen kommentar tilføjet."}
+          </Text>
+        </View>
       </View>
 
       {/* Nedre container */}
@@ -322,29 +420,20 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
-            <View style={baseStyles.f1topHalf}>
-              <Pressable
-                style={baseStyles.F1A}
-                onPress={handleFavoriteToggle} // Tilføj en funktion til at håndtere tryk
-              >
-                <AntDesign
-                  name={isFavorite ? "heart" : "hearto"} // Opdater baseret på favoritstatus
-                  size={24}
-                  color={isFavorite ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve baseret på status
-                />
-              </Pressable>
-            </View>
+              <View style={baseStyles.f1topHalf}>
+                <Pressable
+                  style={baseStyles.F1A}
+                  onPress={handleApproveApplicant} // Godkend knap
+                >
+                  <FontAwesome name="check" size={24} color="green" />
+                </Pressable>
+              </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Bevarer funktionaliteten
-                  accessibilityLabel="Send Button" // Opdateret label
+                  onPress={handleRejectApplicant} // Afvis knap
                 >
-                  <FontAwesome
-                    name="send-o"
-                    size={24}
-                    color="#0a7ea4"
-                  />
+                  <FontAwesome name="times" size={24} color="red" />
                 </Pressable>
               </View>
             </View>
