@@ -116,6 +116,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     setProjectData(initialProjectData);
   }, [initialProjectData]);
 
+  // Håndterer statusændring og ansøgning
   const handleStatusToggle = async () => {
     try {
       if (!userId || !projectData.id) {
@@ -171,48 +172,40 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     throw new Error("Projekt-ejer ID mangler.");
                   }
   
-                  // Reference til applications collection i projekt-ejerens projects/projektId
-                  const applicationCollectionRef = collection(
+                  // Reference til projektets roddokument
+                  const projectDocRef = doc(
                     database,
                     "users",
                     projectData.userId,
                     "projects",
-                    projectData.id,
-                    "applications"
+                    projectData.id
                   );
   
-                  // Tjek om brugeren allerede har ansøgt
-                  const existingApplicationQuery = query(
-                    applicationCollectionRef,
-                    where("applicantId", "==", userId)
+                  // Opdater projektet med ansøgerens oplysninger
+                  await setDoc(
+                    projectDocRef,
+                    {
+                      status: "Application", // Opdater status
+                      applicant: {
+                        id: userId,
+                        name: userSnap.data()?.name || "Ukendt bruger",
+                        email: userSnap.data()?.email || "Ukendt email",
+                        profileImage: userSnap.data()?.profileImage || null,
+                        appliedAt: new Date().toISOString(),
+                      },
+                    },
+                    { merge: true } // Bevarer eksisterende data
                   );
-                  const existingApplicationSnapshot = await getDocs(existingApplicationQuery);
-  
-                  if (!existingApplicationSnapshot.empty) {
-                    Alert.alert(
-                      "Allerede Ansøgt",
-                      "Du har allerede sendt en ansøgning til dette projekt."
-                    );
-                    return;
-                  }
-  
-                  // Opret nyt dokument i applications collection med auto-genereret ID
-                  const newApplicationRef = doc(applicationCollectionRef);
-                  await setDoc(newApplicationRef, {
-                    applicantId: userId,
-                    createdAt: new Date().toISOString()
-                  });
   
                   Alert.alert(
                     "Ansøgning Sendt",
-                    "Din ansøgning er blevet registreret."
+                    "Din ansøgning er blevet registreret, og projektets status er ændret til 'Application'."
                   );
-  
                 } catch (error) {
-                  console.error("Fejl ved oprettelse af ansøgning:", error);
+                  console.error("Fejl ved opdatering af projekt:", error);
                   Alert.alert(
                     "Fejl",
-                    "Kunne ikke oprette ansøgning. Prøv igen senere."
+                    "Kunne ikke indsende ansøgning. Prøv igen senere."
                   );
                 }
               },
