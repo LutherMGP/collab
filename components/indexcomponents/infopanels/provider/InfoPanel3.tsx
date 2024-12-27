@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
@@ -22,25 +22,16 @@ import { styles as baseStyles } from "components/indexcomponents/infopanels/prov
 import { useRouter } from "expo-router";
 
 type ProjectData = {
-  id: string; // Unikt ID for projekt/ansøgning
-  userId: string; // Ejerens bruger-ID
-  projectId: string; // Projektets ID
-  applicationId: string; // Ansøgningens ID
-  name: string; // Projektets navn
-  description: string; // Projektets beskrivelse
-  status: string; // Projektets status
+  id: string;
+  name: string;
+  description: string;
+  status: string;
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
   f3CoverImageLowRes?: string | null;
   f2CoverImageLowRes?: string | null;
   projectImage?: string | null;
-  price: number;
-  transferMethod: string;
-  applicantData?: {
-    applicantId: string;
-    comment: string;
-    [key: string]: any; // Hvis der er flere felter
-  }; // Data om ansøger
+  userId?: string | null;
 };
 
 type InfoPanelProps = {
@@ -79,7 +70,6 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           return;
         }
   
-        // Reference til ansøgninger i Firestore
         const applicationsRef = collection(
           database,
           "users",
@@ -89,30 +79,27 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           "applications"
         );
   
-        // Hent ansøgninger
         const applicationsSnapshot = await getDocs(applicationsRef);
   
-        // Find den relevante ansøgning for den aktuelle bruger (eller første ansøgning)
-        const applicationDoc = applicationsSnapshot.docs.find((doc) =>
-          doc.data().applicantId ? doc.data().applicantId : null
-        );
+        // Find ansøgningen med matching `applicantId`
+        const applicationDoc = applicationsSnapshot.docs.find((doc) => {
+          const data = doc.data();
+          return data.applicantId; // Sørg for, at ansøgningen har `applicantId`
+        });
   
         if (!applicationDoc) {
           console.warn("Ingen ansøgning fundet.");
+          setApplicantData({ profileImage: null, name: "Ingen ansøger" });
           return;
         }
   
-        // Hent applicantId fra ansøgningsdata
         const { applicantId } = applicationDoc.data();
         if (!applicantId) {
           console.warn("Ingen applicantId fundet.");
+          setApplicantData({ profileImage: null, name: "Ukendt ansøger" });
           return;
         }
   
-        // Debugging log
-        console.log("Henter data for ansøger med ID:", applicantId);
-  
-        // Find ansøgerens data i `users/{applicantId}`
         const applicantDocRef = doc(database, "users", applicantId);
         const applicantSnap = await getDoc(applicantDocRef);
   
@@ -122,12 +109,12 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             profileImage: applicantData.profileImage || null,
             name: applicantData.email || "Ukendt bruger",
           });
-          console.log("Ansøgerens data hentet:", applicantData);
         } else {
           console.warn(`Ansøgerens dokument findes ikke. ID: ${applicantId}`);
         }
       } catch (error) {
         console.error("Fejl ved hentning af ansøgerens data:", error);
+        setApplicantData({ profileImage: null, name: "Fejl ved hentning" });
       }
     };
   
@@ -221,13 +208,12 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     }
   };
 
-  // Håndter afvisning af ansøger
   const handleRejectApplicant = async () => {
     try {
-      if (!projectData.userId || !projectData.id || !currentUser) {
-        throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
+      if (!projectData.userId || !projectData.id) {
+        throw new Error("Projekt-ID eller bruger-ID mangler.");
       }
-
+  
       // Reference til ansøgninger
       const applicationsRef = collection(
         database,
@@ -237,35 +223,29 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         projectData.id,
         "applications"
       );
-
-      // Hent ansøgninger
+  
+      // Hent alle ansøgninger
       const applicationsSnapshot = await getDocs(applicationsRef);
-
-      // Find den relevante ansøgning baseret på applicantId
-      const matchingApplicationDoc = applicationsSnapshot.docs.find((doc) => {
+  
+      // Find ansøgningen baseret på `applicantId`
+      const applicationDoc = applicationsSnapshot.docs.find((doc) => {
         const data = doc.data();
-        return data.applicantId === currentUser; // Match på applicantId
+        return data.applicantId === currentUser; // Matcher `applicantId` med `currentUser`
       });
-
-      if (!matchingApplicationDoc) {
+  
+      if (!applicationDoc) {
         Alert.alert("Fejl", "Ingen ansøgning fundet.");
         return;
       }
-
-      const applicationDocRef = matchingApplicationDoc.ref;
-
-      console.log("Sletter ansøgning for ansøger med ID:", currentUser);
-
+  
       // Slet ansøgningen
+      const applicationDocRef = applicationDoc.ref;
       await deleteDoc(applicationDocRef);
-
-      // Fjern ansøgerens data fra lokal state
-      setApplicantData({
-        profileImage: null,
-        name: null,
-      });
+  
+      // Opdater state efter sletning
+      setApplicantData({ profileImage: null, name: null });
       setApplicantComment(null);
-
+  
       Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
     } catch (error) {
       console.error("Fejl ved afvisning af ansøger:", error);
