@@ -2,7 +2,14 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { collection, onSnapshot, QuerySnapshot, QueryDocumentSnapshot, DocumentData, Unsubscribe } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  QuerySnapshot,
+  QueryDocumentSnapshot,
+  DocumentData,
+  Unsubscribe,
+} from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPanel3";
 import { Colors } from "@/constants/Colors";
@@ -17,7 +24,7 @@ const InfoPanelProvider = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  // Ref til at opbevare unsubscribe-funktioner for hver projects ansøgninger
+  // Ref til at opbevare unsubscribe-funktioner for ansøgninger
   const applicationsUnsubscribesRef = useRef<{ [projectId: string]: Unsubscribe }>({});
 
   useEffect(() => {
@@ -25,28 +32,25 @@ const InfoPanelProvider = () => {
 
     const userProjectsCollection = collection(database, "users", user, "projects");
 
-    // Lyt til ændringer i brugerens projekter
     const unsubscribeProjects = onSnapshot(
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
-        // Ryd op i tidligere listeners for projekter, der ikke længere findes
         const existingProjectIds = new Set(projectsSnapshot.docs.map(doc => doc.id));
+
+        // Ryd op i gamle lyttere
         Object.keys(applicationsUnsubscribesRef.current).forEach(projectId => {
           if (!existingProjectIds.has(projectId)) {
-            // Fjern listener for slettede projekter
             applicationsUnsubscribesRef.current[projectId]();
             delete applicationsUnsubscribesRef.current[projectId];
           }
         });
 
+        // Håndter hver projekts ansøgninger
         projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
           const projectId = projectDoc.id;
           const projectData = projectDoc.data();
 
-          // Hvis der allerede er en listener for dette projekt, så spring over
-          if (applicationsUnsubscribesRef.current[projectId]) {
-            return;
-          }
+          if (applicationsUnsubscribesRef.current[projectId]) return;
 
           const applicationsCollection = collection(
             database,
@@ -57,14 +61,16 @@ const InfoPanelProvider = () => {
             "applications"
           );
 
-          // Lyt til ændringer i ansøgninger for hvert projekt
           const unsubscribeApplications = onSnapshot(
             applicationsCollection,
             (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
-              if (!applicationsSnapshot.empty) {
-                const updatedProject: ProjectData = {
-                  id: projectId,
-                  userId: user,
+              const projectApplications = applicationsSnapshot.docs.map(applicationDoc => {
+                const applicationData = applicationDoc.data();
+                return {
+                  id: `${projectId}-${applicationDoc.id}`, // Unikt ID for ansøgning
+                  userId: user, // Ejerens bruger-ID
+                  projectId, // Projektets ID
+                  applicationId: applicationDoc.id, // Ansøgningens ID
                   name: projectData.name || "Uden navn",
                   description: projectData.description || "Ingen beskrivelse",
                   status: projectData.status || "Project",
@@ -75,28 +81,24 @@ const InfoPanelProvider = () => {
                   projectImage: projectData.assets?.projectImage || null,
                   price: projectData.price !== undefined ? projectData.price : 0,
                   transferMethod: projectData.transferMethod || "Standard metode",
+                  applicantData: {
+                    ...applicationData,
+                    applicantId: applicationData.applicantId || "Ukendt",
+                    comment: applicationData.comment || "", // Sørger for, at comment altid er en streng
+                  },
                 };
-                setProjects(prevProjects => {
-                  const exists = prevProjects.find(p => p.id === projectId);
-                  if (exists) {
-                    // Opdater eksisterende projekt
-                    return prevProjects.map(p => p.id === projectId ? updatedProject : p);
-                  } else {
-                    // Tilføj nyt projekt
-                    return [...prevProjects, updatedProject];
-                  }
-                });
-              } else {
-                // Fjern projekt fra state, hvis der ikke er nogen ansøgninger
-                setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
-              }
+              });
+
+              setProjects(prevProjects => {
+                const filteredProjects = prevProjects.filter(p => p.projectId !== projectId);
+                return [...filteredProjects, ...projectApplications];
+              });
             },
             (error) => {
               console.error(`Fejl ved hentning af ansøgninger for projekt ${projectId}:`, error);
             }
           );
 
-          // Gem unsubscribe-funktionen for dette projekt
           applicationsUnsubscribesRef.current[projectId] = unsubscribeApplications;
         });
 
@@ -109,10 +111,8 @@ const InfoPanelProvider = () => {
       }
     );
 
-    // Cleanup listeners ved unmount
     return () => {
       unsubscribeProjects();
-      // Fjern alle applications listeners
       Object.values(applicationsUnsubscribesRef.current).forEach(unsub => unsub());
       applicationsUnsubscribesRef.current = {};
     };
@@ -136,8 +136,11 @@ const InfoPanelProvider = () => {
 
   return (
     <View style={styles.panelContainer}>
-      {projects.map((project) => (
-        <InfoPanel3 key={project.id} projectData={project} />
+      {projects.map((project, index) => (
+        <InfoPanel3 
+          key={`${project.id}-${index}`} // Unik nøgle
+          projectData={project} 
+        />
       ))}
     </View>
   );

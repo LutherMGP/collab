@@ -1,5 +1,7 @@
 // @/types/ProjectData.ts
 
+// @/types/ProjectData.ts
+
 // Definer typer for kategorier
 export type Category = "f8" | "f5" | "f3" | "f2";
 
@@ -21,15 +23,17 @@ export type InfoPanelCircularProps = {
 
 // Definer typen for projektdata
 export interface ProjectData {
-  id: string; // Projektets ID
-  userId: string; // Brugerens ID
+  id: string; // Projektets unikke ID
+  projectId: string; // ID for projektet (påkrævet, da det bruges i ansøgningskonteksten)
+  applicationId: string; // Ansøgningens unikke ID (påkrævet i din kontekst)
+  userId: string; // Brugerens ID (ejerens ID)
   name: string; // Projektets navn
   description: string; // Projektets beskrivelse
   status: "Project" | "Published"; // Begrænsede værdier for status
   price: number; // Pris på projektet
-  transferMethod: string; // Gør feltet obligatorisk
+  transferMethod: string; // Overførselsmetode
 
-  // Felter for hver kategori tillader string, null eller undefined
+  // Felter for hver kategori
   projectImage?: string | null;
   f8CoverImageLowRes?: string | null;
   f8PDF?: string | null;
@@ -42,4 +46,11 @@ export interface ProjectData {
 
   // Felt til cirkulær økonomi data
   circularEconomy?: CircularEconomyData; // Valgfrit felt
+
+  // Ansøgerens data (valgfrit)
+  applicantData?: {
+    applicantId: string; // Ansøgerens bruger-ID
+    comment: string; // Kommentar fra ansøger (obligatorisk for at undgå kompatibilitetsproblemer)
+    [key: string]: any; // Ekstra felter for ansøgerens data
+  };
 }
