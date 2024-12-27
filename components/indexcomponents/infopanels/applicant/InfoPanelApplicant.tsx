@@ -1,10 +1,12 @@
 // @/components/indexcomponents/infopanels/applicant/InfoPanelApplicant.tsx
 
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Text, StyleSheet, ScrollView } from "react-native";
 import {
   collection,
   getDocs,
+  query,
+  where,
   DocumentData,
   CollectionReference,
 } from "firebase/firestore";
@@ -30,19 +32,17 @@ const InfoPanelApplicant = () => {
         setIsLoading(true);
         const fetchedProjects: ProjectData[] = [];
 
-        // 1. Hent alle brugere (undtagen den nuværende bruger)
+        // Reference til ansøgninger
         const usersCollectionRef = collection(database, "users");
+
+        // Forespørgsel til at finde projekter, hvor brugeren har ansøgt
         const usersSnapshot = await getDocs(usersCollectionRef);
 
         for (const userDoc of usersSnapshot.docs) {
           const otherUserId = userDoc.id;
 
-          // Spring den nuværende bruger over
-          if (otherUserId === user) {
-            continue;
-          }
+          if (otherUserId === user) continue;
 
-          // 2. Hent projects-kollektionen for denne "anden" bruger
           const otherUserProjectsRef = collection(
             database,
             "users",
@@ -51,11 +51,10 @@ const InfoPanelApplicant = () => {
           );
           const projectsSnapshot = await getDocs(otherUserProjectsRef);
 
-          // 3. For hvert projekt, se om den nuværende bruger har ansøgt
           for (const projectDoc of projectsSnapshot.docs) {
             const projectData = projectDoc.data();
 
-            // Under-kollektion med ansøgninger
+            // Tjek ansøgninger for brugeren
             const applicationsRef: CollectionReference<DocumentData> = collection(
               database,
               "users",
@@ -64,29 +63,15 @@ const InfoPanelApplicant = () => {
               projectDoc.id,
               "applications"
             );
-            const applicationsSnapshot = await getDocs(applicationsRef);
 
-            // Se om der findes en ansøgning fra den nuværende bruger
-            // (fx tjek på doc.id eller en feltværdi, alt efter hvordan du gemmer ansøgninger)
-            let userHasApplied = false;
-            for (const applicationDoc of applicationsSnapshot.docs) {
-              // Eksempel: hvis du gemmer brugerens ID i doc.id:
-              if (applicationDoc.id === user) {
-                userHasApplied = true;
-                break;
-              }
-              // Alternativt, hvis du gemmer brugerens ID i et felt, fx 'userId':
-              // if (applicationDoc.data().userId === user) {
-              //   userHasApplied = true;
-              //   break;
-              // }
-            }
+            const querySnapshot = await getDocs(
+              query(applicationsRef, where("applicantId", "==", user))
+            );
 
-            // 4. Hvis user har ansøgt, tilføj projektet til listen
-            if (userHasApplied) {
+            if (!querySnapshot.empty) {
               fetchedProjects.push({
                 id: projectDoc.id,
-                userId: otherUserId, // projektets ejer er "anden" bruger
+                userId: otherUserId,
                 name: projectData.name || "Uden navn",
                 description: projectData.description || "Ingen beskrivelse",
                 status: projectData.status || "Project",
@@ -131,11 +116,11 @@ const InfoPanelApplicant = () => {
   }
 
   return (
-    <View style={styles.panelContainer}>
+    <ScrollView style={styles.panelContainer}>
       {projects.map((project) => (
         <InfoPanel3 key={project.id} projectData={project} />
       ))}
-    </View>
+    </ScrollView>
   );
 };
 
@@ -146,7 +131,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   panelContainer: {
-    padding: 0,
+    padding: 10,
   },
 });
 
