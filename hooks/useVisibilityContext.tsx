@@ -7,12 +7,16 @@ interface VisibilityContextType {
   isInfoPanelPublishedVisible: boolean;
   isInfoPanelCatalogVisible: boolean;
   isInfoPanelFavoritesVisible: boolean;
+  isInfoPanelProviderVisible: boolean;
+  isInfoPanelApplicantVisible: boolean;
   showPanel: (
     panel:
       | "projects"
       | "published"
       | "catalog"
       | "favorites"
+      | "provider"
+      | "applicant"
   ) => void;
   hideAllPanels: () => void;
 }
@@ -44,6 +48,11 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     useState(false);
   const [isInfoPanelFavoritesVisible, setIsInfoPanelFavoritesVisible] =
     useState(false);
+  const [isInfoPanelProviderVisible, setIsInfoPanelProviderVisible] =
+  useState(false);   
+  const [isInfoPanelApplicantVisible, setIsInfoPanelApplicantVisible] =
+  useState(false); 
+     
 
   // Logfunktion
   const logVisibilityChange = (panel: string | null) => {
@@ -60,11 +69,15 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       | "published"
       | "catalog"
       | "favorites"
+      | "provider"
+      | "applicant"
   ) => {
     setIsInfoPanelProjectsVisible(panel === "projects");
     setIsInfoPanelPublishedVisible(panel === "published");
     setIsInfoPanelCatalogVisible(panel === "catalog");
     setIsInfoPanelFavoritesVisible(panel === "favorites");
+    setIsInfoPanelProviderVisible(panel === "provider");
+    setIsInfoPanelApplicantVisible(panel === "applicant");
     logVisibilityChange(panel); // Log hvilken panel der blev aktiveret
   };
 
@@ -73,6 +86,8 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelPublishedVisible(false);
     setIsInfoPanelCatalogVisible(false);
     setIsInfoPanelFavoritesVisible(false);
+    setIsInfoPanelProviderVisible(false);
+    setIsInfoPanelApplicantVisible(false);
     logVisibilityChange(null); // Log at alle panels er skjult
   };
 
@@ -83,6 +98,8 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
         isInfoPanelPublishedVisible,
         isInfoPanelCatalogVisible,
         isInfoPanelFavoritesVisible,
+        isInfoPanelProviderVisible,
+        isInfoPanelApplicantVisible,
         showPanel,
         hideAllPanels,
       }}

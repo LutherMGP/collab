@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
-import InfoPanel1 from "@/components/indexcomponents/infopanels/catalog/InfoPanel2";
+import InfoPanel2 from "@/components/indexcomponents/infopanels/catalog/InfoPanel2";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -98,7 +98,7 @@ const InfoPanelFavorites = () => {
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel1 key={project.id} projectData={project} />
+        <InfoPanel2 key={project.id} projectData={project} />
       ))}
     </View>
   );

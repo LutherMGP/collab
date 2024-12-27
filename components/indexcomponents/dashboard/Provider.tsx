@@ -1,98 +1,127 @@
 // @/components/indexcomponents/dashboard/Provider.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collection,
-  query,
   onSnapshot,
-  where,
-  getDocs,
+  QuerySnapshot,
+  QueryDocumentSnapshot,
+  Unsubscribe,
+  DocumentData,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Provider = () => {
   const { user } = useAuth();
-  const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } = useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Total antal projekter
+  const { isInfoPanelProviderVisible, showPanel, hideAllPanels } = useVisibility();
+  const [applicationCount, setApplicationCount] = useState(0);
+  const projectListenersRef = useRef<{ [projectId: string]: Unsubscribe }>({});
 
-  // Logik: Tæller antallet af projekter fra andre brugere, der IKKE er markeret som favoritter 
-  // af den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
   
-    const fetchNonFavoriteProjectsCount = () => {
-      // Lyt til ændringer i favoritter
-      const favoritesCollection = collection(database, "users", user, "favorites");
-      const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-        const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
+    const userProjectsCollection = collection(database, "users", user, "projects");
   
-        // Lyt til projekter fra andre brugere
-        const usersCollection = collection(database, "users");
-        const usersUnsubscribe = onSnapshot(usersCollection, async (usersSnapshot) => {
-          const fetchedProjects: string[] = [];
-  
-          for (const userDoc of usersSnapshot.docs) {
-            if (userDoc.id === user) continue; // Spring den aktuelle bruger over
-            const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
-  
-            const projectsSnapshot = await getDocs(projectsQuery);
-            projectsSnapshot.forEach((projectDoc) => {
-              if (!favoriteProjectIds.includes(projectDoc.id)) {
-                fetchedProjects.push(projectDoc.id);
-              }
-            });
+    // Lyt til projekter og deres ansøgninger
+    const unsubscribeProjects = onSnapshot(
+      userProjectsCollection,
+      (projectsSnapshot: QuerySnapshot<DocumentData>) => {
+        // Ryd op i gamle lyttere for projekter, der ikke længere findes
+        const existingProjectIds = new Set(projectsSnapshot.docs.map(doc => doc.id));
+        Object.keys(projectListenersRef.current).forEach(projectId => {
+          if (!existingProjectIds.has(projectId)) {
+            projectListenersRef.current[projectId]();
+            delete projectListenersRef.current[projectId];
           }
-  
-          setTotalCount(fetchedProjects.length);
         });
   
-        return () => usersUnsubscribe(); // Stop lytning på brugere
-      });
+        // Håndter hver projekts ansøgninger
+        const newApplicationCounts: { [projectId: string]: number } = {};
+        let totalApplications = 0;
   
-      return () => favoritesUnsubscribe(); // Stop lytning på favoritter
+        projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
+          const projectId = projectDoc.id;
+  
+          if (projectListenersRef.current[projectId]) return; // Skip, hvis lytter allerede findes
+  
+          const applicationsCollection = collection(
+            database,
+            "users",
+            user,
+            "projects",
+            projectId,
+            "applications"
+          );
+  
+          const unsubscribeApplications = onSnapshot(
+            applicationsCollection,
+            (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
+              newApplicationCounts[projectId] = applicationsSnapshot.size;
+  
+              // Reberegn totalApplications baseret på alle aktive lyttere
+              totalApplications = Object.values(newApplicationCounts).reduce(
+                (sum, count) => sum + count,
+                0
+              );
+              setApplicationCount(totalApplications);
+            },
+            (error) => {
+              console.error(`Fejl ved lytning til ansøgninger for projekt ${projectId}:`, error);
+            }
+          );
+  
+          projectListenersRef.current[projectId] = unsubscribeApplications;
+        });
+      },
+      (error) => {
+        console.error("Fejl ved hentning af brugerens projekter:", error);
+      }
+    );
+  
+    // Cleanup ved unmount
+    return () => {
+      unsubscribeProjects();
+      Object.values(projectListenersRef.current).forEach(unsub => unsub());
+      projectListenersRef.current = {};
     };
-  
-    fetchNonFavoriteProjectsCount();
   }, [user]);
 
   const handlePress = () => {
-    if (isInfoPanelCatalogVisible) {
+    if (isInfoPanelProviderVisible) {
       hideAllPanels();
     } else {
-      showPanel("catalog");
+      showPanel("provider");
     }
   };
 
   return (
     <View style={styles.container}>
       <Image
-        source={require("@/assets/images/catalog.webp")}
+        source={require("@/assets/images/provider.webp")}
         style={styles.profileImg}
         resizeMode="cover"
       />
-
-      {/* Tæller-knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelCatalogVisible && styles.iconPressed,
+          isInfoPanelProviderVisible && styles.iconPressed,
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{totalCount || 0}</Text>
+        <Text style={styles.countText}>{applicationCount}</Text>
       </TouchableOpacity>
-
       <View style={styles.textContainer}>
-        <Text style={styles.text}>Catalog</Text>
+        <Text style={styles.text}>Provider</Text>
       </View>
     </View>
   );
 };
+
+export default Provider;
 
 const styles = StyleSheet.create({
   container: {
@@ -158,5 +187,3 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
 });
-
-export default Provider;

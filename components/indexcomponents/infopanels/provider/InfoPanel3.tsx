@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/InfoPanel2.tsx
+// @/components/indexcomponents/infopanels/provider/InfoPanel3.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
-import { styles as baseStyles } from "components/indexcomponents/infopanels/catalog/InfoPanelStyles2";
+import { styles as baseStyles } from "components/indexcomponents/infopanels/provider/InfoPanelStyles3";
 import { useRouter } from "expo-router";
 
 type ProjectData = {
@@ -39,7 +39,7 @@ type InfoPanelProps = {
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
+const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -54,7 +54,228 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditEnabled, setIsEditEnabled] = useState(false);
+  const [applicantComment, setApplicantComment] = useState<string | null>(null);
+  const [applicantData, setApplicantData] = useState<{
+    profileImage?: string | null;
+    name?: string | null;
+  }>({}); // Ansøgerens data
   const router = useRouter();
+
+  // Synkroniser med Firestore for at hente ansøgerens data
+  useEffect(() => {
+    const fetchApplicantData = async () => {
+      try {
+        if (!projectData.userId || !projectData.id) {
+          console.warn("Manglende data for projekt eller bruger.");
+          return;
+        }
+  
+        // Reference til ansøgninger i Firestore
+        const applicationsRef = collection(
+          database,
+          "users",
+          projectData.userId,
+          "projects",
+          projectData.id,
+          "applications"
+        );
+  
+        // Hent ansøgninger
+        const applicationsSnapshot = await getDocs(applicationsRef);
+  
+        // Find den relevante ansøgning for den aktuelle bruger (eller første ansøgning)
+        const applicationDoc = applicationsSnapshot.docs.find((doc) =>
+          doc.data().applicantId ? doc.data().applicantId : null
+        );
+  
+        if (!applicationDoc) {
+          console.warn("Ingen ansøgning fundet.");
+          return;
+        }
+  
+        // Hent applicantId fra ansøgningsdata
+        const { applicantId } = applicationDoc.data();
+        if (!applicantId) {
+          console.warn("Ingen applicantId fundet.");
+          return;
+        }
+  
+        // Debugging log
+        console.log("Henter data for ansøger med ID:", applicantId);
+  
+        // Find ansøgerens data i `users/{applicantId}`
+        const applicantDocRef = doc(database, "users", applicantId);
+        const applicantSnap = await getDoc(applicantDocRef);
+  
+        if (applicantSnap.exists()) {
+          const applicantData = applicantSnap.data();
+          setApplicantData({
+            profileImage: applicantData.profileImage || null,
+            name: applicantData.email || "Ukendt bruger",
+          });
+          console.log("Ansøgerens data hentet:", applicantData);
+        } else {
+          console.warn(`Ansøgerens dokument findes ikke. ID: ${applicantId}`);
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af ansøgerens data:", error);
+      }
+    };
+  
+    fetchApplicantData();
+  }, [projectData.userId, projectData.id]);
+
+  // Synkroniser med Firestore for at hente ansøgerens komment
+  useEffect(() => {
+    const fetchApplicantComment = async () => {
+      try {
+        const applicationsRef = collection(
+          database,
+          "users",
+          projectData.userId!,
+          "projects",
+          projectData.id,
+          "applications"
+        );
+  
+        const querySnapshot = await getDocs(applicationsRef);
+  
+        // Find ansøgningen fra den nuværende bruger
+        const applicantDoc = querySnapshot.docs.find(
+          (doc) => doc.id === currentUser
+        );
+  
+        if (applicantDoc) {
+          setApplicantComment(applicantDoc.data().comment || "Ingen kommentar.");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af ansøgerens kommentar:", error);
+      }
+    };
+  
+    fetchApplicantComment();
+  }, [projectData.userId, projectData.id, currentUser]);
+
+
+  // Håndter godkendelse af ansøger
+  const handleApproveApplicant = async () => {
+    try {
+      if (!projectData.userId || !projectData.id || !currentUser) {
+        throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
+      }
+  
+      // Opret `duediligence` collection og tilføj ansøgeren
+      const dueDiligenceRef = collection(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "duediligence"
+      );
+      const newDocRef = doc(dueDiligenceRef);
+      await setDoc(newDocRef, {
+        applicantId: currentUser,
+        createdAt: new Date().toISOString(),
+      });
+  
+      // Fjern ansøgningen fra `applications`
+      const applicationDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "applications",
+        currentUser
+      );
+      await deleteDoc(applicationDocRef);
+  
+      // Opdater projektets status til `DueDiligence`
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+      await setDoc(
+        projectDocRef,
+        { status: "DueDiligence" },
+        { merge: true }
+      );
+  
+      Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
+    } catch (error) {
+      console.error("Fejl ved godkendelse af ansøger:", error);
+      Alert.alert("Fejl", "Kunne ikke godkende ansøgeren. Prøv igen.");
+    }
+  };
+
+  // Håndter afvisning af ansøger
+const handleRejectApplicant = async () => {
+  try {
+    if (!projectData.userId || !projectData.id) {
+      throw new Error("Projekt-ID eller bruger-ID mangler.");
+    }
+
+    // Hent ansøgningen for at finde applicantId
+    const applicationsRef = collection(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id,
+      "applications"
+    );
+
+    // Hent ansøgninger
+    const applicationsSnapshot = await getDocs(applicationsRef);
+
+    // Find den relevante ansøgning
+    const applicationDoc = applicationsSnapshot.docs.find((doc) =>
+      doc.data().applicantId ? doc.data().applicantId : null
+    );
+
+    if (!applicationDoc) {
+      Alert.alert("Fejl", "Ingen ansøgning fundet.");
+      return;
+    }
+
+    const { applicantId } = applicationDoc.data();
+    if (!applicantId) {
+      Alert.alert("Fejl", "Ansøgerens ID mangler.");
+      return;
+    }
+
+    console.log("Sletter ansøgning for ansøger med ID:", applicantId);
+
+    // Slet ansøgningen
+    const applicationDocRef = doc(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id,
+      "applications",
+      applicationDoc.id // Brug dokumentets ID her
+    );
+
+    await deleteDoc(applicationDocRef);
+
+    // Fjern ansøgeren fra den lokale state
+    setApplicantData((prev) => ({
+      profileImage: null,
+      name: null,
+    }));
+    setApplicantComment(null);
+
+    Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+  } catch (error) {
+    console.error("Fejl ved afvisning af ansøger:", error);
+    Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
+  }
+};
 
   // Synkroniser med Firestore for at hente favoritstatus
   useEffect(() => {
@@ -255,45 +476,46 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
-        <Pressable
-          style={baseStyles.F8}
-          accessibilityLabel="F8 Button"
-        >
-          {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImageLowRes && (
-            <Image
+        <View style={baseStyles.F8}>
+          {/* Projektbilledet i venstre øverste hjørne */}
+          {projectData.projectImage && (
+            <View style={baseStyles.projectImageContainer}>
+              <Image
                 source={{
-                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`,
+                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
                 }}
-                style={baseStyles.f8CoverImage}
-            />
+                style={baseStyles.projectImage}
+              />
+            </View>
           )}
 
-          {/* Tekst i f8 toppen */}
+          {/* Ansøgerens profilbillede i højre øverste hjørne */}
+          {applicantData.profileImage && (
+            <View style={baseStyles.applicantImageContainer}>
+              <Image
+                source={{
+                  uri: `${applicantData.profileImage}?timestamp=${Date.now()}`, // Dynamisk hentet URL
+                }}
+                style={baseStyles.applicantImage}
+              />
+            </View>
+          )}
+
+          {/* Tekst i toppen */}
           <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Specification</Text>
+            <Text style={baseStyles.text}>Application</Text>
           </View>
 
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectData.projectImage && (
-            <Pressable
-            style={[
-              baseStyles.projectImageContainer,
-              { opacity: isEditEnabled ? 1 : 1 },
-            ]}
-            accessibilityLabel="Project Image Button"
-          >
-            <Image
-              source={{
-                uri: projectData.projectImage
-                  ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                  : require("@/assets/default/projectimage/projectImage.jpg"),
-              }}
-              style={baseStyles.projectImage}
-            />
-          </Pressable>
-          )}
-        </Pressable>
+          {/* Ansøgerens navn */}
+          <Text style={baseStyles.applicantName}>
+            {applicantData.name || "Ukendt ansøger"}
+          </Text>
+
+          {/* Vis ansøgerens kommentar */}
+          <Text style={baseStyles.commentText}>
+            {applicantComment || "Ingen kommentar tilføjet."}
+          </Text>
+        </View>
       </View>
 
       {/* Nedre container */}
@@ -322,29 +544,20 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
-            <View style={baseStyles.f1topHalf}>
-              <Pressable
-                style={baseStyles.F1A}
-                onPress={handleFavoriteToggle} // Tilføj en funktion til at håndtere tryk
-              >
-                <AntDesign
-                  name={isFavorite ? "heart" : "hearto"} // Opdater baseret på favoritstatus
-                  size={24}
-                  color={isFavorite ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve baseret på status
-                />
-              </Pressable>
-            </View>
+              <View style={baseStyles.f1topHalf}>
+                <Pressable
+                  style={baseStyles.F1A}
+                  onPress={handleApproveApplicant} // Godkend knap
+                >
+                  <FontAwesome name="check" size={24} color="green" />
+                </Pressable>
+              </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
                   style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Bevarer funktionaliteten
-                  accessibilityLabel="Send Button" // Opdateret label
+                  onPress={handleRejectApplicant} // Afvis knap
                 >
-                  <FontAwesome
-                    name="send-o"
-                    size={24}
-                    color="#0a7ea4"
-                  />
+                  <FontAwesome name="times" size={24} color="red" />
                 </Pressable>
               </View>
             </View>
@@ -420,4 +633,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InfoPanel2;
+export default InfoPanel3;

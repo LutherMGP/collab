@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/projects/InfoPanelStyles1.tsx
+// @/components/indexcomponents/infopanels/provider/InfoPanelStyles3.tsx
 
 import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
@@ -348,22 +348,6 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  legalTagF5: {
-    position: "absolute", // Absolut positionering for at placere knappen
-    bottom: 6, // Placerer knappen 6 pixels fra bunden af F5-feltet
-    left: "50%", // Flytter knappen til midten af F5-feltet i horisontal retning
-    transform: [{ translateX: -20 }], // Justerer knappen tilbage med halvdelen af dens bredde (40px inkl. padding)
-    backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
-    borderRadius: 20, // Rund knap
-    padding: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 4, // Tilføjer skygge for bedre design (Android)
-    shadowColor: "#000", // Skygge for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
   textTag: {
     position: "absolute", // Placer den relativt til containeren
     top: 5, // Placering tæt på toppen
@@ -590,5 +574,34 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  applicantImageContainer: {
+    position: "absolute",
+    top: 5.5, // Justering i forhold til toppen af F8-feltet
+    right: 5.5, // Justering i forhold til højre kant
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    width: 50, // Diameter
+    height: 50, // Diameter
+    borderRadius: 25, // Rund form
+    elevation: 4, // Skyggeeffekt
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  applicantImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 25,
+    resizeMode: "cover",
+  },
+  applicantName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 30, // Afstand fra "Application"-teksten
+    marginBottom: 10,
+    color: Colors.light.text, // Kan justeres afhængigt af tema
   },
 });

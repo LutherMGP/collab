@@ -94,7 +94,7 @@ export default function TabLayout() {
                   ? require("@/assets/images/logo/genfoedthub_dark.png")
                   : require("@/assets/images/logo/genfoedthub_light.png")
               }
-              style={{ width: 70, height: 30, marginLeft: 14 }}
+              style={{ width: 85, height: 43, marginLeft: 14 }}
             />
           ),
           headerRight: () => (

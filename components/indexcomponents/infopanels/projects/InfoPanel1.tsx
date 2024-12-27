@@ -30,6 +30,7 @@ import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/proje
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import InfoPanelCircular from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/circular/InfoPanelCircular";
+import InfoPanelLegal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/legal/InfoPanelLegal"; // Tilføjet import
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
 import { FilePaths } from "@/utils/filePaths";
@@ -45,6 +46,7 @@ type ProjectData = {
   description: string;
   status: string;
   transferMethod: string;
+  legalDescription?: string | null; // Tilføjet felt til juridisk beskrivelse
   circularEconomy?: CircularEconomyData; 
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
@@ -86,16 +88,17 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
+  const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
   const [refreshKey, setRefreshKey] = useState(0);
 
-    // Tjek for manglende data
-    if (!projectData || !projectData.id || !userId) {
-      return (
-        <View style={baseStyles.container}>
-          <Text>Data mangler. Tjek dine props.</Text>
-        </View>
-      );
-    }
+  // Tjek for manglende data
+  if (!projectData || !projectData.id || !userId) {
+    return (
+      <View style={baseStyles.container}>
+        <Text>Data mangler. Tjek dine props.</Text>
+      </View>
+    );
+  }
 
   // Synchroniser local state med props
   useEffect(() => {
@@ -123,6 +126,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           ...prev,
           name: data.name || "",
           description: data.description || "",
+          legalDescription: data.legalDescription || prev.legalDescription || null, // Tilføjet hentning af legalDescription
           f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
           f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
           f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
@@ -130,6 +134,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           projectImage: data.projectImage || prev.projectImage || null,
           status: data.status || prev.status || "",
           transferMethod: data.transferMethod || prev.transferMethod || "",
+          circularEconomy: data.circularEconomy || prev.circularEconomy || undefined,
         }));
       }
     } catch (error) {
@@ -414,10 +419,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Vis billede, hvis det er tilgængeligt */}
           {projectData.f8CoverImageLowRes && (
             <Image
-                source={{
-                  uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                }}
-                style={baseStyles.f8CoverImage}
+              source={{
+                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+              }}
+              style={baseStyles.f8CoverImage}
             />
           )}
 
@@ -429,23 +434,23 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           {/* Projektbilledet i det runde felt med onPress */}
           {projectData.projectImage && (
             <Pressable
-            style={[
-              baseStyles.projectImageContainer,
-              { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-            ]}
-            onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
-            accessibilityLabel="Project Image Button"
-            disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
-          >
-            <Image
-              source={{
-                uri: projectData.projectImage
-                  ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                  : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
-              }}
-              style={baseStyles.projectImage} // Tilføj dine styles her
-            />
-          </Pressable>
+              style={[
+                baseStyles.projectImageContainer,
+                { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
+              ]}
+              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
+              accessibilityLabel="Project Image Button"
+              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
+            >
+              <Image
+                source={{
+                  uri: projectData.projectImage
+                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
+                    : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+                }}
+                style={baseStyles.projectImage} // Tilføj dine styles her
+              />
+            </Pressable>
           )}
 
           {/* Delete-knap */}
@@ -493,7 +498,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                       uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
                     }}
                     style={baseStyles.f2CoverImage}
-                />
+                  />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -533,7 +538,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   <AntDesign
                     name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
                     size={24}
-                    color={projectData.status === "Published" ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+                    color="#0a7ea4" // Farve forbliver ens
                   />
                 </Pressable>
               </View>
@@ -611,13 +616,22 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             </Pressable>
           </Pressable>
 
-          {/* Ny Prize-knap */}
+          {/* Prize-knap */}
           <Pressable
             style={baseStyles.prizeTagF5}
             onPress={handlePrizePress} // Brug den nye funktion
             accessibilityLabel="Prize Button"
           >
             <AntDesign name="swap" size={20} color="#0a7ea4" />
+          </Pressable>
+
+          {/* Legal-knap placeret nederst i midten */}
+          <Pressable
+            style={[baseStyles.legalTagF5, { alignSelf: "center", marginTop: 10 }]} // Placer centralt og justér margin
+            onPress={() => setIsLegalModalVisible(true)} // Åbn modal
+            accessibilityLabel="Legal Button"
+          >
+            <AntDesign name="copyright" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
           </Pressable>
         </View>
       </View>
@@ -850,6 +864,32 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         </View>
       </Modal>
 
+      {/* Legal Modal */}
+      <Modal
+        visible={isLegalModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsLegalModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <InfoPanelLegal
+              onClose={() => setIsLegalModalVisible(false)}
+              currentDescription={projectData.legalDescription || "Ingen beskrivelse tilgængelig"}
+              projectId={projectData.id}
+              userId={userId || ""}
+              onSave={(newDescription) => {
+                setProjectData((prev) => ({
+                  ...prev,
+                  legalDescription: newDescription, // Opdaterer juridisk beskrivelse
+                }));
+              }}
+              isEditable={isEditEnabled}
+            />
+          </View>
+        </View>
+      </Modal>
+
       <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
     </ScrollView>
   );
@@ -868,6 +908,13 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
+  },
+  legalTagF5: { // Tilføjet stil for Legal-knap
+    backgroundColor: "#f5f5f5",
+    padding: 10,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
