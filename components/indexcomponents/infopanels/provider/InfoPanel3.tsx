@@ -213,30 +213,69 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   };
 
   // Håndter afvisning af ansøger
-  const handleRejectApplicant = async () => {
-    try {
-      if (!projectData.userId || !projectData.id || !currentUser) {
-        throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
-      }
-  
-      // Fjern ansøgningen
-      const applicationDocRef = doc(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id,
-        "applications",
-        currentUser
-      );
-      await deleteDoc(applicationDocRef);
-  
-      Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
-    } catch (error) {
-      console.error("Fejl ved afvisning af ansøger:", error);
-      Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
+const handleRejectApplicant = async () => {
+  try {
+    if (!projectData.userId || !projectData.id) {
+      throw new Error("Projekt-ID eller bruger-ID mangler.");
     }
-  };
+
+    // Hent ansøgningen for at finde applicantId
+    const applicationsRef = collection(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id,
+      "applications"
+    );
+
+    // Hent ansøgninger
+    const applicationsSnapshot = await getDocs(applicationsRef);
+
+    // Find den relevante ansøgning
+    const applicationDoc = applicationsSnapshot.docs.find((doc) =>
+      doc.data().applicantId ? doc.data().applicantId : null
+    );
+
+    if (!applicationDoc) {
+      Alert.alert("Fejl", "Ingen ansøgning fundet.");
+      return;
+    }
+
+    const { applicantId } = applicationDoc.data();
+    if (!applicantId) {
+      Alert.alert("Fejl", "Ansøgerens ID mangler.");
+      return;
+    }
+
+    console.log("Sletter ansøgning for ansøger med ID:", applicantId);
+
+    // Slet ansøgningen
+    const applicationDocRef = doc(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id,
+      "applications",
+      applicationDoc.id // Brug dokumentets ID her
+    );
+
+    await deleteDoc(applicationDocRef);
+
+    // Fjern ansøgeren fra den lokale state
+    setApplicantData((prev) => ({
+      profileImage: null,
+      name: null,
+    }));
+    setApplicantComment(null);
+
+    Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+  } catch (error) {
+    console.error("Fejl ved afvisning af ansøger:", error);
+    Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
+  }
+};
 
   // Synkroniser med Firestore for at hente favoritstatus
   useEffect(() => {

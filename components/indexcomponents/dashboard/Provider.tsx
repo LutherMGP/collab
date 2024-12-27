@@ -1,46 +1,53 @@
 // @/components/indexcomponents/dashboard/Provider.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import {
   collection,
-  query,
   onSnapshot,
-  getDocs,
-  CollectionReference,
+  QuerySnapshot,
+  QueryDocumentSnapshot,
+  Unsubscribe,
+  DocumentData,
 } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Provider = () => {
   const { user } = useAuth();
   const { isInfoPanelProviderVisible, showPanel, hideAllPanels } = useVisibility();
-  const [applicationCount, setApplicationCount] = useState(0); // Antal ansøgninger
+  const [applicationCount, setApplicationCount] = useState(0);
+  const projectListenersRef = useRef<{ [projectId: string]: Unsubscribe }>({});
 
   useEffect(() => {
     if (!user) return;
-
-    const fetchApplications = async () => {
-      try {
+  
+    const userProjectsCollection = collection(database, "users", user, "projects");
+  
+    // Lyt til projekter og deres ansøgninger
+    const unsubscribeProjects = onSnapshot(
+      userProjectsCollection,
+      (projectsSnapshot: QuerySnapshot<DocumentData>) => {
+        // Ryd op i gamle lyttere for projekter, der ikke længere findes
+        const existingProjectIds = new Set(projectsSnapshot.docs.map(doc => doc.id));
+        Object.keys(projectListenersRef.current).forEach(projectId => {
+          if (!existingProjectIds.has(projectId)) {
+            projectListenersRef.current[projectId]();
+            delete projectListenersRef.current[projectId];
+          }
+        });
+  
+        // Håndter hver projekts ansøgninger
+        const newApplicationCounts: { [projectId: string]: number } = {};
         let totalApplications = 0;
-
-        // Hent alle projekter, som den aktuelle bruger ejer
-        const projectsCollection = collection(
-          database,
-          "users",
-          user,
-          "projects"
-        ) as CollectionReference;
-
-        const projectDocs = await getDocs(projectsCollection);
-
-        // Iterer gennem hvert projekt
-        const projectPromises = projectDocs.docs.map(async (projectDoc) => {
+  
+        projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
           const projectId = projectDoc.id;
-
-          // Hent 'applications'-sub-collection for hvert projekt
+  
+          if (projectListenersRef.current[projectId]) return; // Skip, hvis lytter allerede findes
+  
           const applicationsCollection = collection(
             database,
             "users",
@@ -48,25 +55,39 @@ const Provider = () => {
             "projects",
             projectId,
             "applications"
-          ) as CollectionReference;
-
-          const applicationsSnapshot = await getDocs(applicationsCollection);
-
-          // Tilføj antallet af ansøgninger i dette projekt til den samlede tæller
-          totalApplications += applicationsSnapshot.size;
+          );
+  
+          const unsubscribeApplications = onSnapshot(
+            applicationsCollection,
+            (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
+              newApplicationCounts[projectId] = applicationsSnapshot.size;
+  
+              // Reberegn totalApplications baseret på alle aktive lyttere
+              totalApplications = Object.values(newApplicationCounts).reduce(
+                (sum, count) => sum + count,
+                0
+              );
+              setApplicationCount(totalApplications);
+            },
+            (error) => {
+              console.error(`Fejl ved lytning til ansøgninger for projekt ${projectId}:`, error);
+            }
+          );
+  
+          projectListenersRef.current[projectId] = unsubscribeApplications;
         });
-
-        // Vent på, at alle forespørgsler er færdige
-        await Promise.all(projectPromises);
-
-        // Opdater state med det samlede antal ansøgninger
-        setApplicationCount(totalApplications);
-      } catch (error) {
-        console.error("Fejl ved hentning af ansøgninger:", error);
+      },
+      (error) => {
+        console.error("Fejl ved hentning af brugerens projekter:", error);
       }
+    );
+  
+    // Cleanup ved unmount
+    return () => {
+      unsubscribeProjects();
+      Object.values(projectListenersRef.current).forEach(unsub => unsub());
+      projectListenersRef.current = {};
     };
-
-    fetchApplications();
   }, [user]);
 
   const handlePress = () => {
@@ -84,8 +105,6 @@ const Provider = () => {
         style={styles.profileImg}
         resizeMode="cover"
       />
-
-      {/* Tæller-knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
@@ -95,7 +114,6 @@ const Provider = () => {
       >
         <Text style={styles.countText}>{applicationCount}</Text>
       </TouchableOpacity>
-
       <View style={styles.textContainer}>
         <Text style={styles.text}>Provider</Text>
       </View>
