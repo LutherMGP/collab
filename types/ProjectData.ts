@@ -19,6 +19,12 @@ export type InfoPanelCircularProps = {
   currentData: CircularEconomyData; // De aktuelle data
 };
 
+export interface ApplicantData {
+  id: string;
+  name: string;
+  profileImage?: string | null;
+}
+
 // Definer typen for projektdata
 export interface ProjectData {
   id: string; // Projektets ID
@@ -28,7 +34,7 @@ export interface ProjectData {
   status: "Project" | "Published"; // Begrænsede værdier for status
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
-  applicantId?: string; // Ansøgerens ID
+  applicants?: ApplicantData[]; // Liste over ansøgere
 
   // Felter for hver kategori tillader string, null eller undefined
   projectImage?: string | null;

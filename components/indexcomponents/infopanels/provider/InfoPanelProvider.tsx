@@ -15,7 +15,7 @@ import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPan
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { ProjectData } from "@/types/ProjectData";
+import { ProjectData, ApplicantData } from "@/types/ProjectData";
 
 const InfoPanelProvider = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
@@ -45,16 +45,16 @@ const InfoPanelProvider = () => {
             delete applicationsUnsubscribesRef.current[projectId];
           }
         });
-
+    
         projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
           const projectId = projectDoc.id;
           const projectData = projectDoc.data();
-
+        
           // Hvis der allerede er en listener for dette projekt, så spring over
           if (applicationsUnsubscribesRef.current[projectId]) {
             return;
           }
-
+        
           const applicationsCollection = collection(
             database,
             "users",
@@ -63,18 +63,41 @@ const InfoPanelProvider = () => {
             projectId,
             "applications"
           );
-
+        
           // Lyt til ændringer i ansøgninger for hvert projekt
           const unsubscribeApplications = onSnapshot(
             applicationsCollection,
             (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
-              const newProjects: ProjectData[] = [];
-
-              applicationsSnapshot.docs.forEach((applicationDoc) => {
+              const newApplicants = applicationsSnapshot.docs.map((applicationDoc) => {
                 const applicationData = applicationDoc.data();
-                const applicantId = applicationData.applicantId;
-
-                if (applicantId) {
+                return {
+                  id: applicationData.applicantId,
+                  name: applicationData.applicantName || "Ukendt ansøger",
+                  profileImage: applicationData.profileImage || null,
+                };
+              });
+        
+              setProjects((prevProjects) => {
+                const updatedProjects = prevProjects.map((p) => {
+                  if (p.id === projectId) {
+                    // Flet eksisterende ansøgere med nye ansøgere
+                    const existingApplicants = p.applicants || [];
+                    const mergedApplicants = [...existingApplicants, ...newApplicants].filter(
+                      (applicant, index, self) =>
+                        self.findIndex((a) => a.id === applicant.id) === index // Fjern dubletter baseret på 'id'
+                    );
+        
+                    return {
+                      ...p,
+                      applicants: mergedApplicants,
+                    };
+                  }
+                  return p;
+                });
+        
+                // Tilføj projekt, hvis det ikke allerede findes
+                const projectExists = prevProjects.some((p) => p.id === projectId);
+                if (!projectExists) {
                   const newProject: ProjectData = {
                     id: projectId,
                     userId: user,
@@ -88,32 +111,23 @@ const InfoPanelProvider = () => {
                     projectImage: projectData.assets?.projectImage || null,
                     price: projectData.price !== undefined ? projectData.price : 0,
                     transferMethod: projectData.transferMethod || "Standard metode",
-                    applicantId, // Unik ansøger-ID
+                    applicants: newApplicants,
                   };
-
-                  newProjects.push(newProject);
+                  return [...updatedProjects, newProject];
                 }
-              });
-
-              setProjects((prevProjects) => {
-                // Filtrér tidligere projekter for at fjerne de projekter med samme `projectId` og `applicantId`
-                const filteredProjects = prevProjects.filter(
-                  (p) => !(p.id === projectId && newProjects.some((np) => np.applicantId === p.applicantId))
-                );
-
-                // Tilføj de nye projekter
-                return [...filteredProjects, ...newProjects];
+        
+                return updatedProjects;
               });
             },
             (error) => {
               console.error(`Fejl ved hentning af ansøgninger for projekt ${projectId}:`, error);
             }
           );
-
+        
           // Gem unsubscribe-funktionen for dette projekt
           applicationsUnsubscribesRef.current[projectId] = unsubscribeApplications;
         });
-
+    
         setIsLoading(false);
       },
       (error) => {
@@ -151,7 +165,24 @@ const InfoPanelProvider = () => {
   return (
     <View style={styles.panelContainer}>
       {projects.map((project, index) => (
-        <InfoPanel3 key={`${project.id}-${index}`} projectData={project} />
+        <InfoPanel3
+          key={`${project.id}-${index}`}
+          projectData={project}
+          onUpdate={(updatedProjectId: string, removedApplicantId: string) => {
+            setProjects((prevProjects) =>
+              prevProjects.map((p) => {
+                if (p.id === updatedProjectId) {
+                  // Filtrér den afviste ansøger fra projektet
+                  return {
+                    ...p,
+                    applicants: p.applicants?.filter((a: ApplicantData) => a.id !== removedApplicantId),
+                  };
+                }
+                return p;
+              })
+            );
+          }}
+        />
       ))}
     </View>
   );
