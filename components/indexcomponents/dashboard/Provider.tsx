@@ -5,87 +5,71 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  onSnapshot,
-  QuerySnapshot,
-  QueryDocumentSnapshot,
-  Unsubscribe,
-  DocumentData,
-} from "firebase/firestore";
+import { collection, doc, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Provider = () => {
   const { user } = useAuth();
   const { isInfoPanelProviderVisible, showPanel, hideAllPanels } = useVisibility();
   const [applicationCount, setApplicationCount] = useState(0);
-  const projectListenersRef = useRef<{ [projectId: string]: Unsubscribe }>({});
+  const projectListenersRef = useRef<{ [projectId: string]: () => void }>({});
 
   useEffect(() => {
     if (!user) return;
-  
+
     const userProjectsCollection = collection(database, "users", user, "projects");
-  
-    // Lyt til projekter og deres ansøgninger
+
+    // Lyt til brugerens projekter
     const unsubscribeProjects = onSnapshot(
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
         // Ryd op i gamle lyttere for projekter, der ikke længere findes
-        const existingProjectIds = new Set(projectsSnapshot.docs.map(doc => doc.id));
-        Object.keys(projectListenersRef.current).forEach(projectId => {
+        const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
+        Object.keys(projectListenersRef.current).forEach((projectId) => {
           if (!existingProjectIds.has(projectId)) {
             projectListenersRef.current[projectId]();
             delete projectListenersRef.current[projectId];
           }
         });
-  
-        // Håndter hver projekts ansøgninger
-        const newApplicationCounts: { [projectId: string]: number } = {};
+
         let totalApplications = 0;
-  
-        projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
+
+        projectsSnapshot.docs.forEach((projectDoc) => {
           const projectId = projectDoc.id;
-  
+
           if (projectListenersRef.current[projectId]) return; // Skip, hvis lytter allerede findes
-  
-          const applicationsCollection = collection(
-            database,
-            "users",
-            user,
-            "projects",
-            projectId,
-            "applications"
-          );
-  
-          const unsubscribeApplications = onSnapshot(
-            applicationsCollection,
-            (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
-              newApplicationCounts[projectId] = applicationsSnapshot.size;
-  
-              // Reberegn totalApplications baseret på alle aktive lyttere
-              totalApplications = Object.values(newApplicationCounts).reduce(
-                (sum, count) => sum + count,
-                0
-              );
+
+          const projectRef = doc(database, "users", user, "projects", projectId);
+
+          const unsubscribeApplicant = onSnapshot(
+            projectRef,
+            (docSnapshot) => {
+              const projectData = docSnapshot.data();
+
+              // Kontrollér, om `applicant` eksisterer, og status er `Application`
+              if (projectData?.applicant && projectData?.status === "Application") {
+                totalApplications += 1;
+              }
+
               setApplicationCount(totalApplications);
             },
             (error) => {
-              console.error(`Fejl ved lytning til ansøgninger for projekt ${projectId}:`, error);
+              console.error(`Fejl ved lytning til projekt ${projectId}:`, error);
             }
           );
-  
-          projectListenersRef.current[projectId] = unsubscribeApplications;
+
+          projectListenersRef.current[projectId] = unsubscribeApplicant;
         });
       },
       (error) => {
         console.error("Fejl ved hentning af brugerens projekter:", error);
       }
     );
-  
+
     // Cleanup ved unmount
     return () => {
       unsubscribeProjects();
-      Object.values(projectListenersRef.current).forEach(unsub => unsub());
+      Object.values(projectListenersRef.current).forEach((unsub) => unsub());
       projectListenersRef.current = {};
     };
   }, [user]);
