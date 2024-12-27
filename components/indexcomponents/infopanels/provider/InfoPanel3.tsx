@@ -64,21 +64,58 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Synkroniser med Firestore for at hente ansøgerens data
   useEffect(() => {
     const fetchApplicantData = async () => {
-      if (!currentUser) return;
-  
       try {
-        // Reference til ansøgerens Firestore-dokument
-        const applicantDocRef = doc(database, "users", currentUser);
-        const docSnap = await getDoc(applicantDocRef);
+        if (!projectData.userId || !projectData.id) {
+          console.warn("Manglende data for projekt eller bruger.");
+          return;
+        }
   
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        // Reference til ansøgninger i Firestore
+        const applicationsRef = collection(
+          database,
+          "users",
+          projectData.userId,
+          "projects",
+          projectData.id,
+          "applications"
+        );
+  
+        // Hent ansøgninger
+        const applicationsSnapshot = await getDocs(applicationsRef);
+  
+        // Find den relevante ansøgning for den aktuelle bruger (eller første ansøgning)
+        const applicationDoc = applicationsSnapshot.docs.find((doc) =>
+          doc.data().applicantId ? doc.data().applicantId : null
+        );
+  
+        if (!applicationDoc) {
+          console.warn("Ingen ansøgning fundet.");
+          return;
+        }
+  
+        // Hent applicantId fra ansøgningsdata
+        const { applicantId } = applicationDoc.data();
+        if (!applicantId) {
+          console.warn("Ingen applicantId fundet.");
+          return;
+        }
+  
+        // Debugging log
+        console.log("Henter data for ansøger med ID:", applicantId);
+  
+        // Find ansøgerens data i `users/{applicantId}`
+        const applicantDocRef = doc(database, "users", applicantId);
+        const applicantSnap = await getDoc(applicantDocRef);
+  
+        if (applicantSnap.exists()) {
+          const applicantData = applicantSnap.data();
           setApplicantData({
-            profileImage: data.profileImage || null,
-            name: data.name || null,
+            profileImage: applicantData.profileImage || null,
+            name: applicantData.email || "Ukendt bruger",
           });
+          console.log("Ansøgerens data hentet:", applicantData);
         } else {
-          console.warn("Ansøgerens dokument findes ikke.");
+          console.warn(`Ansøgerens dokument findes ikke. ID: ${applicantId}`);
         }
       } catch (error) {
         console.error("Fejl ved hentning af ansøgerens data:", error);
@@ -86,7 +123,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     };
   
     fetchApplicantData();
-  }, [currentUser, applicantComment]);
+  }, [projectData.userId, projectData.id]);
 
   // Synkroniser med Firestore for at hente ansøgerens komment
   useEffect(() => {
