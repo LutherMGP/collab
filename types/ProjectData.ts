@@ -1,31 +1,24 @@
 // @/types/ProjectData.ts
 
-// Definer typer for kategorier
-export type Category = "f8" | "f5" | "f3" | "f2";
+export interface Applicant {
+  id: string; // Brugerens ID
+  name: string; // Brugerens navn
+  email: string; // Brugerens e-mail
+  profileImage?: string | null; // Brugerens profilbillede
+  appliedAt: string; // Tidsstempel for ansøgning
+}
 
-// Definer typen for cirkulær økonomi data
 export type CircularEconomyData = {
   waterUsage: { value: number; description: string };
   CO2Emission: { value: number; description: string };
 };
 
-// Definer typen for InfoPanelCircularProps
-export type InfoPanelCircularProps = {
-  onClose: () => void; // Funktion til at lukke modal
-  projectId: string; // Projektets ID
-  userId: string; // Brugerens ID
-  onSave: (newData: CircularEconomyData) => void; // Callback til at gemme opdaterede data
-  isEditable: boolean; // Angiver, om modal er redigerbar
-  currentData: CircularEconomyData; // De aktuelle data
-};
-
-// Definer typen for projektdata
 export interface ProjectData {
   id: string; // Projektets ID
-  userId: string; // Brugerens ID
+  userId: string; // Ejeren af projektet (ID)
   name: string; // Projektets navn
   description: string; // Projektets beskrivelse
-  status: "Project" | "Published"; // Begrænsede værdier for status
+  status: "Project" | "Published" | "Application"; // Inkluder "Application" som en status
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
 
@@ -42,4 +35,7 @@ export interface ProjectData {
 
   // Felt til cirkulær økonomi data
   circularEconomy?: CircularEconomyData; // Valgfrit felt
+
+  // Tilføj applicant som valgfelt
+  applicant?: Applicant; // Bruger, der har ansøgt om projektet
 }

@@ -1,8 +1,8 @@
 // @/components/indexcomponents/infopanels/provider/InfoPanelProvider.tsx
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { collection, onSnapshot, QuerySnapshot, QueryDocumentSnapshot, DocumentData, Unsubscribe } from "firebase/firestore";
+import { collection, doc, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPanel3";
 import { Colors } from "@/constants/Colors";
@@ -17,9 +17,6 @@ const InfoPanelProvider = () => {
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
-  // Ref til at opbevare unsubscribe-funktioner for hver projects ansøgninger
-  const applicationsUnsubscribesRef = useRef<{ [projectId: string]: Unsubscribe }>({});
-
   useEffect(() => {
     if (!user) return;
 
@@ -29,93 +26,48 @@ const InfoPanelProvider = () => {
     const unsubscribeProjects = onSnapshot(
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
-        // Ryd op i tidligere listeners for projekter, der ikke længere findes
-        const existingProjectIds = new Set(projectsSnapshot.docs.map(doc => doc.id));
-        Object.keys(applicationsUnsubscribesRef.current).forEach(projectId => {
-          if (!existingProjectIds.has(projectId)) {
-            // Fjern listener for slettede projekter
-            applicationsUnsubscribesRef.current[projectId]();
-            delete applicationsUnsubscribesRef.current[projectId];
-          }
-        });
+        const updatedProjects: ProjectData[] = [];
 
-        projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
+        console.log("Dokumenter fundet i Firestore:", projectsSnapshot.docs.map((doc) => doc.data()));
+
+        projectsSnapshot.docs.forEach((projectDoc) => {
           const projectId = projectDoc.id;
           const projectData = projectDoc.data();
 
-          // Hvis der allerede er en listener for dette projekt, så spring over
-          if (applicationsUnsubscribesRef.current[projectId]) {
-            return;
-          }
+          // Byg et ProjectData-objekt med standardværdier
+          const updatedProject: ProjectData = {
+            id: projectId,
+            userId: user,
+            name: projectData.name || "Uden navn",
+            description: projectData.description || "Ingen beskrivelse",
+            status: projectData.status || "Project",
+            f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
+            f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
+            f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
+            f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
+            projectImage: projectData.assets?.projectImage || null,
+            price: projectData.price !== undefined ? projectData.price : 0,
+            transferMethod: projectData.transferMethod || "Standard metode",
+            applicant: projectData.applicant || null,
+          };
 
-          const applicationsCollection = collection(
-            database,
-            "users",
-            user,
-            "projects",
-            projectId,
-            "applications"
-          );
-
-          // Lyt til ændringer i ansøgninger for hvert projekt
-          const unsubscribeApplications = onSnapshot(
-            applicationsCollection,
-            (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
-              if (!applicationsSnapshot.empty) {
-                const updatedProject: ProjectData = {
-                  id: projectId,
-                  userId: user,
-                  name: projectData.name || "Uden navn",
-                  description: projectData.description || "Ingen beskrivelse",
-                  status: projectData.status || "Project",
-                  f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
-                  f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
-                  f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
-                  f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
-                  projectImage: projectData.assets?.projectImage || null,
-                  price: projectData.price !== undefined ? projectData.price : 0,
-                  transferMethod: projectData.transferMethod || "Standard metode",
-                };
-                setProjects(prevProjects => {
-                  const exists = prevProjects.find(p => p.id === projectId);
-                  if (exists) {
-                    // Opdater eksisterende projekt
-                    return prevProjects.map(p => p.id === projectId ? updatedProject : p);
-                  } else {
-                    // Tilføj nyt projekt
-                    return [...prevProjects, updatedProject];
-                  }
-                });
-              } else {
-                // Fjern projekt fra state, hvis der ikke er nogen ansøgninger
-                setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
-              }
-            },
-            (error) => {
-              console.error(`Fejl ved hentning af ansøgninger for projekt ${projectId}:`, error);
-            }
-          );
-
-          // Gem unsubscribe-funktionen for dette projekt
-          applicationsUnsubscribesRef.current[projectId] = unsubscribeApplications;
+          updatedProjects.push(updatedProject);
         });
 
+        console.log("Filtrerede projekter:", updatedProjects);
+
+        setProjects(updatedProjects);
         setIsLoading(false);
       },
       (error) => {
-        console.error("Fejl ved hentning af brugerprojekter med ansøgninger:", error);
+        console.error("Fejl ved hentning af brugerprojekter:", error);
         setError("Kunne ikke hente projekterne. Prøv igen senere.");
         setIsLoading(false);
       }
     );
 
     // Cleanup listeners ved unmount
-    return () => {
-      unsubscribeProjects();
-      // Fjern alle applications listeners
-      Object.values(applicationsUnsubscribesRef.current).forEach(unsub => unsub());
-      applicationsUnsubscribesRef.current = {};
-    };
+    return () => unsubscribeProjects();
   }, [user]);
 
   if (isLoading) {
