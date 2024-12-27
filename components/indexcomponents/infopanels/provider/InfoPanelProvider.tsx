@@ -164,26 +164,60 @@ const InfoPanelProvider = () => {
 
   return (
     <View style={styles.panelContainer}>
-      {projects.map((project, index) => (
-        <InfoPanel3
-          key={`${project.id}-${index}`}
-          projectData={project}
-          onUpdate={(updatedProjectId: string, removedApplicantId: string) => {
-            setProjects((prevProjects) =>
-              prevProjects.map((p) => {
-                if (p.id === updatedProjectId) {
-                  // Filtrér den afviste ansøger fra projektet
-                  return {
-                    ...p,
-                    applicants: p.applicants?.filter((a: ApplicantData) => a.id !== removedApplicantId),
-                  };
-                }
-                return p;
-              })
+      {projects.flatMap((project) => {
+        if (project.applicants && project.applicants.length > 0) {
+          // Hvis projektet har ansøgere, instantiér en InfoPanel3 for hver ansøger
+          return project.applicants.map((applicant, index) => {
+            const applicantProjectData = {
+              ...project,
+              name: `${project.name} - Ansøgning fra ${applicant.name}`,
+              description: `Ansøgning fra ${applicant.name}`,
+              applicants: [applicant], // Begræns til én ansøger for denne instans
+            };
+  
+            return (
+              <InfoPanel3
+                key={`${project.id}-${applicant.id}-${index}`}
+                projectData={applicantProjectData}
+                onUpdate={(updatedProjectId: string, removedApplicantId: string) => {
+                  setProjects((prevProjects) =>
+                    prevProjects.map((p) => {
+                      if (p.id === updatedProjectId) {
+                        return {
+                          ...p,
+                          applicants: p.applicants?.filter((a) => a.id !== removedApplicantId),
+                        };
+                      }
+                      return p;
+                    })
+                  );
+                }}
+              />
             );
-          }}
-        />
-      ))}
+          });
+        } else {
+          // Hvis projektet ikke har ansøgere, vis det som et normalt projekt
+          return (
+            <InfoPanel3
+              key={`${project.id}`}
+              projectData={project}
+              onUpdate={(updatedProjectId: string, removedApplicantId: string) => {
+                setProjects((prevProjects) =>
+                  prevProjects.map((p) => {
+                    if (p.id === updatedProjectId) {
+                      return {
+                        ...p,
+                        applicants: p.applicants?.filter((a) => a.id !== removedApplicantId),
+                      };
+                    }
+                    return p;
+                  })
+                );
+              }}
+            />
+          );
+        }
+      })}
     </View>
   );
 };
