@@ -111,7 +111,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           const applicantData = applicantSnap.data();
           setApplicantData({
             profileImage: applicantData.profileImage || null,
-            name: applicantData.email || "Ukendt bruger",
+            name: applicantData.name || applicantData.email || "Ukendt bruger",
           });
           console.log("Ansøgerens data hentet:", applicantData);
         } else {
