@@ -575,4 +575,33 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  applicantImageContainer: {
+    position: "absolute",
+    top: 5.5, // Justering i forhold til toppen af F8-feltet
+    right: 5.5, // Justering i forhold til højre kant
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    width: 50, // Diameter
+    height: 50, // Diameter
+    borderRadius: 25, // Rund form
+    elevation: 4, // Skyggeeffekt
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  applicantImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 25,
+    resizeMode: "cover",
+  },
+  applicantName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 30, // Afstand fra "Application"-teksten
+    marginBottom: 10,
+    color: Colors.light.text, // Kan justeres afhængigt af tema
+  },
 });

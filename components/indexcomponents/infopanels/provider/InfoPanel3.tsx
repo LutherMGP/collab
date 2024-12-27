@@ -55,7 +55,38 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditEnabled, setIsEditEnabled] = useState(false);
   const [applicantComment, setApplicantComment] = useState<string | null>(null);
+  const [applicantData, setApplicantData] = useState<{
+    profileImage?: string | null;
+    name?: string | null;
+  }>({}); // Ansøgerens data
   const router = useRouter();
+
+  // Synkroniser med Firestore for at hente ansøgerens data
+  useEffect(() => {
+    const fetchApplicantData = async () => {
+      if (!currentUser) return;
+  
+      try {
+        // Reference til ansøgerens Firestore-dokument
+        const applicantDocRef = doc(database, "users", currentUser);
+        const docSnap = await getDoc(applicantDocRef);
+  
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setApplicantData({
+            profileImage: data.profileImage || null,
+            name: data.name || null,
+          });
+        } else {
+          console.warn("Ansøgerens dokument findes ikke.");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af ansøgerens data:", error);
+      }
+    };
+  
+    fetchApplicantData();
+  }, [currentUser, applicantComment]);
 
   // Synkroniser med Firestore for at hente ansøgerens komment
   useEffect(() => {
@@ -370,7 +401,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
         <View style={baseStyles.F8}>
-          {/* Projektbilledet i det runde felt */}
+          {/* Projektbilledet i venstre øverste hjørne */}
           {projectData.projectImage && (
             <View style={baseStyles.projectImageContainer}>
               <Image
@@ -382,10 +413,27 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             </View>
           )}
 
+          {/* Ansøgerens profilbillede i højre øverste hjørne */}
+          {applicantData.profileImage && (
+            <View style={baseStyles.applicantImageContainer}>
+              <Image
+                source={{
+                  uri: `${applicantData.profileImage}?timestamp=${Date.now()}`, // Dynamisk hentet URL
+                }}
+                style={baseStyles.applicantImage}
+              />
+            </View>
+          )}
+
           {/* Tekst i toppen */}
           <View style={baseStyles.textTag}>
             <Text style={baseStyles.text}>Application</Text>
           </View>
+
+          {/* Ansøgerens navn */}
+          <Text style={baseStyles.applicantName}>
+            {applicantData.name || "Ukendt ansøger"}
+          </Text>
 
           {/* Vis ansøgerens kommentar */}
           <Text style={baseStyles.commentText}>
