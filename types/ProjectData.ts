@@ -28,6 +28,7 @@ export interface ProjectData {
   status: "Project" | "Published"; // Begrænsede værdier for status
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
+  applicantId?: string; // Ansøgerens ID
 
   // Felter for hver kategori tillader string, null eller undefined
   projectImage?: string | null;

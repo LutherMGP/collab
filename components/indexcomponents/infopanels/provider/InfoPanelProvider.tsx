@@ -2,7 +2,14 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { collection, onSnapshot, QuerySnapshot, QueryDocumentSnapshot, DocumentData, Unsubscribe } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  QuerySnapshot,
+  QueryDocumentSnapshot,
+  DocumentData,
+  Unsubscribe,
+} from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPanel3";
 import { Colors } from "@/constants/Colors";
@@ -30,8 +37,8 @@ const InfoPanelProvider = () => {
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
         // Ryd op i tidligere listeners for projekter, der ikke længere findes
-        const existingProjectIds = new Set(projectsSnapshot.docs.map(doc => doc.id));
-        Object.keys(applicationsUnsubscribesRef.current).forEach(projectId => {
+        const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
+        Object.keys(applicationsUnsubscribesRef.current).forEach((projectId) => {
           if (!existingProjectIds.has(projectId)) {
             // Fjern listener for slettede projekter
             applicationsUnsubscribesRef.current[projectId]();
@@ -61,35 +68,42 @@ const InfoPanelProvider = () => {
           const unsubscribeApplications = onSnapshot(
             applicationsCollection,
             (applicationsSnapshot: QuerySnapshot<DocumentData>) => {
-              if (!applicationsSnapshot.empty) {
-                const updatedProject: ProjectData = {
-                  id: projectId,
-                  userId: user,
-                  name: projectData.name || "Uden navn",
-                  description: projectData.description || "Ingen beskrivelse",
-                  status: projectData.status || "Project",
-                  f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
-                  f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
-                  f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
-                  f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
-                  projectImage: projectData.assets?.projectImage || null,
-                  price: projectData.price !== undefined ? projectData.price : 0,
-                  transferMethod: projectData.transferMethod || "Standard metode",
-                };
-                setProjects(prevProjects => {
-                  const exists = prevProjects.find(p => p.id === projectId);
-                  if (exists) {
-                    // Opdater eksisterende projekt
-                    return prevProjects.map(p => p.id === projectId ? updatedProject : p);
-                  } else {
-                    // Tilføj nyt projekt
-                    return [...prevProjects, updatedProject];
-                  }
-                });
-              } else {
-                // Fjern projekt fra state, hvis der ikke er nogen ansøgninger
-                setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
-              }
+              const newProjects: ProjectData[] = [];
+
+              applicationsSnapshot.docs.forEach((applicationDoc) => {
+                const applicationData = applicationDoc.data();
+                const applicantId = applicationData.applicantId;
+
+                if (applicantId) {
+                  const newProject: ProjectData = {
+                    id: projectId,
+                    userId: user,
+                    name: projectData.name || "Uden navn",
+                    description: projectData.description || "Ingen beskrivelse",
+                    status: projectData.status || "Project",
+                    f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
+                    f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
+                    f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
+                    f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
+                    projectImage: projectData.assets?.projectImage || null,
+                    price: projectData.price !== undefined ? projectData.price : 0,
+                    transferMethod: projectData.transferMethod || "Standard metode",
+                    applicantId, // Unik ansøger-ID
+                  };
+
+                  newProjects.push(newProject);
+                }
+              });
+
+              setProjects((prevProjects) => {
+                // Filtrér tidligere projekter for at fjerne de projekter med samme `projectId` og `applicantId`
+                const filteredProjects = prevProjects.filter(
+                  (p) => !(p.id === projectId && newProjects.some((np) => np.applicantId === p.applicantId))
+                );
+
+                // Tilføj de nye projekter
+                return [...filteredProjects, ...newProjects];
+              });
             },
             (error) => {
               console.error(`Fejl ved hentning af ansøgninger for projekt ${projectId}:`, error);
@@ -113,7 +127,7 @@ const InfoPanelProvider = () => {
     return () => {
       unsubscribeProjects();
       // Fjern alle applications listeners
-      Object.values(applicationsUnsubscribesRef.current).forEach(unsub => unsub());
+      Object.values(applicationsUnsubscribesRef.current).forEach((unsub) => unsub());
       applicationsUnsubscribesRef.current = {};
     };
   }, [user]);
@@ -136,8 +150,8 @@ const InfoPanelProvider = () => {
 
   return (
     <View style={styles.panelContainer}>
-      {projects.map((project) => (
-        <InfoPanel3 key={project.id} projectData={project} />
+      {projects.map((project, index) => (
+        <InfoPanel3 key={`${project.id}-${index}`} projectData={project} />
       ))}
     </View>
   );

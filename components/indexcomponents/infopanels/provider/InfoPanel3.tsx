@@ -20,19 +20,7 @@ import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/provider/InfoPanelStyles3";
 import { useRouter } from "expo-router";
-
-type ProjectData = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  f8CoverImageLowRes?: string | null;
-  f5CoverImageLowRes?: string | null;
-  f3CoverImageLowRes?: string | null;
-  f2CoverImageLowRes?: string | null;
-  projectImage?: string | null;
-  userId?: string | null;
-};
+import { ProjectData } from "@/types/ProjectData";
 
 type InfoPanelProps = {
   projectData: ProjectData;
@@ -60,6 +48,32 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     name?: string | null;
   }>({}); // Ansøgerens data
   const router = useRouter();
+
+  // Synkroniser med Firestore for at hente ansøgerens data baseret på applicantId
+  useEffect(() => {
+    const fetchApplicantData = async () => {
+      if (!projectData.applicantId) return; // Undlad at hente, hvis applicantId mangler
+
+      try {
+        const applicantDocRef = doc(database, "users", projectData.applicantId);
+        const applicantSnap = await getDoc(applicantDocRef);
+
+        if (applicantSnap.exists()) {
+          const applicantData = applicantSnap.data();
+          setApplicantData({
+            profileImage: applicantData.profileImage || null,
+            name: applicantData.name || applicantData.email || "Ukendt bruger",
+          });
+        } else {
+          console.warn("Ansøgerens data kunne ikke findes.");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af ansøgerens data:", error);
+      }
+    };
+
+    fetchApplicantData();
+  }, [projectData.applicantId]);
 
   // Synkroniser med Firestore for at hente ansøgerens data
   useEffect(() => {
