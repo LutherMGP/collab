@@ -35,6 +35,7 @@ export interface ProjectData {
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
   applicants?: ApplicantData[]; // Liste over ansøgere
+  applicantId?: string; // Ansøgerens ID
 
   // Felter for hver kategori tillader string, null eller undefined
   projectImage?: string | null;

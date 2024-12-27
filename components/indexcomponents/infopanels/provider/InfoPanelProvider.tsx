@@ -21,6 +21,7 @@ const InfoPanelProvider = () => {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
   const theme = useColorScheme() || "light";
   const { user } = useAuth();
 
@@ -36,6 +37,14 @@ const InfoPanelProvider = () => {
     const unsubscribeProjects = onSnapshot(
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
+        // Hvis der ikke er nogen projekter, nulstil state
+        if (projectsSnapshot.empty) {
+          console.log("Ingen projekter fundet i Firestore.");
+          setProjects([]);
+          setIsLoading(false);
+          return;
+        }
+    
         // Ryd op i tidligere listeners for projekter, der ikke længere findes
         const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
         Object.keys(applicationsUnsubscribesRef.current).forEach((projectId) => {
@@ -49,12 +58,12 @@ const InfoPanelProvider = () => {
         projectsSnapshot.docs.forEach((projectDoc: QueryDocumentSnapshot<DocumentData>) => {
           const projectId = projectDoc.id;
           const projectData = projectDoc.data();
-        
+    
           // Hvis der allerede er en listener for dette projekt, så spring over
           if (applicationsUnsubscribesRef.current[projectId]) {
             return;
           }
-        
+    
           const applicationsCollection = collection(
             database,
             "users",
@@ -63,7 +72,7 @@ const InfoPanelProvider = () => {
             projectId,
             "applications"
           );
-        
+    
           // Lyt til ændringer i ansøgninger for hvert projekt
           const unsubscribeApplications = onSnapshot(
             applicationsCollection,
@@ -76,7 +85,7 @@ const InfoPanelProvider = () => {
                   profileImage: applicationData.profileImage || null,
                 };
               });
-        
+    
               setProjects((prevProjects) => {
                 const updatedProjects = prevProjects.map((p) => {
                   if (p.id === projectId) {
@@ -86,7 +95,7 @@ const InfoPanelProvider = () => {
                       (applicant, index, self) =>
                         self.findIndex((a) => a.id === applicant.id) === index // Fjern dubletter baseret på 'id'
                     );
-        
+    
                     return {
                       ...p,
                       applicants: mergedApplicants,
@@ -94,7 +103,7 @@ const InfoPanelProvider = () => {
                   }
                   return p;
                 });
-        
+    
                 // Tilføj projekt, hvis det ikke allerede findes
                 const projectExists = prevProjects.some((p) => p.id === projectId);
                 if (!projectExists) {
@@ -115,7 +124,7 @@ const InfoPanelProvider = () => {
                   };
                   return [...updatedProjects, newProject];
                 }
-        
+    
                 return updatedProjects;
               });
             },
@@ -123,7 +132,7 @@ const InfoPanelProvider = () => {
               console.error(`Fejl ved hentning af ansøgninger for projekt ${projectId}:`, error);
             }
           );
-        
+    
           // Gem unsubscribe-funktionen for dette projekt
           applicationsUnsubscribesRef.current[projectId] = unsubscribeApplications;
         });
@@ -166,20 +175,20 @@ const InfoPanelProvider = () => {
     <View style={styles.panelContainer}>
       {projects.flatMap((project) => {
         if (project.applicants && project.applicants.length > 0) {
-          // Hvis projektet har ansøgere, instantiér en InfoPanel3 for hver ansøger
           return project.applicants.map((applicant, index) => {
             const applicantProjectData = {
               ...project,
+              applicantId: applicant.id,
               name: `${project.name} - Ansøgning fra ${applicant.name}`,
               description: `Ansøgning fra ${applicant.name}`,
-              applicants: [applicant], // Begræns til én ansøger for denne instans
+              applicants: [applicant],
             };
-  
+
             return (
               <InfoPanel3
-                key={`${project.id}-${applicant.id}-${index}`}
+                key={`${project.id}-${applicant.id}-${refreshCount}`} // Inkluder refreshCount
                 projectData={applicantProjectData}
-                onUpdate={(updatedProjectId: string, removedApplicantId: string) => {
+                onUpdate={(updatedProjectId, removedApplicantId) => {
                   setProjects((prevProjects) =>
                     prevProjects.map((p) => {
                       if (p.id === updatedProjectId) {
@@ -191,17 +200,17 @@ const InfoPanelProvider = () => {
                       return p;
                     })
                   );
+                  setRefreshCount((prev) => prev + 1); // Tving opdatering
                 }}
               />
             );
           });
         } else {
-          // Hvis projektet ikke har ansøgere, vis det som et normalt projekt
           return (
             <InfoPanel3
-              key={`${project.id}`}
+              key={`${project.id}-${refreshCount}`} // Inkluder refreshCount
               projectData={project}
-              onUpdate={(updatedProjectId: string, removedApplicantId: string) => {
+              onUpdate={(updatedProjectId, removedApplicantId) => {
                 setProjects((prevProjects) =>
                   prevProjects.map((p) => {
                     if (p.id === updatedProjectId) {
@@ -213,6 +222,7 @@ const InfoPanelProvider = () => {
                     return p;
                   })
                 );
+                setRefreshCount((prev) => prev + 1); // Tving opdatering
               }}
             />
           );

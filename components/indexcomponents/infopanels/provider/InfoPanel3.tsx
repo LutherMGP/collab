@@ -24,10 +24,10 @@ import { ProjectData } from "@/types/ProjectData";
 
 type InfoPanelProps = {
   projectData: ProjectData;
-  onUpdate?: (updatedProjectId: string, removedApplicantId: string) => void; // Ændret fra ProjectData til string
+  onUpdate?: (updatedProjectId: string, removedApplicantId: string) => void; // Opdater typen her
 };
 
-const InfoPanel3 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
+const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -49,83 +49,15 @@ const InfoPanel3 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   }>({}); // Ansøgerens data
   const router = useRouter();
 
-  // Synkroniser med Firestore for at hente ansøgerens data baseret på applicants
-  useEffect(() => {
-    const fetchApplicantData = async () => {
-      // Tjek om der er nogen ansøgere
-      if (!projectData.applicants || projectData.applicants.length === 0) {
-        console.warn("Ingen ansøgere fundet.");
-        return;
-      }
-
-      // Vælg den første ansøger i listen (eller tilpas til at vælge en bestemt ansøger)
-      const firstApplicant = projectData.applicants[0]; // Brug den første ansøger
-
-      try {
-        const applicantDocRef = doc(database, "users", firstApplicant.id); // Hent ansøgerens ID
-        const applicantSnap = await getDoc(applicantDocRef);
-
-        if (applicantSnap.exists()) {
-          const applicantData = applicantSnap.data();
-          setApplicantData({
-            profileImage: applicantData.profileImage || null,
-            name: applicantData.name || applicantData.email || "Ukendt bruger",
-          });
-        } else {
-          console.warn("Ansøgerens data kunne ikke findes.");
-        }
-      } catch (error) {
-        console.error("Fejl ved hentning af ansøgerens data:", error);
-      }
-    };
-
-  fetchApplicantData();
-}, [projectData.applicants]); // Afhængighed er nu 'applicants'
-
   // Synkroniser med Firestore for at hente ansøgerens data
   useEffect(() => {
     const fetchApplicantData = async () => {
+      // Kontrollér om nødvendige data er til stede
+      if (!projectData.userId || !projectData.id || !projectData.applicantId) return;
+  
       try {
-        if (!projectData.userId || !projectData.id) {
-          console.warn("Manglende data for projekt eller bruger.");
-          return;
-        }
-  
-        // Reference til ansøgninger i Firestore
-        const applicationsRef = collection(
-          database,
-          "users",
-          projectData.userId,
-          "projects",
-          projectData.id,
-          "applications"
-        );
-  
-        // Hent ansøgninger
-        const applicationsSnapshot = await getDocs(applicationsRef);
-  
-        // Find den relevante ansøgning for den aktuelle bruger (eller første ansøgning)
-        const applicationDoc = applicationsSnapshot.docs.find((doc) =>
-          doc.data().applicantId ? doc.data().applicantId : null
-        );
-  
-        if (!applicationDoc) {
-          console.warn("Ingen ansøgning fundet.");
-          return;
-        }
-  
-        // Hent applicantId fra ansøgningsdata
-        const { applicantId } = applicationDoc.data();
-        if (!applicantId) {
-          console.warn("Ingen applicantId fundet.");
-          return;
-        }
-  
-        // Debugging log
-        console.log("Henter data for ansøger med ID:", applicantId);
-  
-        // Find ansøgerens data i `users/{applicantId}`
-        const applicantDocRef = doc(database, "users", applicantId);
+        // Hent ansøgerens data fra Firestore
+        const applicantDocRef = doc(database, "users", projectData.applicantId);
         const applicantSnap = await getDoc(applicantDocRef);
   
         if (applicantSnap.exists()) {
@@ -134,9 +66,8 @@ const InfoPanel3 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             profileImage: applicantData.profileImage || null,
             name: applicantData.name || applicantData.email || "Ukendt bruger",
           });
-          console.log("Ansøgerens data hentet:", applicantData);
         } else {
-          console.warn(`Ansøgerens dokument findes ikke. ID: ${applicantId}`);
+          console.warn(`Ansøgerens dokument findes ikke: ${projectData.applicantId}`);
         }
       } catch (error) {
         console.error("Fejl ved hentning af ansøgerens data:", error);
@@ -144,39 +75,7 @@ const InfoPanel3 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     };
   
     fetchApplicantData();
-  }, [projectData.userId, projectData.id]);
-
-  // Synkroniser med Firestore for at hente ansøgerens komment
-  useEffect(() => {
-    const fetchApplicantComment = async () => {
-      try {
-        const applicationsRef = collection(
-          database,
-          "users",
-          projectData.userId!,
-          "projects",
-          projectData.id,
-          "applications"
-        );
-  
-        const querySnapshot = await getDocs(applicationsRef);
-  
-        // Find ansøgningen fra den nuværende bruger
-        const applicantDoc = querySnapshot.docs.find(
-          (doc) => doc.id === currentUser
-        );
-  
-        if (applicantDoc) {
-          setApplicantComment(applicantDoc.data().comment || "Ingen kommentar.");
-        }
-      } catch (error) {
-        console.error("Fejl ved hentning af ansøgerens kommentar:", error);
-      }
-    };
-  
-    fetchApplicantComment();
-  }, [projectData.userId, projectData.id, currentUser]);
-
+  }, [projectData.userId, projectData.id, projectData.applicantId]);
 
   // Håndter godkendelse af ansøger
   const handleApproveApplicant = async () => {
@@ -234,85 +133,69 @@ const InfoPanel3 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   };
 
   // Håndter afvisning af ansøger
-  const handleRejectApplicant = async () => {
-    try {
-      if (!projectData.userId || !projectData.id) {
-        throw new Error("Projekt-ID eller bruger-ID mangler.");
-      }
-  
-      // Hent ansøgningen for at finde applicantId
-      const applicationsRef = collection(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id,
-        "applications"
-      );
-  
-      const applicationsSnapshot = await getDocs(applicationsRef);
-      const applicationDoc = applicationsSnapshot.docs.find((doc) =>
-        doc.data().applicantId ? doc.data().applicantId : null
-      );
-  
-      if (!applicationDoc) {
-        Alert.alert("Fejl", "Ingen ansøgning fundet.");
-        return;
-      }
-  
-      const { applicantId } = applicationDoc.data();
-      if (!applicantId) {
-        Alert.alert("Fejl", "Ansøgerens ID mangler.");
-        return;
-      }
-  
-      console.log("Sletter ansøgning for ansøger med ID:", applicantId);
-  
-      // Slet ansøgningen
-      const applicationDocRef = doc(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id,
-        "applications",
-        applicationDoc.id
-      );
-  
-      await deleteDoc(applicationDocRef);
-  
-      // Fjern ansøgeren fra den lokale state
-      setApplicantData({ profileImage: null, name: null });
-      setApplicantComment(null);
-  
-      Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
-  
-      // Kald onUpdate med projektets ID
-      if (typeof onUpdate === "function") {
-        const removedApplicantId = applicantId; // Eller brug den relevante `applicantId`
-        onUpdate(projectData.id, removedApplicantId);
-      }
-    } catch (error) {
-      console.error("Fejl ved afvisning af ansøger:", error);
-      Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
+const handleRejectApplicant = async () => {
+  try {
+    if (!projectData.userId || !projectData.id) {
+      throw new Error("Projekt-ID eller bruger-ID mangler.");
     }
-  };
 
-  // Synkroniser med Firestore for at hente favoritstatus
-  useEffect(() => {
-    const fetchFavoriteStatus = async () => {
-      if (!userId || !projectData.id) return;
-      try {
-        const favoriteDocRef = doc(database, "users", userId, "favorites", projectData.id);
-        const docSnap = await getDoc(favoriteDocRef);
-        setIsFavorite(docSnap.exists()); // Hvis dokumentet findes, er projektet en favorit
-      } catch (error) {
-        console.error("Fejl ved hentning af favoritstatus:", error);
-      }
-    };
-  
-    fetchFavoriteStatus();
-  }, [userId, projectData.id]);
+    // Hent ansøgningen for at finde applicantId
+    const applicationsRef = collection(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id,
+      "applications"
+    );
+
+    // Hent ansøgninger
+    const applicationsSnapshot = await getDocs(applicationsRef);
+
+    // Find den relevante ansøgning
+    const applicationDoc = applicationsSnapshot.docs.find((doc) =>
+      doc.data().applicantId ? doc.data().applicantId : null
+    );
+
+    if (!applicationDoc) {
+      Alert.alert("Fejl", "Ingen ansøgning fundet.");
+      return;
+    }
+
+    const { applicantId } = applicationDoc.data();
+    if (!applicantId) {
+      Alert.alert("Fejl", "Ansøgerens ID mangler.");
+      return;
+    }
+
+    console.log("Sletter ansøgning for ansøger med ID:", applicantId);
+
+    // Slet ansøgningen
+    const applicationDocRef = doc(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id,
+      "applications",
+      applicationDoc.id // Brug dokumentets ID her
+    );
+
+    await deleteDoc(applicationDocRef);
+
+    // Fjern ansøgeren fra den lokale state
+    setApplicantData((prev) => ({
+      profileImage: null,
+      name: null,
+    }));
+    setApplicantComment(null);
+
+    Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+  } catch (error) {
+    console.error("Fejl ved afvisning af ansøger:", error);
+    Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
+  }
+};
 
   // Tjek for manglende data
   if (!projectData || !projectData.id || !userId) {
