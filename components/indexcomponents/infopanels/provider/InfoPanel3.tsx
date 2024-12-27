@@ -18,19 +18,6 @@ import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/provider/InfoPanelStyles3";
 import { ProjectData } from "@/types/ProjectData";
 
-type ProjectData = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  f8CoverImageLowRes?: string | null;
-  f5CoverImageLowRes?: string | null;
-  f3CoverImageLowRes?: string | null;
-  f2CoverImageLowRes?: string | null;
-  projectImage?: string | null;
-  userId?: string | null;
-};
-
 type InfoPanelProps = {
   projectData: ProjectData;
 };
@@ -53,7 +40,6 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Godkend ansøger
   const handleApproveApplicant = async () => {
     try {
-      // Her kan der implementeres logik til at godkende ansøgeren
       Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
@@ -63,7 +49,6 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Afvis ansøger
   const handleRejectApplicant = async () => {
     try {
-      // Her kan der implementeres logik til at afvise ansøgeren
       Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
     } catch (error) {
       console.error("Fejl ved afvisning af ansøger:", error);
