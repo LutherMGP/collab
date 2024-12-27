@@ -38,7 +38,7 @@ const Catalog = () => {
           for (const userDoc of usersSnapshot.docs) {
             if (userDoc.id === user) continue; // Spring den aktuelle bruger over
             const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
+            const projectsQuery = query(userProjectsCollection, where("status", "==", "Published"));
   
             const projectsSnapshot = await getDocs(projectsQuery);
             projectsSnapshot.forEach((projectDoc) => {
