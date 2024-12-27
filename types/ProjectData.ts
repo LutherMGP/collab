@@ -25,7 +25,7 @@ export interface ProjectData {
   userId: string; // Brugerens ID
   name: string; // Projektets navn
   description: string; // Projektets beskrivelse
-  status: "Project" | "Published"; // Begrænsede værdier for status
+  status: "Project" | "Published" | "Rejected" | "DueDiligence"; // Begrænsede værdier for status
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
 

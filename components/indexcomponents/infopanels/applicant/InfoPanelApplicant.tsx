@@ -32,16 +32,16 @@ const InfoPanelApplicant = () => {
         setIsLoading(true);
         const fetchedProjects: ProjectData[] = [];
 
-        // Reference til ansøgninger
+        // Reference til brugere
         const usersCollectionRef = collection(database, "users");
 
-        // Forespørgsel til at finde projekter, hvor brugeren har ansøgt
+        // Hent alle brugere
         const usersSnapshot = await getDocs(usersCollectionRef);
 
         for (const userDoc of usersSnapshot.docs) {
           const otherUserId = userDoc.id;
 
-          if (otherUserId === user) continue;
+          if (otherUserId === user) continue; // Spring den nuværende bruger over
 
           const otherUserProjectsRef = collection(
             database,
@@ -68,20 +68,26 @@ const InfoPanelApplicant = () => {
               query(applicationsRef, where("applicantId", "==", user))
             );
 
+            // Kontrollér, om ansøgningen har status som "Draft" eller "Submitted"
             if (!querySnapshot.empty) {
-              fetchedProjects.push({
-                id: projectDoc.id,
-                userId: otherUserId,
-                name: projectData.name || "Uden navn",
-                description: projectData.description || "Ingen beskrivelse",
-                status: projectData.status || "Project",
-                f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
-                f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
-                f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
-                f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
-                projectImage: projectData.assets?.projectImage || null,
-                price: projectData.price !== undefined ? projectData.price : 0,
-                transferMethod: projectData.transferMethod || "Standard metode",
+              querySnapshot.forEach((applicationDoc) => {
+                const applicationData = applicationDoc.data();
+                if (["Draft", "Submitted"].includes(applicationData.status)) {
+                  fetchedProjects.push({
+                    id: projectDoc.id,
+                    userId: otherUserId,
+                    name: projectData.name || "Uden navn",
+                    description: projectData.description || "Ingen beskrivelse",
+                    status: applicationData.status || "Draft",
+                    f8CoverImageLowRes: projectData.f8CoverImageLowRes || null,
+                    f5CoverImageLowRes: projectData.f5CoverImageLowRes || null,
+                    f3CoverImageLowRes: projectData.f3CoverImageLowRes || null,
+                    f2CoverImageLowRes: projectData.f2CoverImageLowRes || null,
+                    projectImage: projectData.projectImage || null,
+                    price: projectData.price !== undefined ? projectData.price : 0,
+                    transferMethod: projectData.transferMethod || "Standard metode",
+                  });
+                }
               });
             }
           }
@@ -118,7 +124,18 @@ const InfoPanelApplicant = () => {
   return (
     <ScrollView style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel3 key={project.id} projectData={project} />
+        <InfoPanel3
+          key={project.id}
+          projectData={project}
+          onUpdate={(updatedProject) => {
+            // Opdater lokalt projektdata, hvis nødvendigt
+            setProjects((prevProjects) =>
+              prevProjects.map((p) =>
+                p.id === updatedProject.id ? updatedProject : p
+              )
+            );
+          }}
+        />
       ))}
     </ScrollView>
   );

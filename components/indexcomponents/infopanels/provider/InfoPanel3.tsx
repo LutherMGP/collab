@@ -11,8 +11,10 @@ import {
   Dimensions,
   StyleSheet,
   ScrollView,
+  Modal,
+  TextInput,
 } from "react-native";
-import { AntDesign, FontAwesome } from "@expo/vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
@@ -20,26 +22,14 @@ import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/provider/InfoPanelStyles3";
 import { useRouter } from "expo-router";
-
-type ProjectData = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  f8CoverImageLowRes?: string | null;
-  f5CoverImageLowRes?: string | null;
-  f3CoverImageLowRes?: string | null;
-  f2CoverImageLowRes?: string | null;
-  projectImage?: string | null;
-  userId?: string | null;
-};
+import { ProjectData } from "@/types/ProjectData";
 
 type InfoPanelProps = {
   projectData: ProjectData;
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
+const InfoPanel3 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -59,18 +49,20 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     profileImage?: string | null;
     name?: string | null;
   }>({}); // Ansøgerens data
+  const [isModalVisible, setModalVisible] = useState(false); // Modal for ansøger
+  const [draftComment, setDraftComment] = useState(""); // Ansøgerens kladde
   const router = useRouter();
 
   // Synkroniser med Firestore for at hente ansøgerens data
   useEffect(() => {
     const fetchApplicantData = async () => {
       if (!currentUser) return;
-  
+
       try {
         // Reference til ansøgerens Firestore-dokument
         const applicantDocRef = doc(database, "users", currentUser);
         const docSnap = await getDoc(applicantDocRef);
-  
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           setApplicantData({
@@ -84,30 +76,30 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         console.error("Fejl ved hentning af ansøgerens data:", error);
       }
     };
-  
+
     fetchApplicantData();
   }, [currentUser, applicantComment]);
 
-  // Synkroniser med Firestore for at hente ansøgerens komment
+  // Synkroniser med Firestore for at hente ansøgerens kommentar
   useEffect(() => {
     const fetchApplicantComment = async () => {
       try {
         const applicationsRef = collection(
           database,
           "users",
-          projectData.userId!,
+          projectData.userId,
           "projects",
           projectData.id,
           "applications"
         );
-  
+
         const querySnapshot = await getDocs(applicationsRef);
-  
+
         // Find ansøgningen fra den nuværende bruger
         const applicantDoc = querySnapshot.docs.find(
           (doc) => doc.id === currentUser
         );
-  
+
         if (applicantDoc) {
           setApplicantComment(applicantDoc.data().comment || "Ingen kommentar.");
         }
@@ -115,18 +107,40 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         console.error("Fejl ved hentning af ansøgerens kommentar:", error);
       }
     };
-  
+
     fetchApplicantComment();
   }, [projectData.userId, projectData.id, currentUser]);
 
+  // Hent brugerens rolle
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Håndter godkendelse af ansøger
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!currentUser) return;
+
+      try {
+        const userDocRef = doc(database, "users", currentUser);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          setUserRole(userSnap.data().role || null);
+        } else {
+          console.warn("Brugerens dokument findes ikke.");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af brugerens rolle:", error);
+      }
+    };
+
+    fetchUserRole();
+  }, [currentUser]);
+
+  // Håndter godkendelse af ansøger (for provider)
   const handleApproveApplicant = async () => {
     try {
       if (!projectData.userId || !projectData.id || !currentUser) {
         throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
       }
-  
+
       // Opret `duediligence` collection og tilføj ansøgeren
       const dueDiligenceRef = collection(
         database,
@@ -141,7 +155,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         applicantId: currentUser,
         createdAt: new Date().toISOString(),
       });
-  
+
       // Fjern ansøgningen fra `applications`
       const applicationDocRef = doc(
         database,
@@ -153,7 +167,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         currentUser
       );
       await deleteDoc(applicationDocRef);
-  
+
       // Opdater projektets status til `DueDiligence`
       const projectDocRef = doc(
         database,
@@ -167,21 +181,26 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         { status: "DueDiligence" },
         { merge: true }
       );
-  
+
       Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
+
+      // Opdater lokal projektdata, hvis onUpdate er defineret
+      if (onUpdate) {
+        onUpdate({ ...projectData, status: "DueDiligence" });
+      }
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
       Alert.alert("Fejl", "Kunne ikke godkende ansøgeren. Prøv igen.");
     }
   };
 
-  // Håndter afvisning af ansøger
+  // Håndter afvisning af ansøger (for provider)
   const handleRejectApplicant = async () => {
     try {
       if (!projectData.userId || !projectData.id || !currentUser) {
         throw new Error("Projekt-ID, bruger-ID eller nuværende bruger mangler.");
       }
-  
+
       // Fjern ansøgningen
       const applicationDocRef = doc(
         database,
@@ -193,8 +212,14 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         currentUser
       );
       await deleteDoc(applicationDocRef);
-  
+
       Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+
+      // Opdater lokal projektdata, hvis onUpdate er defineret
+      if (onUpdate) {
+        // Opdater status til "Rejected" eller fjern projektet fra listen
+        onUpdate({ ...projectData, status: "Rejected" });
+      }
     } catch (error) {
       console.error("Fejl ved afvisning af ansøger:", error);
       Alert.alert("Fejl", "Kunne ikke afvise ansøgeren. Prøv igen.");
@@ -213,7 +238,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         console.error("Fejl ved hentning af favoritstatus:", error);
       }
     };
-  
+
     fetchFavoriteStatus();
   }, [userId, projectData.id]);
 
@@ -226,15 +251,16 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     );
   }
 
+  // Håndter favorit toggle
   const handleFavoriteToggle = async () => {
     if (!userId || !projectData.id) {
       Alert.alert("Fejl", "Bruger-ID eller projekt-ID mangler.");
       return;
     }
-  
+
     try {
       const favoriteDocRef = doc(database, "users", userId, "favorites", projectData.id);
-  
+
       if (isFavorite) {
         // Fjern fra favoritter
         await deleteDoc(favoriteDocRef);
@@ -261,17 +287,13 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     setProjectData(initialProjectData);
   }, [initialProjectData]);
 
+  // Håndter status toggle (rollebaseret funktion)
   const handleStatusToggle = async () => {
     try {
       if (!userId || !projectData.id) {
         throw new Error("Bruger-ID eller projekt-ID mangler.");
       }
-  
-      // Hent brugerens rolle
-      const userDocRef = doc(database, "users", userId);
-      const userSnap = await getDoc(userDocRef);
-      const userRole = userSnap.exists() ? userSnap.data().role : null;
-  
+
       if (!userRole) {
         Alert.alert(
           "Ugyldig rolle",
@@ -279,8 +301,8 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         );
         return;
       }
-  
-      // Rolle: Bruger
+
+      // Rolle: Bruger (Ansøger)
       if (userRole === "Bruger") {
         Alert.alert(
           "Opgrader til Designer",
@@ -298,8 +320,8 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         );
         return;
       }
-  
-      // Rolle: Designer eller Admin
+
+      // Rolle: Designer eller Admin (Provider)
       if (userRole === "Designer" || userRole === "Admin") {
         Alert.alert(
           "Bekræft Ansøgning",
@@ -315,7 +337,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                   if (!projectData.userId) {
                     throw new Error("Projekt-ejer ID mangler.");
                   }
-  
+
                   // Reference til applications collection i projekt-ejerens projects/projektId
                   const applicationCollectionRef = collection(
                     database,
@@ -325,14 +347,14 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     projectData.id,
                     "applications"
                   );
-  
+
                   // Tjek om brugeren allerede har ansøgt
                   const existingApplicationQuery = query(
                     applicationCollectionRef,
                     where("applicantId", "==", userId)
                   );
                   const existingApplicationSnapshot = await getDocs(existingApplicationQuery);
-  
+
                   if (!existingApplicationSnapshot.empty) {
                     Alert.alert(
                       "Allerede Ansøgt",
@@ -340,19 +362,19 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     );
                     return;
                   }
-  
+
                   // Opret nyt dokument i applications collection med auto-genereret ID
                   const newApplicationRef = doc(applicationCollectionRef);
                   await setDoc(newApplicationRef, {
                     applicantId: userId,
                     createdAt: new Date().toISOString()
                   });
-  
+
                   Alert.alert(
                     "Ansøgning Sendt",
                     "Din ansøgning er blevet registreret."
                   );
-  
+
                 } catch (error) {
                   console.error("Fejl ved oprettelse af ansøgning:", error);
                   Alert.alert(
@@ -366,7 +388,8 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         );
         return;
       }
-  
+
+      // Ugyldig handling for andre roller
       Alert.alert(
         "Ugyldig handling",
         "Denne handling er ikke tilladt for din rolle."
@@ -376,6 +399,83 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
       Alert.alert("Fejl", "Kunne ikke behandle ansøgningen. Prøv igen senere.");
     }
   };
+
+  // Håndter åbning af modal (Ansøger)
+  const handleOpenModal = () => setModalVisible(true);
+  const handleCloseModal = () => setModalVisible(false);
+
+  // Håndter gemning af kladde (F1B)
+  const handleSaveDraft = async () => {
+    try {
+      const applicationRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "applications",
+        currentUser
+      );
+
+      await setDoc(applicationRef, { comment: draftComment, status: "Draft" }, { merge: true });
+      Alert.alert("Kladde gemt", "Din ansøgning er gemt som kladde.");
+      handleCloseModal();
+    } catch (error) {
+      console.error("Fejl ved gemning af kladde:", error);
+      Alert.alert("Fejl", "Kunne ikke gemme kladden.");
+    }
+  };
+
+  // Håndter frigivelse af ansøgning (F1A)
+  const handleSubmitApplication = async () => {
+    try {
+      const applicationRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "applications",
+        currentUser
+      );
+
+      await setDoc(applicationRef, { comment: draftComment, status: "Submitted" }, { merge: true });
+      Alert.alert("Ansøgning sendt", "Din ansøgning er frigivet til provider.");
+      handleCloseModal();
+    } catch (error) {
+      console.error("Fejl ved frigivelse af ansøgning:", error);
+      Alert.alert("Fejl", "Kunne ikke frigive ansøgningen.");
+    }
+  };
+
+  // Modal til ansøgere
+  const renderApplicantModal = () => (
+    <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Skriv din ansøgning</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Skriv her..."
+            value={draftComment}
+            onChangeText={setDraftComment}
+            multiline
+          />
+          <View style={styles.modalButtons}>
+            <Pressable style={styles.saveButton} onPress={handleSaveDraft}>
+              <Text style={styles.buttonText}>Gem kladde</Text>
+            </Pressable>
+            <Pressable style={styles.submitButton} onPress={handleSubmitApplication}>
+              <Text style={styles.buttonText}>Frigiv</Text>
+            </Pressable>
+          </View>
+          <Pressable style={styles.cancelButton} onPress={handleCloseModal}>
+            <Text style={styles.buttonText}>Annuller</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
@@ -458,7 +558,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                       uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`,
                     }}
                     style={baseStyles.f2CoverImage}
-                />
+                  />
                 )}
 
                 {/* Tekst i f2 toppen */}
@@ -468,22 +568,27 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               </Pressable>
             </View>
             <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={handleApproveApplicant} // Godkend knap
-                >
-                  <FontAwesome name="check" size={24} color="green" />
-                </Pressable>
-              </View>
-              <View style={baseStyles.f1bottomHalf}>
-                <Pressable
-                  style={baseStyles.F1B}
-                  onPress={handleRejectApplicant} // Afvis knap
-                >
-                  <FontAwesome name="times" size={24} color="red" />
-                </Pressable>
-              </View>
+              {/* Hvis brugeren er en provider, vis godkend og afvis knapper */}
+              {userRole === "Designer" || userRole === "Admin" ? (
+                <>
+                  <View style={baseStyles.f1topHalf}>
+                    <Pressable
+                      style={baseStyles.F1A}
+                      onPress={handleApproveApplicant} // Godkend knap
+                    >
+                      <FontAwesome name="check" size={24} color="green" />
+                    </Pressable>
+                  </View>
+                  <View style={baseStyles.f1bottomHalf}>
+                    <Pressable
+                      style={baseStyles.F1B}
+                      onPress={handleRejectApplicant} // Afvis knap
+                    >
+                      <FontAwesome name="times" size={24} color="red" />
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
             </View>
           </View>
           <View style={baseStyles.f3bottomSide}>
@@ -531,6 +636,17 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         </View>
       </View>
 
+      {/* Favorit toggle */}
+      <Pressable onPress={handleFavoriteToggle} style={baseStyles.favoriteToggle}>
+        <FontAwesome name={isFavorite ? "heart" : "heart-o"} size={24} color="red" />
+        <Text style={[baseStyles.favoriteText, { color: Colors[theme].text }]}>
+          {isFavorite ? "Fjern fra favoritter" : "Tilføj til favoritter"}
+        </Text>
+      </Pressable>
+
+      {/* Modal til ansøgere */}
+      {userRole === "Bruger" && renderApplicantModal()}
+
       {isLoading && (
         <View style={baseStyles.loadingOverlay}>
           <ActivityIndicator size="large" color="blue" />
@@ -542,7 +658,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -550,10 +666,57 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "90%",
-    height: "80%",
     backgroundColor: "white",
     borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  textInput: {
+    width: "100%",
+    borderColor: "gray",
+    borderWidth: 1,
+    borderRadius: 5,
     padding: 10,
+    marginBottom: 10,
+    textAlignVertical: "top",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  saveButton: {
+    backgroundColor: "orange",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+    marginRight: 5,
+  },
+  submitButton: {
+    backgroundColor: "green",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+    marginLeft: 5,
+  },
+  cancelButton: {
+    backgroundColor: "red",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    width: "100%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 
