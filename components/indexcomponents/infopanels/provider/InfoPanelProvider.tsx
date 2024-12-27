@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { collection, doc, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
+import { collection, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel3 from "@/components/indexcomponents/infopanels/provider/InfoPanel3";
 import { Colors } from "@/constants/Colors";
@@ -28,7 +28,7 @@ const InfoPanelProvider = () => {
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
         const updatedProjects: ProjectData[] = [];
 
-        console.log("Dokumenter fundet i Firestore:", projectsSnapshot.docs.map((doc) => doc.data()));
+        console.log("Alle dokumenter fundet i Firestore:", projectsSnapshot.docs.map((doc) => doc.data()));
 
         projectsSnapshot.docs.forEach((projectDoc) => {
           const projectId = projectDoc.id;
@@ -48,19 +48,19 @@ const InfoPanelProvider = () => {
             projectImage: projectData.assets?.projectImage || null,
             price: projectData.price !== undefined ? projectData.price : 0,
             transferMethod: projectData.transferMethod || "Standard metode",
-            applicant: projectData.applicant || null,
+            applicant: projectData.applicant || null, // Brug applicant fra projektets roddokument
           };
 
           updatedProjects.push(updatedProject);
         });
 
-        console.log("Filtrerede projekter:", updatedProjects);
+        console.log("Projekter med ansøgerdata og status:", updatedProjects);
 
         setProjects(updatedProjects);
         setIsLoading(false);
       },
       (error) => {
-        console.error("Fejl ved hentning af brugerprojekter:", error);
+        console.error("Fejl ved hentning af projekter fra Firestore:", error);
         setError("Kunne ikke hente projekterne. Prøv igen senere.");
         setIsLoading(false);
       }

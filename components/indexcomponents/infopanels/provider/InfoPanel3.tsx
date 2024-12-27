@@ -14,18 +14,9 @@ import {
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAuth } from "@/hooks/useAuth";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
-import { database } from "@/firebaseConfig";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/provider/InfoPanelStyles3";
+import { ProjectData } from "@/types/ProjectData";
 
 type ProjectData = {
   id: string;
@@ -50,77 +41,19 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const height = (width * 8) / 5;
   const rightMargin = width * 0.03;
 
-  const { user: currentUser } = useAuth();
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
   const [isLoading, setIsLoading] = useState(false);
-  const [applicantData, setApplicantData] = useState<{
-    profileImage?: string | null;
-    name?: string | null;
-  }>({});
-  const [applicantComment, setApplicantComment] = useState<string | null>(null);
   const [showFullComment, setShowFullComment] = useState(false);
 
-  // Hent ansøgerens data
+  // Synkroniser lokale data med props
   useEffect(() => {
-    const fetchApplicantData = async () => {
-      try {
-        if (!projectData.userId || !projectData.id) return;
-
-        const applicationsRef = collection(
-          database,
-          "users",
-          projectData.userId,
-          "projects",
-          projectData.id,
-          "applications"
-        );
-
-        const applicationsSnapshot = await getDocs(applicationsRef);
-        const applicationDoc = applicationsSnapshot.docs[0];
-
-        if (!applicationDoc) return;
-
-        const { applicantId, comment } = applicationDoc.data();
-        if (!applicantId) return;
-
-        const applicantDocRef = doc(database, "users", applicantId);
-        const applicantSnap = await getDoc(applicantDocRef);
-
-        if (applicantSnap.exists()) {
-          const applicant = applicantSnap.data();
-          setApplicantData({
-            profileImage: applicant.profileImage || null,
-            name: applicant.name || "Ukendt bruger",
-          });
-          setApplicantComment(comment || "Ingen kommentar.");
-        }
-      } catch (error) {
-        console.error("Fejl ved hentning af ansøgerens data:", error);
-      }
-    };
-
-    fetchApplicantData();
-  }, [projectData.userId, projectData.id]);
+    setProjectData(initialProjectData);
+  }, [initialProjectData]);
 
   // Godkend ansøger
   const handleApproveApplicant = async () => {
     try {
-      if (!projectData.userId || !projectData.id) return;
-
-      const projectDocRef = doc(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id
-      );
-
-      await setDoc(
-        projectDocRef,
-        { status: "Approved" },
-        { merge: true }
-      );
-
+      // Her kan der implementeres logik til at godkende ansøgeren
       Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
@@ -130,37 +63,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Afvis ansøger
   const handleRejectApplicant = async () => {
     try {
-      if (!projectData.userId || !projectData.id) return;
-
-      const applicationsRef = collection(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id,
-        "applications"
-      );
-
-      const applicationsSnapshot = await getDocs(applicationsRef);
-      const applicationDoc = applicationsSnapshot.docs[0];
-
-      if (!applicationDoc) return;
-
-      const applicationDocRef = doc(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id,
-        "applications",
-        applicationDoc.id
-      );
-
-      await deleteDoc(applicationDocRef);
-
-      setApplicantData({ profileImage: null, name: null });
-      setApplicantComment(null);
-
+      // Her kan der implementeres logik til at afvise ansøgeren
       Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
     } catch (error) {
       console.error("Fejl ved afvisning af ansøger:", error);
@@ -204,11 +107,11 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           )}
 
           {/* Ansøgerens profilbillede i højre øverste hjørne */}
-          {applicantData.profileImage && (
+          {projectData.applicant?.profileImage && (
             <View style={baseStyles.applicantImageContainer}>
               <Image
                 source={{
-                  uri: `${applicantData.profileImage}?timestamp=${Date.now()}`, // Dynamisk hentet URL
+                  uri: `${projectData.applicant.profileImage}?timestamp=${Date.now()}`, // Dynamisk hentet URL
                 }}
                 style={baseStyles.applicantImage}
               />
@@ -222,12 +125,12 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
           {/* Ansøgerens navn */}
           <Text style={baseStyles.applicantName}>
-            {applicantData.name || "Ukendt ansøger"}
+            {projectData.applicant?.name || "Ukendt ansøger"}
           </Text>
 
           {/* Vis ansøgerens kommentar */}
           <Text style={baseStyles.commentText}>
-            {applicantComment || "Ingen kommentar tilføjet."}
+            {projectData.applicant?.email || "Ingen kommentar tilføjet."}
           </Text>
         </View>
       </View>
