@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     paddingLeft: "3%",
     paddingTop: "3%",
-    paddingBottom: "0.5%",
+    paddingBottom: "3%",
   },
   contentContainerStyle: {
     paddingRight: 30,
