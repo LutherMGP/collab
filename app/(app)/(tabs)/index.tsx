@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
     marginBottom: "1.5%",
-    marginTop: "3%",
+    marginTop: "0.3%",
   },
   infoPanelProjectsContainer: {
     width: "100%",

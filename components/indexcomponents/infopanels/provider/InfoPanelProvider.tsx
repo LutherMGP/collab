@@ -19,43 +19,45 @@ const InfoPanelProvider = () => {
 
   useEffect(() => {
     if (!user) return;
-
+  
     const userProjectsCollection = collection(database, "users", user, "projects");
-
+  
     // Lyt til ændringer i brugerens projekter
     const unsubscribeProjects = onSnapshot(
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
         const updatedProjects: ProjectData[] = [];
-
+  
         console.log("Alle dokumenter fundet i Firestore:", projectsSnapshot.docs.map((doc) => doc.data()));
-
+  
         projectsSnapshot.docs.forEach((projectDoc) => {
           const projectId = projectDoc.id;
           const projectData = projectDoc.data();
-
-          // Byg et ProjectData-objekt med standardværdier
-          const updatedProject: ProjectData = {
-            id: projectId,
-            userId: user,
-            name: projectData.name || "Uden navn",
-            description: projectData.description || "Ingen beskrivelse",
-            status: projectData.status || "Project",
-            f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
-            f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
-            f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
-            f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
-            projectImage: projectData.assets?.projectImage || null,
-            price: projectData.price !== undefined ? projectData.price : 0,
-            transferMethod: projectData.transferMethod || "Standard metode",
-            applicant: projectData.applicant || null, // Brug applicant fra projektets roddokument
-          };
-
-          updatedProjects.push(updatedProject);
+  
+          // Filtrer kun projekter med status: "Application"
+          if (projectData.status === "Application") {
+            const updatedProject: ProjectData = {
+              id: projectId,
+              userId: user,
+              name: projectData.name || "Uden navn",
+              description: projectData.description || "Ingen beskrivelse",
+              status: projectData.status || "Project",
+              f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
+              f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
+              f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
+              f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
+              projectImage: projectData.assets?.projectImage || null,
+              price: projectData.price !== undefined ? projectData.price : 0,
+              transferMethod: projectData.transferMethod || "Standard metode",
+              applicant: projectData.applicant || null, // Brug applicant fra projektets roddokument
+            };
+  
+            updatedProjects.push(updatedProject);
+          }
         });
-
-        console.log("Projekter med ansøgerdata og status:", updatedProjects);
-
+  
+        console.log("Filtrerede projekter med status 'Application':", updatedProjects);
+  
         setProjects(updatedProjects);
         setIsLoading(false);
       },
@@ -65,7 +67,7 @@ const InfoPanelProvider = () => {
         setIsLoading(false);
       }
     );
-
+  
     // Cleanup listeners ved unmount
     return () => unsubscribeProjects();
   }, [user]);

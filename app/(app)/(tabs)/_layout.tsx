@@ -69,7 +69,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Market",
+          title: "",
           tabBarLabel: "Home",
           tabBarIcon: ({ color, focused }) => {
             const iconColor =
@@ -122,8 +122,8 @@ export default function TabLayout() {
         options={{
           // href: isAdmin || isDesigner ? undefined : null, // Viser fanen for 'Admin' og 'Designer', skjuler for 'Bruger'
           href: !(isAdmin || isDesigner) ? undefined : null,
-          title: "Pending Requests",
-          tabBarLabel: "CircShare",
+          title: "",
+          tabBarLabel: "cart",
           tabBarIcon: ({ color }) => (
             <View>
               <MaterialIcons
@@ -146,7 +146,7 @@ export default function TabLayout() {
                   ? require("@/assets/images/logo/genfoedthub_dark.png")
                   : require("@/assets/images/logo/genfoedthub_light.png")
               }
-              style={{ width: 70, height: 30, marginLeft: 14 }}
+              style={{ width: 85, height: 43, marginLeft: 14 }}
             />
           ),
           headerRight: () => (
@@ -173,7 +173,7 @@ export default function TabLayout() {
         name="admin"
         options={{
           href: isAdmin ? undefined : null, // Ændret fra conditional rendering til href-baseret skjulning
-          title: "Administration",
+          title: "",
           tabBarLabel: "Admin",
           tabBarIcon: ({ color }) => (
             <MaterialIcons
@@ -190,7 +190,7 @@ export default function TabLayout() {
                   ? require("@/assets/images/logo/genfoedthub_dark.png")
                   : require("@/assets/images/logo/genfoedthub_light.png")
               }
-              style={{ width: 70, height: 30, marginLeft: 14 }}
+              style={{ width: 85, height: 43, marginLeft: 14 }}
             />
           ),
           headerRight: () => (
@@ -216,7 +216,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="account"
         options={{
-          title: "Menu",
+          title: "",
+          tabBarLabel: "Menu",
           tabBarIcon: () => (
             <View
               style={{
@@ -244,6 +245,16 @@ export default function TabLayout() {
                 }}
               />
             </View>
+          ),
+          headerLeft: () => (
+            <Image
+              source={
+                colorScheme === "dark"
+                  ? require("@/assets/images/logo/genfoedthub_dark.png")
+                  : require("@/assets/images/logo/genfoedthub_light.png")
+              }
+              style={{ width: 85, height: 43, marginLeft: 14 }}
+            />
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row" }}>

@@ -37,7 +37,7 @@ const InfoPanelFavorites = () => {
             if (userDoc.id === user) return; // Spring den aktuelle bruger over
 
             const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
+            const projectsQuery = query(userProjectsCollection, where("status", "==", "Published"));
 
             onSnapshot(projectsQuery, (projectsSnapshot) => {
               projectsSnapshot.forEach((projectDoc) => {

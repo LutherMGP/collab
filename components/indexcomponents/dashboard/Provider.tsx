@@ -16,14 +16,12 @@ const Provider = () => {
 
   useEffect(() => {
     if (!user) return;
-
+  
     const userProjectsCollection = collection(database, "users", user, "projects");
-
-    // Lyt til brugerens projekter
+  
     const unsubscribeProjects = onSnapshot(
       userProjectsCollection,
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
-        // Ryd op i gamle lyttere for projekter, der ikke længere findes
         const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
         Object.keys(projectListenersRef.current).forEach((projectId) => {
           if (!existingProjectIds.has(projectId)) {
@@ -31,33 +29,33 @@ const Provider = () => {
             delete projectListenersRef.current[projectId];
           }
         });
-
+  
         let totalApplications = 0;
-
+  
         projectsSnapshot.docs.forEach((projectDoc) => {
           const projectId = projectDoc.id;
-
-          if (projectListenersRef.current[projectId]) return; // Skip, hvis lytter allerede findes
-
+  
+          if (projectListenersRef.current[projectId]) return;
+  
           const projectRef = doc(database, "users", user, "projects", projectId);
-
+  
           const unsubscribeApplicant = onSnapshot(
             projectRef,
             (docSnapshot) => {
               const projectData = docSnapshot.data();
-
-              // Kontrollér, om `applicant` eksisterer, og status er `Application`
-              if (projectData?.applicant && projectData?.status === "Application") {
+  
+              // Tæl kun projekter med status 'Application'
+              if (projectData?.status === "Application") {
                 totalApplications += 1;
               }
-
+  
               setApplicationCount(totalApplications);
             },
             (error) => {
               console.error(`Fejl ved lytning til projekt ${projectId}:`, error);
             }
           );
-
+  
           projectListenersRef.current[projectId] = unsubscribeApplicant;
         });
       },
@@ -65,8 +63,7 @@ const Provider = () => {
         console.error("Fejl ved hentning af brugerens projekter:", error);
       }
     );
-
-    // Cleanup ved unmount
+  
     return () => {
       unsubscribeProjects();
       Object.values(projectListenersRef.current).forEach((unsub) => unsub());

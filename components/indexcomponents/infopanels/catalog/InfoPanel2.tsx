@@ -94,7 +94,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         // Fjern fra favoritter
         await deleteDoc(favoriteDocRef);
         setIsFavorite(false); // Opdater state lokalt
-        Alert.alert("Favorit fjernet", "Projektet er fjernet fra dine favoritter.");
+        // Alert.alert("Favorit fjernet", "Projektet er fjernet fra dine favoritter.");
       } else {
         // Tilføj til favoritter
         await setDoc(favoriteDocRef, {
@@ -103,7 +103,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           addedAt: new Date().toISOString(), // Tilføj tidsstempel
         });
         setIsFavorite(true); // Opdater state lokalt
-        Alert.alert("Favorit tilføjet", "Projektet er tilføjet til dine favoritter.");
+        // Alert.alert("Favorit tilføjet", "Projektet er tilføjet til dine favoritter.");
       }
     } catch (error) {
       console.error("Fejl ved opdatering af favoritstatus:", error);
@@ -123,42 +123,14 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         throw new Error("Bruger-ID eller projekt-ID mangler.");
       }
   
-      // Hent brugerens rolle
+      // Hent brugerens data fra Firestore
       const userDocRef = doc(database, "users", userId);
       const userSnap = await getDoc(userDocRef);
       const userRole = userSnap.exists() ? userSnap.data().role : null;
   
-      if (!userRole) {
-        Alert.alert(
-          "Ugyldig rolle",
-          "Din rolle er ikke angivet. Kontakt administratoren for hjælp."
-        );
-        return;
-      }
-  
-      // Rolle: Bruger
-      if (userRole === "Bruger") {
-        Alert.alert(
-          "Opgrader til Designer",
-          "For at deltage i denne fase skal du opgradere din konto til Designer. Vil du fortsætte?",
-          [
-            { text: "Annuller", style: "cancel" },
-            {
-              text: "Fortsæt",
-              style: "default",
-              onPress: () => {
-                router.push("/(app)/(tabs)/cart");
-              },
-            },
-          ]
-        );
-        return;
-      }
-  
-      // Rolle: Designer eller Admin
       if (userRole === "Designer" || userRole === "Admin") {
         Alert.alert(
-          "Bekræft Ansøgning",
+          "Bekræft Igangsættelse af Ansøgnings Process",
           "Vil du ansøge om at deltage i dette projekt?",
           [
             { text: "Annuller", style: "cancel" },
@@ -167,12 +139,10 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               style: "default",
               onPress: async () => {
                 try {
-                  // Kontrollér at vi har projekt-ejerens ID
                   if (!projectData.userId) {
                     throw new Error("Projekt-ejer ID mangler.");
                   }
   
-                  // Reference til projektets roddokument
                   const projectDocRef = doc(
                     database,
                     "users",
@@ -180,12 +150,19 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     "projects",
                     projectData.id
                   );
+                  const projectSnap = await getDoc(projectDocRef);
   
-                  // Opdater projektet med ansøgerens oplysninger
+                  if (!projectSnap.exists()) {
+                    throw new Error("Projektet findes ikke.");
+                  }
+  
+                  const projectDataFromFirestore = projectSnap.data();
+  
+                  // Opdater projektets dokument i Firestore
                   await setDoc(
                     projectDocRef,
                     {
-                      status: "Application", // Opdater status
+                      status: "Application",
                       applicant: {
                         id: userId,
                         name: userSnap.data()?.name || "Ukendt bruger",
@@ -194,34 +171,59 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                         appliedAt: new Date().toISOString(),
                       },
                     },
-                    { merge: true } // Bevarer eksisterende data
+                    { merge: true }
                   );
   
+                  // Reference til ansøgerens `applications`-collection
+                  const applicationsCollectionRef = collection(
+                    database,
+                    "users",
+                    userId,
+                    "applications"
+                  );
+  
+                  const applicationData = {
+                    projectId: projectData.id,
+                    projectName: projectData.name || "Uden navn",
+                    projectDescription: projectData.description || "Ingen beskrivelse",
+                    ownerId: projectData.userId,
+                    appliedAt: new Date().toISOString(),
+                    projectStatus: projectData.status || "Project",
+                    projectImage: projectData.projectImage || null,
+                    f5CoverImageLowRes: projectDataFromFirestore.assets?.f5CoverImageLowRes || null,
+                    f3CoverImageLowRes: projectDataFromFirestore.assets?.f3CoverImageLowRes || null,
+                    f2CoverImageLowRes: projectDataFromFirestore.assets?.f2CoverImageLowRes || null,
+                  };
+  
+                  await setDoc(doc(applicationsCollectionRef, projectData.id), applicationData);
+  
                   Alert.alert(
-                    "Ansøgning Sendt",
-                    "Din ansøgning er blevet registreret, og projektets status er ændret til 'Application'."
+                    "Ansøgning Process Igangsat",
+                    "Gå til Applicant og udfyld din ansøgning"
                   );
                 } catch (error) {
-                  console.error("Fejl ved opdatering af projekt:", error);
+                  console.error("Fejl ved igangsættelse af ansøgnings process:", error);
                   Alert.alert(
                     "Fejl",
-                    "Kunne ikke indsende ansøgning. Prøv igen senere."
+                    "Kunne ikke igangsætte ansøgnings process. Prøv igen senere."
                   );
                 }
               },
             },
           ]
         );
-        return;
+      } else if (userRole === "Bruger") {
+        // Naviger til `CartScreen`
+        router.push("/(app)/(tabs)/cart");
+      } else {
+        Alert.alert(
+          "Ugyldig handling",
+          "Denne handling er ikke tilladt for din rolle."
+        );
       }
-  
-      Alert.alert(
-        "Ugyldig handling",
-        "Denne handling er ikke tilladt for din rolle."
-      );
     } catch (error) {
       console.error("Fejl ved håndtering af ansøgning:", error);
-      Alert.alert("Fejl", "Kunne ikke behandle ansøgningen. Prøv igen senere.");
+      Alert.alert("Fejl", "Kunne ikke behandle ansøgnings processen. Prøv igen senere.");
     }
   };
 

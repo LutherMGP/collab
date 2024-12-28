@@ -1,4 +1,4 @@
-// @/components/indexcomponents/infopanels/provider/InfoPanelStyles3.tsx
+// @/components/indexcomponents/infopanels/applicant/InfoPanelStyles4.tsx
 
 import { StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
@@ -22,6 +22,7 @@ export const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: 14,
+    width: "96%",
   },
   f8Container: {
     flex: 8,
@@ -597,11 +598,11 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   applicantName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
     marginTop: 35, // Afstand fra "Application"-teksten
-    marginBottom: 10,
+    marginBottom: 6,
     color: Colors.light.text, // Kan justeres afhængigt af tema
   },
 });

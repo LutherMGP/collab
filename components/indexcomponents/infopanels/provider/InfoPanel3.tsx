@@ -12,24 +12,13 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { doc, getDoc, setDoc, deleteDoc, deleteField } from "firebase/firestore";
+import { database } from "@/firebaseConfig";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/provider/InfoPanelStyles3";
 import { ProjectData } from "@/types/ProjectData";
-
-type ProjectData = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  f8CoverImageLowRes?: string | null;
-  f5CoverImageLowRes?: string | null;
-  f3CoverImageLowRes?: string | null;
-  f2CoverImageLowRes?: string | null;
-  projectImage?: string | null;
-  userId?: string | null;
-};
 
 type InfoPanelProps = {
   projectData: ProjectData;
@@ -45,6 +34,44 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showFullComment, setShowFullComment] = useState(false);
 
+  // State til ansøgningsdata
+  const [applicantComment, setApplicantComment] = useState<string>("Pending");
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+
+  // Funktion til at hente `applicant` data
+  const fetchApplicantData = async () => {
+    try {
+      if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
+
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+
+      const projectSnap = await getDoc(projectDocRef);
+
+      if (projectSnap.exists()) {
+        const applicantData = projectSnap.data()?.applicant;
+        if (applicantData) {
+          setApplicantComment(
+            applicantData.submitted ? applicantData.userComment || "Pending" : "Pending"
+          );
+          setIsSubmitted(!!applicantData.submitted);
+        }
+      }
+    } catch (error) {
+      console.error("Fejl ved hentning af ansøgningsdata:", error);
+    }
+  };
+
+  // Hent data ved komponentens opstart
+  useEffect(() => {
+    fetchApplicantData();
+  }, [projectData.userId, projectData.id]);
+
   // Synkroniser lokale data med props
   useEffect(() => {
     setProjectData(initialProjectData);
@@ -53,7 +80,6 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Godkend ansøger
   const handleApproveApplicant = async () => {
     try {
-      // Her kan der implementeres logik til at godkende ansøgeren
       Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
@@ -63,10 +89,46 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Afvis ansøger
   const handleRejectApplicant = async () => {
     try {
-      // Her kan der implementeres logik til at afvise ansøgeren
-      Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+      if (!projectData.userId || !projectData.id) {
+        Alert.alert("Fejl", "Projektdata mangler.");
+        return;
+      }
+  
+      // 1. Fjern `applicant`-felterne fra projektets dokument og opdater `status`
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+  
+      await setDoc(
+        projectDocRef,
+        {
+          applicant: deleteField(), // Fjern applicant-data med deleteField
+          status: "Published",      // Opdater status til Published
+        },
+        { merge: true }             // Bevar andre felter i dokumentet
+      );
+  
+      // 2. Slet det tilhørende projekt i ansøgerens `applications`-collection
+      if (projectData.applicant?.id) {
+        const applicantDocRef = doc(
+          database,
+          "users",
+          projectData.applicant.id, // Ansøgerens bruger-ID
+          "applications",
+          projectData.id // Projektets ID
+        );
+  
+        await deleteDoc(applicantDocRef);
+      }
+  
+      Alert.alert("Afvist", "Ansøgningen er blevet afvist, og projektstatus er ændret til Published.");
     } catch (error) {
-      console.error("Fejl ved afvisning af ansøger:", error);
+      console.error("Fejl ved afvisning af ansøgning:", error);
+      Alert.alert("Fejl", "Der opstod en fejl under afvisningen.");
     }
   };
 
@@ -128,10 +190,12 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             {projectData.applicant?.name || "Ukendt ansøger"}
           </Text>
 
-          {/* Vis ansøgerens kommentar */}
-          <Text style={baseStyles.commentText}>
-            {projectData.applicant?.email || "Ingen kommentar tilføjet."}
-          </Text>
+          {/* Ansøgning */}
+          <View style={styles.applicationContainer}>
+            <Text style={styles.applicationText}>
+              {isSubmitted ? applicantComment : "Pending"}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -166,7 +230,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                   style={baseStyles.F1A}
                   onPress={handleApproveApplicant} // Godkend knap
                 >
-                  <FontAwesome name="check" size={24} color="green" />
+                  <FontAwesome name="check" size={24} color="#0a7ea4" />
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
@@ -247,6 +311,27 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
+  },
+  applicationContainer: {
+    marginTop: 3,                  // Afstand fra elementet ovenfor
+    padding: 10,                   // Indvendig afstand
+    backgroundColor: "#f0f0f0",    // Baggrundsfarve
+    alignItems: "flex-start",      // Juster indholdet til venstre
+    justifyContent: "flex-start",  // Placer indholdet øverst
+    borderWidth: 1,                // Rammetykkelse
+    borderColor: "rgba(255, 255, 255, 0.7)", // Rammefarve
+    width: "96%",                  // Bredden af containeren
+    height: "81%",                 // Højden af containeren
+    borderRadius: 10,              // Runde hjørner
+    elevation: 4,                  // Skyggeeffekt (Android)
+    shadowColor: "#000",           // Skyggefarve
+    shadowOffset: { width: 0, height: 2 }, // Skyggeplacering
+    shadowOpacity: 0.25,           // Skyggeintensitet
+    shadowRadius: 3.84,            // Skyggeradius
+  },
+  applicationText: {
+    color: "#000", // Tekstfarve
+    fontSize: 14, // Tekststørrelse
   },
 });
 
