@@ -267,9 +267,14 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     <Pressable
                         style={[
                         baseStyles.F1B,
-                        { opacity: Colors[theme].tint ? 0.3 : 1 }, // Skift transparens baseret på F1B's tilstand
+                        { opacity: isF1BActive ? 1 : 0.3 }, // Dynamisk transparens
                         ]}
-                        onPress={() => handleToggleButtons("F1B")}
+                        onPress={() => {
+                        if (isF1BActive) {
+                            saveCommentToFirestore(); // Gem teksten
+                            Alert.alert("Gemt", "Din ansøgning er blevet gemt."); // Vis bekræftelse
+                        }
+                        }}
                     >
                         <FontAwesome
                         name="save"
@@ -277,7 +282,7 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                         color={isF1BActive ? Colors[theme].tint : "#ccc"}
                         />
                     </Pressable>
-                  </View>
+                    </View>
                 </View>
               </View>
               <View style={baseStyles.f3bottomSide}>
