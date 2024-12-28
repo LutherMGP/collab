@@ -112,11 +112,41 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     // Håndter knapskifte
     const handleToggleButtons = async (button: "F1A" | "F1B") => {
         if (button === "F1A") {
-          setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
-          await submitApplicationToFirestore(); // Opdater submission-status til true
+          // Valider om ansøgningen er tom
+          if (!userComment.trim()) {
+            Alert.alert("Fejl", "Du skal udfylde din ansøgning, før den kan sendes.");
+            return;
+          }
+      
+          // Vis bekræftelsesdialog
+          Alert.alert(
+            "Bekræft afsendelse",
+            "Er du sikker på, at du vil sende din ansøgning? Når den er sendt, er den bindende.",
+            [
+              {
+                text: "Annuller",
+                style: "cancel", // Luk dialogen uden handling
+              },
+              {
+                text: "Send ansøgning",
+                onPress: async () => {
+                  setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
+                  await submitApplicationToFirestore(); // Opdater submission-status til true
+                  Alert.alert("Sendt", "Ansøgningen er nu sendt til projektejeren.");
+                },
+              },
+            ],
+            { cancelable: true } // Tillad brugeren at lukke dialogen
+          );
         } else if (button === "F1B") {
+          // Gem kommentaren med submission-status false
+          if (!userComment.trim()) {
+            Alert.alert("Fejl", "Du skal udfylde din ansøgning, før den kan gemmes.");
+            return;
+          }
+      
           setIsF1BActive(true); // Aktiver F1B, deaktiver F1A
-          await saveCommentToFirestore(); // Gem kommentaren med submission-status false
+          await saveCommentToFirestore();
         }
     };
 
