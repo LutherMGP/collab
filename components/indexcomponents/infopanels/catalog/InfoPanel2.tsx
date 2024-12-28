@@ -129,7 +129,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   
       if (userRole === "Designer" || userRole === "Admin") {
         Alert.alert(
-          "Bekræft Ansøgning",
+          "Bekræft Igangsættelse af Ansøgnings Process",
           "Vil du ansøge om at deltage i dette projekt?",
           [
             { text: "Annuller", style: "cancel" },
@@ -203,14 +203,14 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                   await setDoc(doc(applicationsCollectionRef, projectData.id), applicationData);
   
                   Alert.alert(
-                    "Ansøgning Fuldført",
-                    "Din ansøgning er blevet sendt, og en kopi er oprettet i dine ansøgninger."
+                    "Ansøgning Process Igangsat",
+                    "Gå til Applicant og udfyld din ansøgning"
                   );
                 } catch (error) {
-                  console.error("Fejl ved opdatering af projekt og ansøgning:", error);
+                  console.error("Fejl ved igangsættelse af ansøgnings process:", error);
                   Alert.alert(
                     "Fejl",
-                    "Kunne ikke indsende ansøgning. Prøv igen senere."
+                    "Kunne ikke igangsætte ansøgnings process. Prøv igen senere."
                   );
                 }
               },
@@ -226,7 +226,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
       );
     } catch (error) {
       console.error("Fejl ved håndtering af ansøgning:", error);
-      Alert.alert("Fejl", "Kunne ikke behandle ansøgningen. Prøv igen senere.");
+      Alert.alert("Fejl", "Kunne ikke behandle ansøgnings processen. Prøv igen senere.");
     }
   };
 
