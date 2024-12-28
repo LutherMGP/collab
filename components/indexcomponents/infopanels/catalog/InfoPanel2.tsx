@@ -136,25 +136,6 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         return;
       }
   
-      // Rolle: Bruger
-      if (userRole === "Bruger") {
-        Alert.alert(
-          "Opgrader til Designer",
-          "For at deltage i denne fase skal du opgradere din konto til Designer. Vil du fortsætte?",
-          [
-            { text: "Annuller", style: "cancel" },
-            {
-              text: "Fortsæt",
-              style: "default",
-              onPress: () => {
-                router.push("/(app)/(tabs)/cart");
-              },
-            },
-          ]
-        );
-        return;
-      }
-  
       // Rolle: Designer eller Admin
       if (userRole === "Designer" || userRole === "Admin") {
         Alert.alert(
@@ -167,12 +148,11 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
               style: "default",
               onPress: async () => {
                 try {
-                  // Kontrollér at vi har projekt-ejerens ID
                   if (!projectData.userId) {
                     throw new Error("Projekt-ejer ID mangler.");
                   }
   
-                  // Reference til projektets roddokument
+                  // Reference til projektets dokument
                   const projectDocRef = doc(
                     database,
                     "users",
@@ -181,11 +161,11 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     projectData.id
                   );
   
-                  // Opdater projektet med ansøgerens oplysninger
+                  // Opdater projektets dokument i Firestore
                   await setDoc(
                     projectDocRef,
                     {
-                      status: "Application", // Opdater status
+                      status: "Application",
                       applicant: {
                         id: userId,
                         name: userSnap.data()?.name || "Ukendt bruger",
@@ -194,15 +174,37 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                         appliedAt: new Date().toISOString(),
                       },
                     },
-                    { merge: true } // Bevarer eksisterende data
+                    { merge: true }
                   );
   
+                  // Reference til ansøgerens `applications`-collection
+                  const applicationsCollectionRef = collection(
+                    database,
+                    "users",
+                    userId,
+                    "applications"
+                  );
+  
+                  // Data om projektet, der skal gemmes under ansøgeren
+                  const applicationData = {
+                    projectId: projectData.id,
+                    projectName: projectData.name || "Uden navn",
+                    projectDescription: projectData.description || "Ingen beskrivelse",
+                    ownerId: projectData.userId,
+                    appliedAt: new Date().toISOString(),
+                    projectStatus: projectData.status || "Project",
+                    projectImage: projectData.projectImage || null,
+                  };
+  
+                  // Opret en ansøgning i ansøgerens `applications`-collection
+                  await setDoc(doc(applicationsCollectionRef, projectData.id), applicationData);
+  
                   Alert.alert(
-                    "Ansøgning Sendt",
-                    "Din ansøgning er blevet registreret, og projektets status er ændret til 'Application'."
+                    "Ansøgning Fuldført",
+                    "Din ansøgning er blevet sendt, og en kopi er oprettet i dine ansøgninger."
                   );
                 } catch (error) {
-                  console.error("Fejl ved opdatering af projekt:", error);
+                  console.error("Fejl ved opdatering af projekt og ansøgning:", error);
                   Alert.alert(
                     "Fejl",
                     "Kunne ikke indsende ansøgning. Prøv igen senere."
