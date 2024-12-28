@@ -49,34 +49,104 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     // Gem kommentar i Firestore
     const saveCommentToFirestore = async () => {
         try {
-        if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
-        const docRef = doc(
+          if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
+      
+          const projectDocRef = doc(
             database,
             "users",
-            projectData.userId,
-            "application",
-            projectData.id
-        );
-        await setDoc(
-            docRef,
-            { userComment }, // Gem den indtastede tekst
-            { merge: true } // Bevar eksisterende data
-        );
-        Alert.alert("Gemt", "Din kommentar er gemt.");
+            projectData.userId,      // Ejeren af projektet
+            "projects",
+            projectData.id           // Projektets ID
+          );
+      
+          await setDoc(
+            projectDocRef,
+            {
+              applicant: {
+                ...projectData.applicant, // Bevar eksisterende ansøgerdata
+                userComment,             // Gem den indtastede ansøgningstekst
+                submitted: false         // Boolean for submission-status
+              }
+            },
+            { merge: true }               // Bevar eksisterende data
+          );
+      
+          Alert.alert("Gemt", "Din ansøgning er gemt.");
         } catch (error) {
-        console.error("Fejl ved lagring af kommentar:", error);
-        Alert.alert("Fejl", "Kunne ikke gemme kommentaren.");
+          console.error("Fejl ved lagring af ansøgning:", error);
+          Alert.alert("Fejl", "Kunne ikke gemme ansøgningen.");
+        }
+    };
+
+    // Send ansøgning til Firestore
+    const submitApplicationToFirestore = async () => {
+        try {
+          if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
+      
+          const projectDocRef = doc(
+            database,
+            "users",
+            projectData.userId,      // Ejeren af projektet
+            "projects",
+            projectData.id           // Projektets ID
+          );
+      
+          await setDoc(
+            projectDocRef,
+            {
+              applicant: {
+                ...projectData.applicant, // Bevar eksisterende ansøgerdata
+                submitted: true           // Opdater submission-status
+              }
+            },
+            { merge: true }               // Bevar eksisterende data
+          );
+      
+          Alert.alert("Sendt", "Ansøgningen er sendt til projektejeren.");
+        } catch (error) {
+          console.error("Fejl ved opdatering af submission-status:", error);
+          Alert.alert("Fejl", "Kunne ikke sende ansøgningen.");
         }
     };
 
     // Håndter knapskifte
-    const handleToggleButtons = (button: "F1A" | "F1B") => {
+    const handleToggleButtons = async (button: "F1A" | "F1B") => {
         if (button === "F1A") {
           setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
+          await submitApplicationToFirestore(); // Opdater submission-status til true
         } else if (button === "F1B") {
           setIsF1BActive(true); // Aktiver F1B, deaktiver F1A
+          await saveCommentToFirestore(); // Gem kommentaren med submission-status false
+        }
+    };
+
+    // Hent ansøgerdata fra Firestore
+    const getApplicantData = async () => {
+        try {
+          const projectDocRef = doc(
+            database,
+            "users",
+            projectData.userId,
+            "projects",
+            projectData.id
+          );
+      
+          const projectSnap = await getDoc(projectDocRef);
+          if (projectSnap.exists()) {
+            const data = projectSnap.data();
+            if (data.applicant) {
+              setUserComment(data.applicant.userComment || ""); // Indlæs eksisterende tekst
+              setIsF1BActive(!data.applicant.submitted);       // Skift knapper baseret på submission-status
+            }
+          }
+        } catch (error) {
+          console.error("Fejl ved hentning af ansøgerdata:", error);
         }
       };
+      
+      useEffect(() => {
+        getApplicantData(); // Indlæs data ved komponentens opstart
+    }, []);
   
     // Synkroniser lokale data med props
     useEffect(() => {
