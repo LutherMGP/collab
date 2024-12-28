@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   panelContainer: {
-    padding: 10,
+    //padding: 10,
   },
 });
 

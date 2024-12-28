@@ -25,213 +25,229 @@ type InfoPanelProps = {
 };
 
 const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
-  const theme = useColorScheme() || "light";
-  const { width } = Dimensions.get("window");
-  const height = (width * 8) / 5;
-  const rightMargin = width * 0.03;
-
-  const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showFullComment, setShowFullComment] = useState(false);
-
-  // Synkroniser lokale data med props
-  useEffect(() => {
-    setProjectData(initialProjectData);
-  }, [initialProjectData]);
-
-  // Hent brugerens profilbillede fra Firestore
-  useEffect(() => {
-    const fetchUserProfileImage = async () => {
-      try {
-        if (!projectData.userId) return; // Tjek om userId er tilgængelig
-        const userDocRef = doc(database, "users", projectData.userId); // Reference til Firestore-dokumentet
-        const userSnap = await getDoc(userDocRef);
-
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          setProfileImage(userData.profileImage || null); // Sæt billede, hvis det findes
+    const theme = useColorScheme() || "light";
+    const { width } = Dimensions.get("window");
+    const height = (width * 8) / 5;
+    const rightMargin = width * 0.03;
+  
+    const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
+    const [profileImageFromUserDoc, setProfileImageFromUserDoc] = useState<string | null>(null);
+    const [profileImageFromAssets, setProfileImageFromAssets] = useState<string | null>(null);
+    const [f5CoverImage, setF5CoverImage] = useState<string | null>(null);
+    const [f3CoverImage, setF3CoverImage] = useState<string | null>(null);
+    const [f2CoverImage, setF2CoverImage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [showFullComment, setShowFullComment] = useState(false);
+  
+    // Synkroniser lokale data med props
+    useEffect(() => {
+      setProjectData(initialProjectData);
+    }, [initialProjectData]);
+  
+    // Hent billeder fra Firestore
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          if (!projectData.userId || !projectData.id) return;
+  
+          // Hent profilbillede fra users collection
+          const userDocRef = doc(database, "users", projectData.userId);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            setProfileImageFromUserDoc(userData.profileImage || null);
+          }
+  
+          // Hent assets billeder fra projects
+          const projectDocRef = doc(
+            database,
+            "users",
+            projectData.userId,
+            "projects",
+            projectData.id
+          );
+          const projectSnap = await getDoc(projectDocRef);
+          if (projectSnap.exists()) {
+            const projectData = projectSnap.data();
+            const assets = projectData.assets || {};
+  
+            setProfileImageFromAssets(assets.profileImage || null);
+            setF5CoverImage(assets.f5CoverImageLowRes || null);
+            setF3CoverImage(assets.f3CoverImageLowRes || null);
+            setF2CoverImage(assets.f2CoverImageLowRes || null);
+          }
+        } catch (error) {
+          console.error("Fejl ved hentning af billeder:", error);
+        } finally {
+          setLoading(false); // Indlæsning færdig
         }
-      } catch (error) {
-        console.error("Fejl ved hentning af brugerens profilbillede:", error);
-      }
-    };
-
-    fetchUserProfileImage();
-  }, [projectData.userId]);
-
-  // Bevar eksisterende funktionalitet
-  const handleApproveApplicant = async () => {
-    try {
+      };
+  
+      fetchData();
+    }, [projectData.userId, projectData.id]);
+  
+    // Prioriter profilbilleder (assets > users)
+    const profileImage = profileImageFromAssets || profileImageFromUserDoc;
+  
+    // Bevar eksisterende funktionalitet
+    const handleApproveApplicant = async () => {
       Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
-    } catch (error) {
-      console.error("Fejl ved godkendelse af ansøger:", error);
-    }
-  };
-
-  const handleRejectApplicant = async () => {
-    try {
+    };
+  
+    const handleRejectApplicant = async () => {
       Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
-    } catch (error) {
-      console.error("Fejl ved afvisning af ansøger:", error);
-    }
-  };
-
-  return (
-    <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
-      {/* Tekst og kommentarer */}
-      <View style={baseStyles.textContainer}>
-        <Text
-          style={[baseStyles.nameText, { color: Colors[theme].tint }]}
-        >
-          {projectData.name || "Uden navn"}
-        </Text>
-        <Text
-          style={[baseStyles.commentText, { color: Colors[theme].text }]}
-          numberOfLines={showFullComment ? undefined : 1}
-          ellipsizeMode="tail"
-          onPress={() => {
-            setShowFullComment(!showFullComment);
-          }}
-        >
-          {projectData.description || "Ingen kommentar"}
-        </Text>
+    };
+  
+    // Placeholder komponent til loading eller manglende billeder
+    const PlaceholderImage = ({ style }: { style: any }) => (
+      <View style={[style, { backgroundColor: "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: "#aaa" }}>Indlæser...</Text>
       </View>
+    );
 
-      {/* F8 felt */}
-      <View style={baseStyles.f8Container}>
-        <View style={baseStyles.F8}>
-          {/* Projektbilledet i venstre øverste hjørne */}
-          {projectData.projectImage && (
-            <View style={baseStyles.projectImageContainer}>
-              <Image
-                source={{
-                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
-                }}
-                style={baseStyles.projectImage}
-              />
-            </View>
-          )}
-
-          {/* Brugerens profilbillede i højre øverste hjørne */}
-          {profileImage && (
-            <View style={baseStyles.applicantImageContainer}>
-              <Image
-                source={{
-                  uri: `${profileImage}?timestamp=${Date.now()}`,
-                }}
-                style={baseStyles.applicantImage}
-              />
-            </View>
-          )}
-
-          {/* Tekst i toppen */}
-          <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Application for</Text>
+    return (
+        <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
+          {/* Tekst og kommentarer */}
+          <View style={baseStyles.textContainer}>
+            <Text style={[baseStyles.nameText, { color: Colors[theme].tint }]}>
+              {projectData.name || "Uden navn"}
+            </Text>
+            <Text
+              style={[baseStyles.commentText, { color: Colors[theme].text }]}
+              numberOfLines={showFullComment ? undefined : 1}
+              ellipsizeMode="tail"
+              onPress={() => setShowFullComment(!showFullComment)}
+            >
+              {projectData.description || "Ingen kommentar"}
+            </Text>
           </View>
-
-          {/* Ansøgerens navn */}
-          <Text style={baseStyles.applicantName}>
-            {projectData.name || "Uden navn"}
-          </Text>
-
-          {/* Vis ansøgerens kommentar */}
-          <Text style={baseStyles.commentText}>
-            {projectData.applicant?.email || "Ingen kommentar tilføjet."}
-          </Text>
-        </View>
-      </View>
-
-      {/* Nedre container */}
-      <View style={baseStyles.lowerContainer}>
-        {/* Bevar alt eksisterende */}
-        <View style={baseStyles.leftSide}>
-          <View style={baseStyles.topSide}>
-            <View style={baseStyles.f2leftTop}>
-              <Pressable
-                style={baseStyles.F2}
-                accessibilityLabel="F2 Button"
-              >
-                {projectData.f2CoverImageLowRes && (
+      
+          {/* F8 felt */}
+          <View style={baseStyles.f8Container}>
+            <View style={baseStyles.F8}>
+              {/* Projektbilledet i venstre øverste hjørne */}
+              {projectData.projectImage ? (
+                <View style={baseStyles.projectImageContainer}>
                   <Image
                     source={{
-                      uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`,
+                      uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
                     }}
-                    style={baseStyles.f2CoverImage}
+                    style={baseStyles.projectImage}
                   />
+                </View>
+              ) : (
+                <View style={[baseStyles.projectImageContainer, { backgroundColor: "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+                  <Text style={{ color: "#aaa" }}>Indlæser...</Text>
+                </View>
+              )}
+      
+              {/* Brugerens profilbillede i højre øverste hjørne */}
+              {profileImage ? (
+                <View style={baseStyles.applicantImageContainer}>
+                  <Image
+                    source={{
+                      uri: `${profileImage}?timestamp=${Date.now()}`,
+                    }}
+                    style={baseStyles.applicantImage}
+                  />
+                </View>
+              ) : (
+                <View style={[baseStyles.applicantImageContainer, { backgroundColor: "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+                  <Text style={{ color: "#aaa" }}>Indlæser...</Text>
+                </View>
+              )}
+      
+              {/* Tekst i toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Application for</Text>
+              </View>
+      
+              {/* Ansøgerens navn */}
+              <Text style={baseStyles.applicantName}>
+                {projectData.name || "Uden navn"}
+              </Text>
+      
+              {/* Vis ansøgerens kommentar */}
+              <Text style={baseStyles.commentText}>
+                {projectData.applicant?.email || "Ingen kommentar tilføjet."}
+              </Text>
+            </View>
+          </View>
+      
+          {/* Nedre container */}
+          <View style={baseStyles.lowerContainer}>
+            <View style={baseStyles.leftSide}>
+              <View style={baseStyles.topSide}>
+                <View style={baseStyles.f2leftTop}>
+                  <Pressable style={baseStyles.F2} accessibilityLabel="F2 Button">
+                    {f2CoverImage ? (
+                      <Image
+                        source={{ uri: `${f2CoverImage}?timestamp=${Date.now()}` }}
+                        style={baseStyles.f2CoverImage}
+                      />
+                    ) : (
+                      <View style={[baseStyles.f2CoverImage, { backgroundColor: "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+                        <Text style={{ color: "#aaa" }}>Indlæser...</Text>
+                      </View>
+                    )}
+                    <View style={baseStyles.textTag}>
+                      <Text style={baseStyles.text}>Agreement</Text>
+                    </View>
+                  </Pressable>
+                </View>
+                <View style={baseStyles.rightTop}>
+                  <View style={baseStyles.f1topHalf}>
+                    <Pressable style={baseStyles.F1A} onPress={handleApproveApplicant}>
+                      <FontAwesome name="check" size={24} color="green" />
+                    </Pressable>
+                  </View>
+                  <View style={baseStyles.f1bottomHalf}>
+                    <Pressable style={baseStyles.F1B} onPress={handleRejectApplicant}>
+                      <FontAwesome name="times" size={24} color="red" />
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+              <View style={baseStyles.f3bottomSide}>
+                <Pressable style={baseStyles.F3} accessibilityLabel="F3 Button">
+                  {f3CoverImage ? (
+                    <Image
+                      source={{ uri: `${f3CoverImage}?timestamp=${Date.now()}` }}
+                      style={baseStyles.f3CoverImage}
+                    />
+                  ) : (
+                    <View style={[baseStyles.f3CoverImage, { backgroundColor: "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+                      <Text style={{ color: "#aaa" }}>Indlæser...</Text>
+                    </View>
+                  )}
+                  <View style={baseStyles.textTag}>
+                    <Text style={baseStyles.text}>Sustainability</Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+            <View style={baseStyles.f5Side}>
+              <Pressable style={[baseStyles.F5, { right: rightMargin }]} accessibilityLabel="F5 Button">
+                {f5CoverImage ? (
+                  <Image
+                    source={{ uri: `${f5CoverImage}?timestamp=${Date.now()}` }}
+                    style={baseStyles.f5CoverImage}
+                  />
+                ) : (
+                  <View style={[baseStyles.f5CoverImage, { backgroundColor: "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+                    <Text style={{ color: "#aaa" }}>Indlæser...</Text>
+                  </View>
                 )}
                 <View style={baseStyles.textTag}>
-                  <Text style={baseStyles.text}>Agreement</Text>
+                  <Text style={baseStyles.text}>Terms & Condition</Text>
                 </View>
               </Pressable>
             </View>
-            <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={handleApproveApplicant}
-                >
-                  <FontAwesome name="check" size={24} color="green" />
-                </Pressable>
-              </View>
-              <View style={baseStyles.f1bottomHalf}>
-                <Pressable
-                  style={baseStyles.F1B}
-                  onPress={handleRejectApplicant}
-                >
-                  <FontAwesome name="times" size={24} color="red" />
-                </Pressable>
-              </View>
-            </View>
           </View>
-          <View style={baseStyles.f3bottomSide}>
-            <Pressable
-              style={baseStyles.F3}
-              accessibilityLabel="F3 Button"
-            >
-              {projectData.f3CoverImageLowRes && (
-                <Image
-                  source={{
-                    uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`,
-                  }}
-                  style={baseStyles.f3CoverImage}
-                />
-              )}
-              <View style={baseStyles.textTag}>
-                <Text style={baseStyles.text}>Sustainability</Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-        <View style={baseStyles.f5Side}>
-          <Pressable
-            style={[baseStyles.F5, { right: rightMargin }]}
-            accessibilityLabel="F5 Button"
-          >
-            {projectData.f5CoverImageLowRes && (
-              <Image
-                source={{
-                  uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`,
-                }}
-                style={baseStyles.f5CoverImage}
-              />
-            )}
-            <View style={baseStyles.textTag}>
-              <Text style={baseStyles.text}>Terms & Condition</Text>
-            </View>
-          </Pressable>
-        </View>
-      </View>
-
-      {isLoading && (
-        <View style={baseStyles.loadingOverlay}>
-          <ActivityIndicator size="large" color="blue" />
-        </View>
-      )}
-      <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
-    </ScrollView>
-  );
-};
+          <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
+        </ScrollView>
+      );
+    };
 
 const styles = StyleSheet.create({
   modalOverlay: {

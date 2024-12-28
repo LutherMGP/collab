@@ -123,20 +123,10 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         throw new Error("Bruger-ID eller projekt-ID mangler.");
       }
   
-      // Hent brugerens rolle
       const userDocRef = doc(database, "users", userId);
       const userSnap = await getDoc(userDocRef);
       const userRole = userSnap.exists() ? userSnap.data().role : null;
   
-      if (!userRole) {
-        Alert.alert(
-          "Ugyldig rolle",
-          "Din rolle er ikke angivet. Kontakt administratoren for hjælp."
-        );
-        return;
-      }
-  
-      // Rolle: Designer eller Admin
       if (userRole === "Designer" || userRole === "Admin") {
         Alert.alert(
           "Bekræft Ansøgning",
@@ -152,7 +142,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     throw new Error("Projekt-ejer ID mangler.");
                   }
   
-                  // Reference til projektets dokument
+                  // Hent projektets data for at få `assets`
                   const projectDocRef = doc(
                     database,
                     "users",
@@ -160,6 +150,13 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     "projects",
                     projectData.id
                   );
+                  const projectSnap = await getDoc(projectDocRef);
+  
+                  if (!projectSnap.exists()) {
+                    throw new Error("Projektet findes ikke.");
+                  }
+  
+                  const projectDataFromFirestore = projectSnap.data();
   
                   // Opdater projektets dokument i Firestore
                   await setDoc(
@@ -194,6 +191,12 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     appliedAt: new Date().toISOString(),
                     projectStatus: projectData.status || "Project",
                     projectImage: projectData.projectImage || null,
+                    f5CoverImageLowRes:
+                      projectDataFromFirestore.assets?.f5CoverImageLowRes || null,
+                    f3CoverImageLowRes:
+                      projectDataFromFirestore.assets?.f3CoverImageLowRes || null,
+                    f2CoverImageLowRes:
+                      projectDataFromFirestore.assets?.f2CoverImageLowRes || null,
                   };
   
                   // Opret en ansøgning i ansøgerens `applications`-collection
