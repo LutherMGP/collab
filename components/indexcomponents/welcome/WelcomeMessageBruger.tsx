@@ -141,7 +141,7 @@ export default function WelcomeMessageBruger() {
         style={[styles.imageContainer, { width: imageSize, height: imageSize }]}
       >
         <Image
-          source={require("@/assets/images/Krans.png")}
+          source={require("@/assets/images/logo/Fibonomic.png")}
           style={styles.backgroundImage}
         />
       </View>
