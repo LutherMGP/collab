@@ -193,7 +193,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                   style={baseStyles.F1A}
                   onPress={handleApproveApplicant} // Godkend knap
                 >
-                  <FontAwesome name="check" size={24} color="green" />
+                  <FontAwesome name="check" size={24} color="#0a7ea4" />
                 </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
