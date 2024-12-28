@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "collab",
-    "slug": "collab",
+    "name": "fibonomic",
+    "slug": "fibonomic",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.keastudentpractice.collab"
+      "bundleIdentifier": "com.keastudentpractice.fibonomic"
     },
     "android": {
       "adaptiveIcon": {
@@ -47,8 +47,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "0e105f63-488b-4ca4-804e-5d87a30b97c9"
+        "projectId": "b412f766-0855-4f4d-95df-d1a0d4a355ee"
       }
-    }
+    },
+    "owner": "keastudentpractice"
   }
 }
