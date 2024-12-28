@@ -12,6 +12,8 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { doc, getDoc } from "firebase/firestore";
+import { database } from "@/firebaseConfig";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/constants/Colors";
@@ -31,6 +33,44 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
   const [isLoading, setIsLoading] = useState(false);
   const [showFullComment, setShowFullComment] = useState(false);
+
+  // State til ansøgningsdata
+  const [applicantComment, setApplicantComment] = useState<string>("Pending");
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+
+  // Funktion til at hente `applicant` data
+  const fetchApplicantData = async () => {
+    try {
+      if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
+
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+
+      const projectSnap = await getDoc(projectDocRef);
+
+      if (projectSnap.exists()) {
+        const applicantData = projectSnap.data()?.applicant;
+        if (applicantData) {
+          setApplicantComment(
+            applicantData.submitted ? applicantData.userComment || "Pending" : "Pending"
+          );
+          setIsSubmitted(!!applicantData.submitted);
+        }
+      }
+    } catch (error) {
+      console.error("Fejl ved hentning af ansøgningsdata:", error);
+    }
+  };
+
+  // Hent data ved komponentens opstart
+  useEffect(() => {
+    fetchApplicantData();
+  }, [projectData.userId, projectData.id]);
 
   // Synkroniser lokale data med props
   useEffect(() => {
@@ -115,7 +155,9 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
           {/* Ansøgning */}
           <View style={styles.applicationContainer}>
-            <Text style={styles.applicationText}>Dette er en ny container</Text>
+            <Text style={styles.applicationText}>
+              {isSubmitted ? applicantComment : "Pending"}
+            </Text>
           </View>
         </View>
       </View>
@@ -234,21 +276,21 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   applicationContainer: {
-    marginTop: 3, // Afstand fra elementerne over
-    padding: 10, // Indvendig afstand
-    backgroundColor: "#f0f0f0", // Baggrundsfarve
-    alignItems: "center", // Centrer indholdet
-    justifyContent: "center", // Vertikal centrering
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
-    width: "96%",
-    height: "81%",
-    borderRadius: 10, // Rund form
-    elevation: 4, // Skyggeeffekt
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    marginTop: 3,                  // Afstand fra elementet ovenfor
+    padding: 10,                   // Indvendig afstand
+    backgroundColor: "#f0f0f0",    // Baggrundsfarve
+    alignItems: "flex-start",      // Juster indholdet til venstre
+    justifyContent: "flex-start",  // Placer indholdet øverst
+    borderWidth: 1,                // Rammetykkelse
+    borderColor: "rgba(255, 255, 255, 0.7)", // Rammefarve
+    width: "96%",                  // Bredden af containeren
+    height: "81%",                 // Højden af containeren
+    borderRadius: 10,              // Runde hjørner
+    elevation: 4,                  // Skyggeeffekt (Android)
+    shadowColor: "#000",           // Skyggefarve
+    shadowOffset: { width: 0, height: 2 }, // Skyggeplacering
+    shadowOpacity: 0.25,           // Skyggeintensitet
+    shadowRadius: 3.84,            // Skyggeradius
   },
   applicationText: {
     color: "#333", // Tekstfarve
