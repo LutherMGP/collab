@@ -94,7 +94,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         // Fjern fra favoritter
         await deleteDoc(favoriteDocRef);
         setIsFavorite(false); // Opdater state lokalt
-        Alert.alert("Favorit fjernet", "Projektet er fjernet fra dine favoritter.");
+        // Alert.alert("Favorit fjernet", "Projektet er fjernet fra dine favoritter.");
       } else {
         // Tilføj til favoritter
         await setDoc(favoriteDocRef, {
@@ -103,7 +103,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           addedAt: new Date().toISOString(), // Tilføj tidsstempel
         });
         setIsFavorite(true); // Opdater state lokalt
-        Alert.alert("Favorit tilføjet", "Projektet er tilføjet til dine favoritter.");
+        // Alert.alert("Favorit tilføjet", "Projektet er tilføjet til dine favoritter.");
       }
     } catch (error) {
       console.error("Fejl ved opdatering af favoritstatus:", error);
@@ -123,6 +123,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         throw new Error("Bruger-ID eller projekt-ID mangler.");
       }
   
+      // Hent brugerens data fra Firestore
       const userDocRef = doc(database, "users", userId);
       const userSnap = await getDoc(userDocRef);
       const userRole = userSnap.exists() ? userSnap.data().role : null;
@@ -142,7 +143,6 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     throw new Error("Projekt-ejer ID mangler.");
                   }
   
-                  // Hent projektets data for at få `assets`
                   const projectDocRef = doc(
                     database,
                     "users",
@@ -182,7 +182,6 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     "applications"
                   );
   
-                  // Data om projektet, der skal gemmes under ansøgeren
                   const applicationData = {
                     projectId: projectData.id,
                     projectName: projectData.name || "Uden navn",
@@ -191,15 +190,11 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     appliedAt: new Date().toISOString(),
                     projectStatus: projectData.status || "Project",
                     projectImage: projectData.projectImage || null,
-                    f5CoverImageLowRes:
-                      projectDataFromFirestore.assets?.f5CoverImageLowRes || null,
-                    f3CoverImageLowRes:
-                      projectDataFromFirestore.assets?.f3CoverImageLowRes || null,
-                    f2CoverImageLowRes:
-                      projectDataFromFirestore.assets?.f2CoverImageLowRes || null,
+                    f5CoverImageLowRes: projectDataFromFirestore.assets?.f5CoverImageLowRes || null,
+                    f3CoverImageLowRes: projectDataFromFirestore.assets?.f3CoverImageLowRes || null,
+                    f2CoverImageLowRes: projectDataFromFirestore.assets?.f2CoverImageLowRes || null,
                   };
   
-                  // Opret en ansøgning i ansøgerens `applications`-collection
                   await setDoc(doc(applicationsCollectionRef, projectData.id), applicationData);
   
                   Alert.alert(
@@ -217,13 +212,15 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             },
           ]
         );
-        return;
+      } else if (userRole === "Bruger") {
+        // Naviger til `CartScreen`
+        router.push("/(app)/(tabs)/cart");
+      } else {
+        Alert.alert(
+          "Ugyldig handling",
+          "Denne handling er ikke tilladt for din rolle."
+        );
       }
-  
-      Alert.alert(
-        "Ugyldig handling",
-        "Denne handling er ikke tilladt for din rolle."
-      );
     } catch (error) {
       console.error("Fejl ved håndtering af ansøgning:", error);
       Alert.alert("Fejl", "Kunne ikke behandle ansøgnings processen. Prøv igen senere.");

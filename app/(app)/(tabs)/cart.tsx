@@ -137,7 +137,10 @@ const CartScreen = () => {
           <View style={styles.modalContainer}>
             <Text style={[styles.modalTitle, { color: themeColors.text }]}>Velkommen!</Text>
             <Text style={[styles.modalDescription, { color: themeColors.text }]}>
-              Du er nu opgraderet til Designer. Du har adgang til alle funktioner.
+              Du er nu opgraderet til Designer med adgang til alle funktioner.
+            </Text>
+            <Text style={[styles.modalDescription, { color: themeColors.text }]}>
+              Du skal logge ud og logge ind igen for at se ændringerne.
             </Text>
             <TouchableOpacity
               style={[styles.modalButton, styles.confirmButton]}
@@ -282,6 +285,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: "80%",
+    height: "35%",
     backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 20,
@@ -327,6 +331,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   confirmButton: {
+    width: "50%",
+    height: "20%",
     backgroundColor: "#007AFF",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",

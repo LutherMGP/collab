@@ -5,24 +5,41 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Favorites = () => {
   const { user } = useAuth();
-  const { isInfoPanelFavoritesVisible, showPanel, hideAllPanels } =
-    useVisibility();
+  const { isInfoPanelFavoritesVisible, showPanel, hideAllPanels } = useVisibility();
   const [totalCount, setTotalCount] = useState(0); // Total antal favoritter
 
   useEffect(() => {
     if (!user) return;
 
-    // Reference til `favorites`-samlingen
+    // Reference til `favorites`-samlingen med filtrering
     const favoritesCollection = collection(database, "users", user, "favorites");
 
-    // Lyt til ændringer i samlingen og opdater tælleren
-    const unsubscribe = onSnapshot(favoritesCollection, (snapshot) => {
-      setTotalCount(snapshot.size); // Brug snapshot.size til at tælle dokumenter
+    // Lyt til ændringer i favoritter og opdater tælleren
+    const unsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
+      const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
+
+      if (favoriteProjectIds.length === 0) {
+        setTotalCount(0);
+        return;
+      }
+
+      // Filtrer kun projekter med status "Published"
+      const projectsQuery = query(
+        collection(database, "projects"),
+        where("status", "==", "Published"),
+        where("__name__", "in", favoriteProjectIds) // Filtrér kun favoritprojekter
+      );
+
+      const unsubscribeProjects = onSnapshot(projectsQuery, (projectsSnapshot) => {
+        setTotalCount(projectsSnapshot.size); // Antallet af projekter med status "Published"
+      });
+
+      return () => unsubscribeProjects(); // Stop overvågning af projekter
     });
 
     // Ryd op ved unmount
