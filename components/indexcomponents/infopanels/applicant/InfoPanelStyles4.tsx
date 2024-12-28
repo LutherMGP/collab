@@ -22,6 +22,7 @@ export const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: 14,
+    width: "96%",
   },
   f8Container: {
     flex: 8,
@@ -601,7 +602,7 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginTop: 35, // Afstand fra "Application"-teksten
-    marginBottom: 4,
+    marginBottom: 6,
     color: Colors.light.text, // Kan justeres afhængigt af tema
   },
 });

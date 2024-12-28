@@ -112,41 +112,44 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     // Håndter knapskifte
     const handleToggleButtons = async (button: "F1A" | "F1B") => {
         if (button === "F1A") {
-          // Valider om ansøgningen er tom
-          if (!userComment.trim()) {
+        // Valider om ansøgningen er tom
+        if (!userComment.trim()) {
             Alert.alert("Fejl", "Du skal udfylde din ansøgning, før den kan sendes.");
             return;
-          }
-      
-          // Vis bekræftelsesdialog
-          Alert.alert(
+        }
+    
+        // Gem teksten i Firestore
+        await saveCommentToFirestore();
+    
+        // Vis bekræftelsesdialog
+        Alert.alert(
             "Bekræft afsendelse",
             "Er du sikker på, at du vil sende din ansøgning? Når den er sendt, er den bindende.",
             [
-              {
+            {
                 text: "Annuller",
                 style: "cancel", // Luk dialogen uden handling
-              },
-              {
+            },
+            {
                 text: "Send ansøgning",
                 onPress: async () => {
-                  setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
-                  await submitApplicationToFirestore(); // Opdater submission-status til true
-                  Alert.alert("Sendt", "Ansøgningen er nu sendt til projektejeren.");
+                setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
+                await submitApplicationToFirestore(); // Opdater submission-status til true
+                Alert.alert("Sendt", "Ansøgningen er nu sendt til projektejeren.");
                 },
-              },
+            },
             ],
             { cancelable: true } // Tillad brugeren at lukke dialogen
-          );
+        );
         } else if (button === "F1B") {
-          // Gem kommentaren med submission-status false
-          if (!userComment.trim()) {
+        // Gem kommentaren med submission-status false
+        if (!userComment.trim()) {
             Alert.alert("Fejl", "Du skal udfylde din ansøgning, før den kan gemmes.");
             return;
-          }
-      
-          setIsF1BActive(true); // Aktiver F1B, deaktiver F1A
-          await saveCommentToFirestore();
+        }
+    
+        setIsF1BActive(true); // Aktiver F1B, deaktiver F1A
+        await saveCommentToFirestore();
         }
     };
 
@@ -308,16 +311,16 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
       
               {/* Tekstinput eller visning af ansøgers kommentar */}
               {isF1BActive ? (
-              <TextInput
-                style={styles.textInput}
-                placeholder="Indtast din ansøgning her..."
-                placeholderTextColor="#aaa"
-                value={userComment}
-                onChangeText={setUserComment}
-                multiline={true} // Tillader flere linjer
-                textAlignVertical="top" // Sørger for, at teksten starter i toppen
-                onBlur={saveCommentToFirestore} // Gem tekst, når feltet mister fokus
-              />
+                <TextInput
+                    style={styles.textInput}
+                    placeholder="Indtast din ansøgning her..."
+                    placeholderTextColor="#aaa"
+                    value={userComment}
+                    onChangeText={setUserComment}
+                    multiline={true} // Tillader flere linjer
+                    textAlignVertical="top" // Sørger for, at teksten starter i toppen
+                    onBlur={saveCommentToFirestore} // Gem tekst, når feltet mister fokus
+                />
               ) : (
               <Text style={[baseStyles.commentText, { color: Colors[theme].text }]}>
                 {userComment || "Ingen kommentar tilføjet."}
@@ -441,23 +444,23 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   textInput: {
-    marginTop: 5,
-    marginBottom: 10,
-    padding: 11,
-    width: "97%", // Bredden af inputfeltet
-    height: "81.9%", // Højden af inputfeltet
-    borderRadius: 10,
-    fontSize: 16,
-    textAlignVertical: "top", // Sørger for, at teksten starter i toppen
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.7)",
-    position: "relative",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    marginTop: 5,                  // Afstand til toppen af elementet ovenover
+    marginBottom: 10,              // Afstand til bunden af elementet nedenunder
+    padding: 10,                   // Indvendig polstring
+    width: "97%",                  // Bredden af inputfeltet
+    height: "81.9%",               // Højden af inputfeltet
+    borderRadius: 10,              // Runde hjørner
+    fontSize: 16,                  // Tekstens størrelse
+    textAlignVertical: "top",      // Sørger for, at teksten starter i toppen
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Lysere baggrund for bedre kontrast
+    borderWidth: 1,                // Rammetykkelse
+    borderColor: "#ccc",           // Neutral rammefarve
+    color: "#000",                 // Tekstfarve for bedre læsbarhed
+    elevation: 4,                  // Skaber en skygge på Android
+    shadowColor: "#000",           // Skyggefarve
+    shadowOffset: { width: 0, height: 2 }, // Juster skyggeplacering
+    shadowOpacity: 0.1,            // Reduceret skyggeintensitet
+    shadowRadius: 4,               // Mere subtil skyggeradius
   },
 });
 
