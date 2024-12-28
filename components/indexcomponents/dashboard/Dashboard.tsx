@@ -13,6 +13,7 @@ import Favorites from "@/components/indexcomponents/dashboard/Favorites";
 import Provider from "@/components/indexcomponents/dashboard/Provider";
 import Applicant from "@/components/indexcomponents/dashboard/Applicant";
 import DueDiligence from "@/components/indexcomponents/dashboard/DueDiligence";
+import FiboShare from "@/components/indexcomponents/dashboard/FiboShare";
 
 const Dashboard = () => {
   const theme = useColorScheme() || "light";
@@ -50,7 +51,10 @@ const Dashboard = () => {
       {(userRole === "Designer" || userRole === "Admin") && <Applicant />}  
 
       {/* Viser kun DueDiligence, hvis brugerens rolle er 'Designer' eller 'Admin' */}
-      {(userRole === "Designer" || userRole === "Admin") && <DueDiligence />}           
+      {(userRole === "Designer" || userRole === "Admin") && <DueDiligence />}  
+
+      {/* Viser kun FiboShare, hvis brugerens rolle er 'Bruger','Designer' eller 'Admin' eller */}
+      {(userRole === "Designer" || userRole === "Admin" || userRole === "Bruger") && <FiboShare />}         
     </ScrollView>
   );
 };

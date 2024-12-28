@@ -10,6 +10,7 @@ interface VisibilityContextType {
   isInfoPanelProviderVisible: boolean;
   isInfoPanelApplicantVisible: boolean;
   isInfoPanelDueDiligenceVisible: boolean;
+  isInfoPanelFiboShareVisible: boolean;
   showPanel: (
     panel:
       | "projects"
@@ -19,6 +20,7 @@ interface VisibilityContextType {
       | "provider"
       | "applicant"
       | "duediligence"
+      | "fiboshare"
   ) => void;
   hideAllPanels: () => void;
 }
@@ -55,7 +57,9 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   const [isInfoPanelApplicantVisible, setIsInfoPanelApplicantVisible] =
   useState(false); 
   const [isInfoPanelDueDiligenceVisible, setIsInfoPanelDueDiligenceVisible] =
-  useState(false);     
+  useState(false);
+  const [isInfoPanelFiboShareVisible, setIsInfoPanelFiboShareVisible] =
+  useState(false);      
 
   // Logfunktion
   const logVisibilityChange = (panel: string | null) => {
@@ -75,6 +79,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       | "provider"
       | "applicant"
       | "duediligence"
+      | "fiboshare"
   ) => {
     setIsInfoPanelProjectsVisible(panel === "projects");
     setIsInfoPanelPublishedVisible(panel === "published");
@@ -83,6 +88,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelProviderVisible(panel === "provider");
     setIsInfoPanelApplicantVisible(panel === "applicant");
     setIsInfoPanelDueDiligenceVisible(panel === "duediligence");
+    setIsInfoPanelFiboShareVisible(panel === "fiboshare");
     logVisibilityChange(panel); // Log hvilken panel der blev aktiveret
   };
 
@@ -94,6 +100,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelProviderVisible(false);
     setIsInfoPanelApplicantVisible(false);
     setIsInfoPanelDueDiligenceVisible(false);
+    setIsInfoPanelFiboShareVisible(false);
     logVisibilityChange(null); // Log at alle panels er skjult
   };
 
@@ -107,6 +114,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
         isInfoPanelProviderVisible,
         isInfoPanelApplicantVisible,
         isInfoPanelDueDiligenceVisible,
+        isInfoPanelFiboShareVisible,
         showPanel,
         hideAllPanels,
       }}
