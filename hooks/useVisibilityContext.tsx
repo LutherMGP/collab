@@ -9,6 +9,7 @@ interface VisibilityContextType {
   isInfoPanelFavoritesVisible: boolean;
   isInfoPanelProviderVisible: boolean;
   isInfoPanelApplicantVisible: boolean;
+  isInfoPanelDueDiligenceVisible: boolean;
   showPanel: (
     panel:
       | "projects"
@@ -17,6 +18,7 @@ interface VisibilityContextType {
       | "favorites"
       | "provider"
       | "applicant"
+      | "duediligence"
   ) => void;
   hideAllPanels: () => void;
 }
@@ -52,7 +54,8 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   useState(false);   
   const [isInfoPanelApplicantVisible, setIsInfoPanelApplicantVisible] =
   useState(false); 
-     
+  const [isInfoPanelDueDiligenceVisible, setIsInfoPanelDueDiligenceVisible] =
+  useState(false);     
 
   // Logfunktion
   const logVisibilityChange = (panel: string | null) => {
@@ -71,6 +74,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
       | "favorites"
       | "provider"
       | "applicant"
+      | "duediligence"
   ) => {
     setIsInfoPanelProjectsVisible(panel === "projects");
     setIsInfoPanelPublishedVisible(panel === "published");
@@ -78,6 +82,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelFavoritesVisible(panel === "favorites");
     setIsInfoPanelProviderVisible(panel === "provider");
     setIsInfoPanelApplicantVisible(panel === "applicant");
+    setIsInfoPanelDueDiligenceVisible(panel === "duediligence");
     logVisibilityChange(panel); // Log hvilken panel der blev aktiveret
   };
 
@@ -88,6 +93,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     setIsInfoPanelFavoritesVisible(false);
     setIsInfoPanelProviderVisible(false);
     setIsInfoPanelApplicantVisible(false);
+    setIsInfoPanelDueDiligenceVisible(false);
     logVisibilityChange(null); // Log at alle panels er skjult
   };
 
@@ -100,6 +106,7 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
         isInfoPanelFavoritesVisible,
         isInfoPanelProviderVisible,
         isInfoPanelApplicantVisible,
+        isInfoPanelDueDiligenceVisible,
         showPanel,
         hideAllPanels,
       }}

@@ -12,6 +12,7 @@ import Catalog from "@/components/indexcomponents/dashboard/Catalog";
 import Favorites from "@/components/indexcomponents/dashboard/Favorites";
 import Provider from "@/components/indexcomponents/dashboard/Provider";
 import Applicant from "@/components/indexcomponents/dashboard/Applicant";
+import DueDiligence from "@/components/indexcomponents/dashboard/DueDiligence";
 
 const Dashboard = () => {
   const theme = useColorScheme() || "light";
@@ -46,7 +47,10 @@ const Dashboard = () => {
       {(userRole === "Designer" || userRole === "Admin") && <Provider />} 
 
       {/* Viser kun Applicant, hvis brugerens rolle er 'Designer' eller 'Admin' */}
-      {(userRole === "Designer" || userRole === "Admin") && <Applicant />}             
+      {(userRole === "Designer" || userRole === "Admin") && <Applicant />}  
+
+      {/* Viser kun DueDiligence, hvis brugerens rolle er 'Designer' eller 'Admin' */}
+      {(userRole === "Designer" || userRole === "Admin") && <DueDiligence />}           
     </ScrollView>
   );
 };
