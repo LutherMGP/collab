@@ -7,17 +7,17 @@ import {
   Pressable,
   Image,
   Alert,
-  ActivityIndicator,
   Dimensions,
   StyleSheet,
   ScrollView,
+  TextInput,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "@/components/indexcomponents/infopanels/applicant/InfoPanelStyles4";
 import { ProjectData } from "@/types/ProjectData";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 type InfoPanelProps = {
@@ -29,7 +29,8 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     const { width } = Dimensions.get("window");
     const height = (width * 8) / 5;
     const rightMargin = width * 0.03;
-    const [isF1BActive, setIsF1BActive] = useState<boolean>(true);
+    const [isF1BActive, setIsF1BActive] = useState<boolean>(true); // Status for F1B-knap
+    const [userComment, setUserComment] = useState<string>(""); // Tekst fra bruger
   
     const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
     const [profileImageFromUserDoc, setProfileImageFromUserDoc] = useState<string | null>(null);
@@ -40,6 +41,35 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     const [loading, setLoading] = useState(true);
     const [showFullComment, setShowFullComment] = useState(false);
 
+    // Synkroniser data med props
+    useEffect(() => {
+        setProjectData(initialProjectData);
+    }, [initialProjectData]);
+
+    // Gem kommentar i Firestore
+    const saveCommentToFirestore = async () => {
+        try {
+        if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
+        const docRef = doc(
+            database,
+            "users",
+            projectData.userId,
+            "application",
+            projectData.id
+        );
+        await setDoc(
+            docRef,
+            { userComment }, // Gem den indtastede tekst
+            { merge: true } // Bevar eksisterende data
+        );
+        Alert.alert("Gemt", "Din kommentar er gemt.");
+        } catch (error) {
+        console.error("Fejl ved lagring af kommentar:", error);
+        Alert.alert("Fejl", "Kunne ikke gemme kommentaren.");
+        }
+    };
+
+    // Håndter knapskifte
     const handleToggleButtons = (button: "F1A" | "F1B") => {
         if (button === "F1A") {
           setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
@@ -176,10 +206,23 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                 {projectData.name || "Uden navn"}
               </Text>
       
-              {/* Vis ansøgerens kommentar */}
-              <Text style={baseStyles.commentText}>
-                {projectData.applicant?.email || "Ingen kommentar tilføjet."}
+              {/* Tekstinput eller visning af ansøgers kommentar */}
+              {isF1BActive ? (
+              <TextInput
+                style={styles.textInput}
+                placeholder="Indtast din ansøgning her..."
+                placeholderTextColor="#aaa"
+                value={userComment}
+                onChangeText={setUserComment}
+                multiline={true} // Tillader flere linjer
+                textAlignVertical="top" // Sørger for, at teksten starter i toppen
+                onBlur={saveCommentToFirestore} // Gem tekst, når feltet mister fokus
+              />
+              ) : (
+              <Text style={[baseStyles.commentText, { color: Colors[theme].text }]}>
+                {userComment || "Ingen kommentar tilføjet."}
               </Text>
+            )}
             </View>
           </View>
       
@@ -291,6 +334,25 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
+  },
+  textInput: {
+    marginTop: 5,
+    marginBottom: 10,
+    padding: 11,
+    width: "97%", // Bredden af inputfeltet
+    height: "81.9%", // Højden af inputfeltet
+    borderRadius: 10,
+    fontSize: 16,
+    textAlignVertical: "top", // Sørger for, at teksten starter i toppen
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    position: "relative",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 });
 

@@ -597,11 +597,11 @@ export const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   applicantName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
-    marginTop: 30, // Afstand fra "Application"-teksten
-    marginBottom: 10,
+    marginTop: 35, // Afstand fra "Application"-teksten
+    marginBottom: 4,
     color: Colors.light.text, // Kan justeres afhængigt af tema
   },
 });
