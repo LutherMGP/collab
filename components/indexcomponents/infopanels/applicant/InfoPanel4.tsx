@@ -29,6 +29,7 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     const { width } = Dimensions.get("window");
     const height = (width * 8) / 5;
     const rightMargin = width * 0.03;
+    const [isF1BActive, setIsF1BActive] = useState<boolean>(true);
   
     const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
     const [profileImageFromUserDoc, setProfileImageFromUserDoc] = useState<string | null>(null);
@@ -38,6 +39,14 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     const [f2CoverImage, setF2CoverImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [showFullComment, setShowFullComment] = useState(false);
+
+    const handleToggleButtons = (button: "F1A" | "F1B") => {
+        if (button === "F1A") {
+          setIsF1BActive(false); // Deaktiver F1B, aktiver F1A
+        } else if (button === "F1B") {
+          setIsF1BActive(true); // Aktiver F1B, deaktiver F1A
+        }
+      };
   
     // Synkroniser lokale data med props
     useEffect(() => {
@@ -197,13 +206,33 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                 </View>
                 <View style={baseStyles.rightTop}>
                   <View style={baseStyles.f1topHalf}>
-                    <Pressable style={baseStyles.F1A} onPress={handleApproveApplicant}>
-                      <FontAwesome name="check" size={24} color="green" />
+                    <Pressable
+                        style={[
+                        baseStyles.F1A,
+                        { opacity: isF1BActive ? 1 : 0.3 }, // Skift transparens baseret på F1B's tilstand
+                        ]}
+                        onPress={() => handleToggleButtons("F1A")}
+                    >
+                        <FontAwesome
+                        name="send-o"
+                        size={24}
+                        color={isF1BActive ? Colors[theme].tint : Colors[theme].tint}
+                        />
                     </Pressable>
                   </View>
                   <View style={baseStyles.f1bottomHalf}>
-                    <Pressable style={baseStyles.F1B} onPress={handleRejectApplicant}>
-                      <FontAwesome name="times" size={24} color="red" />
+                    <Pressable
+                        style={[
+                        baseStyles.F1B,
+                        { opacity: Colors[theme].tint ? 0.3 : 1 }, // Skift transparens baseret på F1B's tilstand
+                        ]}
+                        onPress={() => handleToggleButtons("F1B")}
+                    >
+                        <FontAwesome
+                        name="save"
+                        size={24}
+                        color={isF1BActive ? Colors[theme].tint : "#ccc"}
+                        />
                     </Pressable>
                   </View>
                 </View>
