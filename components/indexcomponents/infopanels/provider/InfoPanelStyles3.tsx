@@ -600,7 +600,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     textAlign: "center",
-    marginTop: 30, // Afstand fra "Application"-teksten
+    marginTop: 35, // Afstand fra "Application"-teksten
     marginBottom: 10,
     color: Colors.light.text, // Kan justeres afhængigt af tema
   },

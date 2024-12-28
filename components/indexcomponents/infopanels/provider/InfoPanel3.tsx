@@ -113,10 +113,10 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             {projectData.applicant?.name || "Ukendt ansøger"}
           </Text>
 
-          {/* Vis ansøgerens kommentar */}
-          <Text style={baseStyles.commentText}>
-            {projectData.applicant?.email || "Ingen kommentar tilføjet."}
-          </Text>
+          {/* Ansøgning */}
+          <View style={styles.applicationContainer}>
+            <Text style={styles.applicationText}>Dette er en ny container</Text>
+          </View>
         </View>
       </View>
 
@@ -232,6 +232,27 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
+  },
+  applicationContainer: {
+    marginTop: 3, // Afstand fra elementerne over
+    padding: 10, // Indvendig afstand
+    backgroundColor: "#f0f0f0", // Baggrundsfarve
+    alignItems: "center", // Centrer indholdet
+    justifyContent: "center", // Vertikal centrering
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    width: "96%",
+    height: "81%",
+    borderRadius: 10, // Rund form
+    elevation: 4, // Skyggeeffekt
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  applicationText: {
+    color: "#333", // Tekstfarve
+    fontSize: 14, // Tekststørrelse
   },
 });
 
