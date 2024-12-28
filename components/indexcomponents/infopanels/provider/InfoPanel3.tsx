@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, deleteField } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -89,9 +89,46 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Afvis ansøger
   const handleRejectApplicant = async () => {
     try {
-      Alert.alert("Afvist", "Ansøgeren er blevet afvist.");
+      if (!projectData.userId || !projectData.id) {
+        Alert.alert("Fejl", "Projektdata mangler.");
+        return;
+      }
+  
+      // 1. Fjern `applicant`-felterne fra projektets dokument og opdater `status`
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+  
+      await setDoc(
+        projectDocRef,
+        {
+          applicant: deleteField(), // Fjern applicant-data med deleteField
+          status: "Published",      // Opdater status til Published
+        },
+        { merge: true }             // Bevar andre felter i dokumentet
+      );
+  
+      // 2. Slet det tilhørende projekt i ansøgerens `applications`-collection
+      if (projectData.applicant?.id) {
+        const applicantDocRef = doc(
+          database,
+          "users",
+          projectData.applicant.id, // Ansøgerens bruger-ID
+          "applications",
+          projectData.id // Projektets ID
+        );
+  
+        await deleteDoc(applicantDocRef);
+      }
+  
+      Alert.alert("Afvist", "Ansøgningen er blevet afvist, og projektstatus er ændret til Published.");
     } catch (error) {
-      console.error("Fejl ved afvisning af ansøger:", error);
+      console.error("Fejl ved afvisning af ansøgning:", error);
+      Alert.alert("Fejl", "Der opstod en fejl under afvisningen.");
     }
   };
 
