@@ -5,7 +5,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, getDocs, CollectionReference, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Applicant = () => {
@@ -16,59 +16,20 @@ const Applicant = () => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchApplications = async () => {
+    const fetchApplicationCount = async () => {
       try {
-        let totalApplications = 0;
+        // Hent dokumenter fra brugerens 'applications'-samling
+        const applicationsRef = collection(database, "users", user, "applications");
+        const applicationsSnapshot = await getDocs(applicationsRef);
 
-        // 1. Hent alle brugere (undtagen den nuværende bruger)
-        const usersCollectionRef = collection(database, "users");
-        const usersSnapshot = await getDocs(usersCollectionRef);
-
-        for (const userDoc of usersSnapshot.docs) {
-          const otherUserId = userDoc.id;
-
-          // Spring den nuværende bruger over
-          if (otherUserId === user) continue;
-
-          // 2. Hent projekter for denne bruger
-          const otherUserProjectsRef = collection(
-            database,
-            "users",
-            otherUserId,
-            "projects"
-          ) as CollectionReference<DocumentData>;
-          const projectsSnapshot = await getDocs(otherUserProjectsRef);
-
-          // 3. For hvert projekt, se om den nuværende bruger har ansøgt
-          for (const projectDoc of projectsSnapshot.docs) {
-            const applicationsRef: CollectionReference<DocumentData> = collection(
-              database,
-              "users",
-              otherUserId,
-              "projects",
-              projectDoc.id,
-              "applications"
-            );
-            const applicationsSnapshot = await getDocs(applicationsRef);
-
-            // Hvis der findes en ansøgning fra den nuværende bruger, tælles den
-            for (const applicationDoc of applicationsSnapshot.docs as QueryDocumentSnapshot<DocumentData>[]) {
-              if (applicationDoc.id === user) {
-                totalApplications++;
-                break; // Tæl kun én gang pr. projekt
-              }
-            }
-          }
-        }
-
-        // Opdater state med det samlede antal ansøgninger
-        setApplicationCount(totalApplications);
+        // Opdater tælleren med antallet af dokumenter
+        setApplicationCount(applicationsSnapshot.docs.length);
       } catch (error) {
         console.error("Fejl ved hentning af ansøgninger:", error);
       }
     };
 
-    fetchApplications();
+    fetchApplicationCount();
   }, [user]);
 
   const handlePress = () => {

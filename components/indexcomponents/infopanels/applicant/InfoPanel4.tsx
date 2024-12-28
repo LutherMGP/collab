@@ -102,7 +102,6 @@ const InfoPanel4 = ({ projectData: initialProjectData }: InfoPanelProps) => {
             { merge: true }               // Bevar eksisterende data
           );
       
-          Alert.alert("Sendt", "Ansøgningen er sendt til projektejeren.");
         } catch (error) {
           console.error("Fejl ved opdatering af submission-status:", error);
           Alert.alert("Fejl", "Kunne ikke sende ansøgningen.");
