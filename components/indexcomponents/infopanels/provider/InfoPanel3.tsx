@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,            // Skyggeradius
   },
   applicationText: {
-    color: "#333", // Tekstfarve
+    color: "#000", // Tekstfarve
     fontSize: 14, // Tekststørrelse
   },
 });
