@@ -5,13 +5,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  query,
-  onSnapshot,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Favorites = () => {
@@ -20,45 +14,19 @@ const Favorites = () => {
     useVisibility();
   const [totalCount, setTotalCount] = useState(0); // Total antal favoritter
 
-  // Logik: Tæller antallet af projekter fra andre brugere, der matcher projekter i favoritlisten 
-  // for den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
-  
-    const fetchFavoriteProjectsCount = () => {
-      // Lyt til ændringer i favoritter
-      const favoritesCollection = collection(database, "users", user, "favorites");
-      const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-        const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
-  
-        // Lyt til projekter fra andre brugere
-        const usersCollection = collection(database, "users");
-        const usersUnsubscribe = onSnapshot(usersCollection, async (usersSnapshot) => {
-          let count = 0;
-  
-          for (const userDoc of usersSnapshot.docs) {
-            if (userDoc.id === user) continue; // Spring den aktuelle bruger over
-            const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Project"));
-  
-            const projectsSnapshot = await getDocs(projectsQuery);
-            projectsSnapshot.forEach((projectDoc) => {
-              if (favoriteProjectIds.includes(projectDoc.id)) {
-                count++;
-              }
-            });
-          }
-  
-          setTotalCount(count);
-        });
-  
-        return () => usersUnsubscribe(); // Stop lytning på brugere
-      });
-  
-      return () => favoritesUnsubscribe(); // Stop lytning på favoritter
-    };
-  
-    fetchFavoriteProjectsCount();
+
+    // Reference til `favorites`-samlingen
+    const favoritesCollection = collection(database, "users", user, "favorites");
+
+    // Lyt til ændringer i samlingen og opdater tælleren
+    const unsubscribe = onSnapshot(favoritesCollection, (snapshot) => {
+      setTotalCount(snapshot.size); // Brug snapshot.size til at tælle dokumenter
+    });
+
+    // Ryd op ved unmount
+    return () => unsubscribe();
   }, [user]);
 
   const handlePress = () => {
@@ -94,6 +62,8 @@ const Favorites = () => {
     </View>
   );
 };
+
+export default Favorites;
 
 const styles = StyleSheet.create({
   container: {
@@ -159,5 +129,3 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
 });
-
-export default Favorites;
