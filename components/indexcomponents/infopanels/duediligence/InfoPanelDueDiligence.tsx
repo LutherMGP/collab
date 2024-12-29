@@ -23,6 +23,8 @@ const InfoPanelDueDiligence = () => {
       return;
     }
 
+    console.log("Aktuel bruger-ID:", user);
+
     const projectsCollection = collection(database, "projects");
 
     const providersQuery = query(
@@ -41,6 +43,7 @@ const InfoPanelDueDiligence = () => {
       providersQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
         const providerProjects = snapshot.docs.map((doc) => mapToProjectData(doc.id, doc.data()));
+        console.log("Provider-projekter fundet i Firestore:", providerProjects);
 
         const unsubscribeApplicants = onSnapshot(
           applicantsQuery,
@@ -48,6 +51,8 @@ const InfoPanelDueDiligence = () => {
             const applicantProjects = appSnapshot.docs.map((doc) =>
               mapToProjectData(doc.id, doc.data())
             );
+
+            console.log("Applicant-projekter fundet i Firestore:", applicantProjects);
 
             const allProjects = [...providerProjects, ...applicantProjects];
             setProjects(allProjects);
@@ -72,7 +77,6 @@ const InfoPanelDueDiligence = () => {
     return () => unsubscribeProviders();
   }, [user]);
 
-  // Helper-funktion til at mappe Firestore-data til typen ProjectData
   const mapToProjectData = (id: string, data: DocumentData): ProjectData => ({
     id,
     userId: data.userId || null,

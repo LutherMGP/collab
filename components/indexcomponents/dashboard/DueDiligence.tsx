@@ -5,7 +5,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, query, where, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const DueDiligence = () => {
@@ -19,50 +19,56 @@ const DueDiligence = () => {
       return;
     }
 
+    console.log("Aktuel bruger-ID:", user);
+
     const projectsCollection = collection(database, "projects");
 
-    // Query for projekter, hvor brugeren er Provider
     const providersQuery = query(
       projectsCollection,
       where("status", "==", "DueDiligence"),
       where("providers", "array-contains", user)
     );
 
-    const unsubscribeProviders = onSnapshot(
-      providersQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        console.log("Provider-projekter hentet:", snapshot.docs.map((doc) => doc.data()));
-        const providerCount = snapshot.size;
-
-        // Query for projekter, hvor brugeren er Applicant
-        const applicantsQuery = query(
-          projectsCollection,
-          where("status", "==", "DueDiligence"),
-          where("applicants", "array-contains", user)
-        );
-
-        onSnapshot(
-          applicantsQuery,
-          (appSnapshot: QuerySnapshot<DocumentData>) => {
-            console.log("Applicant-projekter hentet:", appSnapshot.docs.map((doc) => doc.data()));
-            const applicantCount = appSnapshot.size;
-
-            // Samlet antal projekter
-            setDueDiligenceCount(providerCount + applicantCount);
-          },
-          (error) => {
-            console.error("Fejl ved hentning af applicant-projekter:", error);
-          }
-        );
-      },
-      (error) => {
-        console.error("Fejl ved hentning af provider-projekter:", error);
-      }
+    const applicantsQuery = query(
+      projectsCollection,
+      where("status", "==", "DueDiligence"),
+      where("applicants", "array-contains", user)
     );
 
-    return () => {
-      unsubscribeProviders();
-    };
+    const userIdQuery = query(
+      projectsCollection,
+      where("status", "==", "DueDiligence"),
+      where("userId", "==", user)
+    );
+
+    const unsubscribeProviders = onSnapshot(providersQuery, (snapshot) => {
+      const providerCount = snapshot.size;
+      console.log("Provider-projekter fundet:", snapshot.docs.map((doc) => doc.data()));
+
+      const unsubscribeApplicants = onSnapshot(applicantsQuery, (appSnapshot) => {
+        const applicantCount = appSnapshot.size;
+        console.log("Applicant-projekter fundet:", appSnapshot.docs.map((doc) => doc.data()));
+
+        const unsubscribeUserId = onSnapshot(userIdQuery, (userIdSnapshot) => {
+          const userIdCount = userIdSnapshot.size;
+          console.log(
+            "Projekter fundet med userId:",
+            userIdSnapshot.docs.map((doc) => doc.data())
+          );
+
+          // Samlet antal projekter
+          const totalCount = providerCount + applicantCount + userIdCount;
+          setDueDiligenceCount(totalCount);
+          console.log("Samlet DueDiligence-antal:", totalCount);
+        });
+
+        return () => unsubscribeUserId();
+      });
+
+      return () => unsubscribeApplicants();
+    });
+
+    return () => unsubscribeProviders();
   }, [user]);
 
   const handlePress = () => {
