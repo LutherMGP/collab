@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { doc, getDoc, setDoc, deleteDoc, deleteField } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, deleteField, collection, addDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -80,9 +80,43 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   // Godkend ansøger
   const handleApproveApplicant = async () => {
     try {
-      Alert.alert("Godkendt", "Ansøgeren er blevet godkendt.");
+      if (!projectData.userId || !projectData.id || !projectData.applicant?.id) {
+        throw new Error("Nødvendige data mangler.");
+      }
+  
+      const projectDocRef = doc(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id
+      );
+      const chatCollectionRef = collection(
+        database,
+        "users",
+        projectData.userId,
+        "projects",
+        projectData.id,
+        "chats"
+      );
+  
+      // 1. Opdater projektets status til 'DueDiligence'
+      await setDoc(
+        projectDocRef,
+        { status: "DueDiligence" },
+        { merge: true }
+      );
+  
+      // 2. Opret et nyt dokument i 'chats'-samlingen
+      await addDoc(chatCollectionRef, {
+        participants: [projectData.userId, projectData.applicant.id],
+        createdAt: new Date().toISOString(),
+      });
+  
+      Alert.alert("Godkendt", "Ansøgeren er blevet godkendt, og chatten er oprettet.");
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
+      Alert.alert("Fejl", "Der opstod en fejl under godkendelsen. Prøv igen senere.");
     }
   };
 
