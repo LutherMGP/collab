@@ -482,9 +482,9 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
             accessibilityLabel="Chat Toggle Button"
           >
             <AntDesign
-              name={isChatActive ? "closecircle" : "wechat"} // Skifter ikon afhængigt af tilstanden
+              name={isChatActive ? "picture" : "wechat"} // Skifter ikon afhængigt af tilstanden
               size={32}
-              color={isChatActive ? "#ff4444" : "#0a7ea4"} // Dynamisk farve
+              color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
             />
           </Pressable>
         </Pressable>
@@ -927,10 +927,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   chatContainer: {
-    flex: 1,
+    flex: 1, // Fylder hele containeren
+    width: "96%", // Sætter bredden til 90% af F8-feltet
+    height: "100%", // Sætter højden til 100% af F8-feltet
     justifyContent: "space-between",
-    padding: 10,
-    backgroundColor: "#f9f9f9", // Lys baggrund for chatten
+    marginTop: 63, // Justerer afstanden til toppen af F8-feltet
+    marginBottom: 8, // Justerer afstanden til bunden af F8-feltet
+    padding: 11,
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Lys baggrund for chatten
+    borderRadius: 10, // Match F8-feltets afrundede kanter, hvis det har nogen
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   chatMessages: {
     flexGrow: 1,
@@ -955,7 +967,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: "#ccc",
-    paddingTop: 5,
+    paddingTop: 13,
   },
   chatInput: {
     flex: 1,
