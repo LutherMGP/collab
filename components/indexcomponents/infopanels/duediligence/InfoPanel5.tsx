@@ -15,10 +15,10 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { AntDesign, Entypo } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc, setDoc, DocumentData } from "firebase/firestore";
+import { doc, getDoc, setDoc, DocumentData, collection, addDoc, Timestamp, onSnapshot } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/duediligence/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -129,17 +129,43 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
     sender: string;
     text: string;
   };
+
+  // Real-time opdatering af chatbeskeder
+  useEffect(() => {
+    if (!projectData.id) return;
+
+    const chatDocRef = doc(database, "chats", projectData.id);
+    const messagesCollection = collection(chatDocRef, "messages");
+
+    const unsubscribe = onSnapshot(messagesCollection, (snapshot) => {
+      const updatedMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(updatedMessages); // Opdater beskeder
+    });
+
+    return () => unsubscribe(); // Ryd op ved unmount
+  }, [projectData.id]); // Afhængighed af projectData.id
   
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!newMessage.trim()) return;
   
-    const newChatMessage: ChatMessage = {
+    const newChatMessage = {
       sender: currentUser || "Unknown",
       text: newMessage.trim(),
+      timestamp: Timestamp.now(),
     };
   
-    setMessages((prevMessages: ChatMessage[]) => [...prevMessages, newChatMessage]); // Angiv typen for prevMessages
-    setNewMessage("");
+    try {
+      const chatDocRef = doc(database, "chats", projectData.id);
+      const messagesCollection = collection(chatDocRef, "messages");
+      await addDoc(messagesCollection, newChatMessage);
+  
+      setNewMessage(""); // Ryd inputfeltet
+    } catch (error) {
+      console.error("Fejl ved afsendelse af besked:", error);
+    }
   };
 
   // Funktion til at opdatere projektdata efter ændringer
