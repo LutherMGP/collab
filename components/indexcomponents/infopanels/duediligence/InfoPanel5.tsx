@@ -881,7 +881,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               onSave={(newDescription) => {
                 setProjectData((prev) => ({
                   ...prev,
-                  legalDescription: newDescription, // Opdaterer juridisk beskrivelse
+                  legalDescription: newDescription,
                 }));
               }}
               isEditable={isEditEnabled}

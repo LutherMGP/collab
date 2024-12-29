@@ -22,6 +22,7 @@ type InfoPanelLegalProps = {
   projectId: string;
   userId: string;
   onSave: (newDescription: string, brandConsent: boolean) => void;
+  isEditable: boolean;
 };
 
 const InfoPanelLegal = ({
