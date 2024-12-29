@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Linking,
+  TextInput,
   Modal,
   StyleSheet,
   ScrollView,
@@ -92,6 +93,8 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
   const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
   const [refreshKey, setRefreshKey] = useState(0);
   const [isChatActive, setIsChatActive] = useState(false);
+  const [newMessage, setNewMessage] = useState(""); // State for beskedinput
+  const [messages, setMessages] = useState(chatData?.messages || []); // Chatbeskeder
 
   // Tjek for manglende data
   if (!projectData || !projectData.id || !userId) {
@@ -114,6 +117,29 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
     } else {
       Alert.alert("Adgang nægtet", "Kun provideren kan redigere dette projekt.");
     }
+  };
+
+  // Funktion til at Toggle chat-tilstanden
+  const toggleChatActive = () => {
+    setIsChatActive((prev) => !prev); 
+  };  
+
+  // Funktion til at sende en besked  
+  type ChatMessage = {
+    sender: string;
+    text: string;
+  };
+  
+  const sendMessage = () => {
+    if (!newMessage.trim()) return;
+  
+    const newChatMessage: ChatMessage = {
+      sender: currentUser || "Unknown",
+      text: newMessage.trim(),
+    };
+  
+    setMessages((prevMessages: ChatMessage[]) => [...prevMessages, newChatMessage]); // Angiv typen for prevMessages
+    setNewMessage("");
   };
 
   // Funktion til at opdatere projektdata efter ændringer
@@ -182,10 +208,6 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       console.error(`Fejl ved åbning af PDF for ${pdfType}:`, error);
       Alert.alert("Fejl", `Kunne ikke hente PDF for ${pdfType}. Prøv igen.`);
     }
-  };
-
-  const toggleChatActive = () => {
-    setIsChatActive((prev) => !prev); // Toggler tilstanden
   };
 
   // Generisk handlePress funktion med conditional
@@ -389,45 +411,68 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
-          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
+          onPress={() => {
+            if (!isChatActive) {
+              handlePress("F8"); // Standardfunktionalitet
+            }
+          }}
+          onLongPress={() => {
+            if (!isChatActive) {
+              handleLongPress("f8PDF"); // Standardfunktionalitet
+            }
+          }}
           accessibilityLabel="F8 Button"
         >
-          {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImageLowRes && (
-            <Image
-              source={{
-                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-              }}
-              style={baseStyles.f8CoverImage}
-            />
-          )}
-
-          {/* Tekst i f8 toppen */}
-          <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Specification</Text>
-          </View>
-
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectData.projectImage && (
-            <Pressable
-              style={[
-                baseStyles.projectImageContainer,
-                { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-              ]}
-              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
-              accessibilityLabel="Project Image Button"
-              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
-            >
-              <Image
-                source={{
-                  uri: projectData.projectImage
-                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                    : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
-                }}
-                style={baseStyles.projectImage} // Tilføj dine styles her
-              />
-            </Pressable>
+          {isChatActive ? (
+            // Chat-UI
+            <View style={styles.chatContainer}>
+              <ScrollView contentContainerStyle={styles.chatMessages}>
+                {messages.map((message: ChatMessage, index: number) => (
+                  <Text
+                    key={index}
+                    style={[
+                      styles.chatMessage,
+                      message.sender === currentUser
+                        ? styles.chatMessageSender
+                        : styles.chatMessageReceiver,
+                    ]}
+                  >
+                    {message.text}
+                  </Text>
+                ))}
+              </ScrollView>
+              <View style={styles.chatInputContainer}>
+                <TextInput
+                  style={styles.chatInput}
+                  placeholder="Skriv en besked..."
+                  value={newMessage}
+                  onChangeText={setNewMessage}
+                />
+                <Pressable
+                  style={styles.chatSendButton}
+                  onPress={sendMessage}
+                  accessibilityLabel="Send Message Button"
+                >
+                  <AntDesign name="arrowup" size={20} color="#fff" />
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            // Standard `f8CoverImageLowRes` indhold
+            <>
+              {projectData.f8CoverImageLowRes && (
+                <Image
+                  source={{
+                    uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                  }}
+                  style={baseStyles.f8CoverImage}
+                />
+              )}
+              {/* Tekst i toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Specification</Text>
+              </View>
+            </>
           )}
 
           {/* Chat-knap */}
@@ -437,26 +482,10 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
             accessibilityLabel="Chat Toggle Button"
           >
             <AntDesign
-              name={isChatActive ? "picture" : "wechat"} // Brug "message1" for begge tilstande
+              name={isChatActive ? "closecircle" : "wechat"} // Skifter ikon afhængigt af tilstanden
               size={32}
-              color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+              color={isChatActive ? "#ff4444" : "#0a7ea4"} // Dynamisk farve
             />
-          </Pressable>
-
-          {/* Comment-knap f8 */}
-          <Pressable
-            style={baseStyles.commentButtonf8}
-            onPress={() => handleOpenCommentModal("f8")}
-          >
-            <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
-
-          {/* Attachment-knap */}
-          <Pressable
-            style={baseStyles.attachmentButton}
-            onPress={openAttachmentModal}
-          >
-            <Entypo name="attachment" size={20} color="#0a7ea4" />
           </Pressable>
         </Pressable>
       </View>
@@ -896,6 +925,50 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
+  },
+  chatContainer: {
+    flex: 1,
+    justifyContent: "space-between",
+    padding: 10,
+    backgroundColor: "#f9f9f9", // Lys baggrund for chatten
+  },
+  chatMessages: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+  },
+  chatMessage: {
+    marginVertical: 5,
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: "80%",
+  },
+  chatMessageSender: {
+    alignSelf: "flex-end",
+    backgroundColor: "#d4f5d4",
+  },
+  chatMessageReceiver: {
+    alignSelf: "flex-start",
+    backgroundColor: "#f5f5f5",
+  },
+  chatInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#ccc",
+    paddingTop: 5,
+  },
+  chatInput: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  chatSendButton: {
+    backgroundColor: "#0a7ea4",
+    padding: 10,
+    borderRadius: 50,
   },
 });
 
