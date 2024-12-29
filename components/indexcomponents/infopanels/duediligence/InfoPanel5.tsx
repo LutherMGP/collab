@@ -17,7 +17,7 @@ import {
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, setDoc, DocumentData } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/duediligence/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -58,10 +58,11 @@ type ProjectData = {
 
 type InfoPanelProps = {
   projectData: ProjectData;
+  chatData?: DocumentData; // Ny prop til chatdata
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
+const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -90,6 +91,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isChatActive, setIsChatActive] = useState(false);
 
   // Tjek for manglende data
   if (!projectData || !projectData.id || !userId) {
@@ -105,9 +107,13 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setProjectData(initialProjectData);
   }, [initialProjectData]);
 
-  // Funktion til at togglere Edit-tilstand
+  // Din toggleEdit funktion
   const toggleEdit = () => {
-    setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
+    if (chatData?.userId === currentUser) {
+      setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
+    } else {
+      Alert.alert("Adgang nægtet", "Kun provideren kan redigere dette projekt.");
+    }
   };
 
   // Funktion til at opdatere projektdata efter ændringer
@@ -178,37 +184,8 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  const handleDelete = () => {
-    // Always show Delete button since config.showDelete is removed
-    Alert.alert(
-      "Bekræft Sletning",
-      "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
-      [
-        { text: "Annuller", style: "cancel" },
-        {
-          text: "Slet",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (!userId || !projectData.id) {
-                Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log("userId:", userId, "projectData.id:", projectData.id);
-                return;
-              }
-
-              const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
-              console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
-            } catch (error) {
-              console.error("Fejl ved sletning af projekt:", error);
-              Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  const toggleChatActive = () => {
+    setIsChatActive((prev) => !prev); // Toggler tilstanden
   };
 
   // Generisk handlePress funktion med conditional
@@ -453,13 +430,17 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             </Pressable>
           )}
 
-          {/* Delete-knap */}
+          {/* Chat-knap */}
           <Pressable
-            style={baseStyles.deleteIconContainer}
-            onPress={handleDelete}
-            accessibilityLabel="Delete Button"
+            style={baseStyles.deleteIconContainer} // Behold eksisterende styling
+            onPress={toggleChatActive} // Toggler chat-tilstanden
+            accessibilityLabel="Chat Toggle Button"
           >
-            <AntDesign name="delete" size={20} color="#0a7ea4" />
+            <AntDesign
+              name={isChatActive ? "picture" : "wechat"} // Brug "message1" for begge tilstande
+              size={32}
+              color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+            />
           </Pressable>
 
           {/* Comment-knap f8 */}

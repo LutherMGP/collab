@@ -1,81 +1,58 @@
 // @/components/indexcomponents/dashboard/DueDiligence.tsx
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, doc, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const DueDiligence = () => {
   const { user } = useAuth();
   const { isInfoPanelDueDiligenceVisible, showPanel, hideAllPanels } = useVisibility();
-  const [applicationCount, setApplicationCount] = useState(0);
-  const projectListenersRef = useRef<{ [projectId: string]: () => void }>({});
+  const [dueDiligenceCount, setDueDiligenceCount] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
-    
-    const userProjectsCollection = collection(database, "users", user, "projects");
-    
-    const unsubscribeProjects = onSnapshot(
-      userProjectsCollection,
-      (projectsSnapshot: QuerySnapshot<DocumentData>) => {
-        const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
-        Object.keys(projectListenersRef.current).forEach((projectId) => {
-          if (!existingProjectIds.has(projectId)) {
-            projectListenersRef.current[projectId]();
-            delete projectListenersRef.current[projectId];
-          }
-        });
-    
-        let totalDueDiligence = 0; // Ændret variabelnavn for klarhed
-    
-        projectsSnapshot.docs.forEach((projectDoc) => {
-          const projectId = projectDoc.id;
-    
-          if (projectListenersRef.current[projectId]) return;
-    
-          const projectRef = doc(database, "users", user, "projects", projectId);
-    
-          const unsubscribeProject = onSnapshot(
-            projectRef,
-            (docSnapshot) => {
-              const projectData = docSnapshot.data();
-    
-              // Tæl kun projekter med status 'DueDiligence'
-              if (projectData?.status === "DueDiligence") {
-                totalDueDiligence += 1;
-              }
-    
-              setApplicationCount(totalDueDiligence); // Opdater tæller
-            },
-            (error) => {
-              console.error(`Fejl ved lytning til projekt ${projectId}:`, error);
-            }
-          );
-    
-          projectListenersRef.current[projectId] = unsubscribeProject;
-        });
+    if (!user) {
+      console.log("Bruger ikke logget ind.");
+      return;
+    }
+
+    console.log("Aktuel bruger-ID:", user);
+
+    // Reference til chats-samlingen
+    const chatsCollection = collection(database, "chats");
+
+    // Query for chats, hvor brugeren er deltager, og status er 'DueDiligence'
+    const chatsQuery = query(
+      chatsCollection,
+      where("participants", "array-contains", user),
+      where("status", "==", "DueDiligence")
+    );
+
+    // Lyt til ændringer i query'en
+    const unsubscribe = onSnapshot(
+      chatsQuery,
+      (snapshot) => {
+        const count = snapshot.size;
+        console.log("Chats fundet i Firestore:", snapshot.docs.map((doc) => doc.data()));
+        setDueDiligenceCount(count); // Opdater tælleren med antallet af fundne dokumenter
       },
       (error) => {
-        console.error("Fejl ved hentning af brugerens projekter:", error);
+        console.error("Fejl ved hentning af Due Diligence-chats:", error);
       }
     );
-    
-    return () => {
-      unsubscribeProjects();
-      Object.values(projectListenersRef.current).forEach((unsub) => unsub());
-      projectListenersRef.current = {};
-    };
+
+    // Ryd op efter listener ved unmount
+    return () => unsubscribe();
   }, [user]);
 
   const handlePress = () => {
     if (isInfoPanelDueDiligenceVisible) {
       hideAllPanels();
     } else {
-      showPanel("provider");
+      showPanel("duediligence");
     }
   };
 
@@ -93,7 +70,7 @@ const DueDiligence = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{applicationCount}</Text>
+        <Text style={styles.countText}>{dueDiligenceCount}</Text>
       </TouchableOpacity>
       <View style={styles.textContainer}>
         <Text style={styles.text}>DD</Text>

@@ -20,6 +20,7 @@ import InfoPanelCatalog from "components/indexcomponents/infopanels/catalog/Info
 import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/InfoPanelFavorites";
 import InfoPanelProvider from "@/components/indexcomponents/infopanels/provider/InfoPanelProvider";
 import InfoPanelApplicant from "@/components/indexcomponents/infopanels/applicant/InfoPanelApplicant";
+import InfoPanelDueDiligence from "@/components/indexcomponents/infopanels/duediligence/InfoPanelDueDiligence";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
@@ -37,6 +38,7 @@ const Index = () => {
     isInfoPanelFavoritesVisible,
     isInfoPanelProviderVisible,
     isInfoPanelApplicantVisible,
+    isInfoPanelDueDiligenceVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
@@ -46,7 +48,8 @@ const Index = () => {
     isInfoPanelCatalogVisible ||
     isInfoPanelFavoritesVisible ||
     isInfoPanelProviderVisible ||
-    isInfoPanelApplicantVisible
+    isInfoPanelApplicantVisible ||
+    isInfoPanelDueDiligenceVisible
   );
 
   // Logger hvilken InfoPanel der er synlig
@@ -62,7 +65,9 @@ const Index = () => {
     } else if (isInfoPanelProviderVisible) {
       console.log("Provider panel er synligt.");
     } else if (isInfoPanelApplicantVisible) {
-      console.log("Applicant panel er synligt.");              
+      console.log("Applicant panel er synligt.");  
+    } else if (isInfoPanelDueDiligenceVisible) {
+      console.log("Due Diligence panel er synligt.");             
     } else {
       console.log("Ingen paneler er synlige.");
     }
@@ -73,6 +78,7 @@ const Index = () => {
     isInfoPanelFavoritesVisible,
     isInfoPanelProviderVisible,
     isInfoPanelApplicantVisible,
+    isInfoPanelDueDiligenceVisible,
   ]);
 
   useEffect(() => {
@@ -171,6 +177,13 @@ const Index = () => {
           <InfoPanelApplicant />
         </View>
       )}
+
+      {/* Render InfoPanelDueDiligence kun hvis synlig */}
+      {isInfoPanelDueDiligenceVisible && (
+        <View style={styles.infoPanelDueDiligenceContainer}>
+          <InfoPanelDueDiligence />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };
@@ -226,6 +239,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   infoPanelApplicantContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelDueDiligenceContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
