@@ -114,7 +114,7 @@ export const styles = StyleSheet.create({
     top: 5,
     right: 5.5,
     backgroundColor: "rgba(255, 255, 255, 0.7)", // Semi-transparent baggrund
-    borderRadius: 20, // Rund knap
+    borderRadius: 30, // Rund knap
     padding: 8,
     justifyContent: "center",
     alignItems: "center",

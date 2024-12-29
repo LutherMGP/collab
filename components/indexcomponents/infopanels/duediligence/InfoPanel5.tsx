@@ -91,6 +91,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isChatActive, setIsChatActive] = useState(false);
 
   // Tjek for manglende data
   if (!projectData || !projectData.id || !userId) {
@@ -183,37 +184,8 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
     }
   };
 
-  const handleDelete = () => {
-    // Always show Delete button since config.showDelete is removed
-    Alert.alert(
-      "Bekræft Sletning",
-      "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
-      [
-        { text: "Annuller", style: "cancel" },
-        {
-          text: "Slet",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              if (!userId || !projectData.id) {
-                Alert.alert("Fejl", "Bruger ID eller projekt ID mangler.");
-                console.log("userId:", userId, "projectData.id:", projectData.id);
-                return;
-              }
-
-              const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
-              console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
-            } catch (error) {
-              console.error("Fejl ved sletning af projekt:", error);
-              Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  const toggleChatActive = () => {
+    setIsChatActive((prev) => !prev); // Toggler tilstanden
   };
 
   // Generisk handlePress funktion med conditional
@@ -458,13 +430,17 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
             </Pressable>
           )}
 
-          {/* Delete-knap */}
+          {/* Chat-knap */}
           <Pressable
-            style={baseStyles.deleteIconContainer}
-            onPress={handleDelete}
-            accessibilityLabel="Delete Button"
+            style={baseStyles.deleteIconContainer} // Behold eksisterende styling
+            onPress={toggleChatActive} // Toggler chat-tilstanden
+            accessibilityLabel="Chat Toggle Button"
           >
-            <AntDesign name="delete" size={20} color="#0a7ea4" />
+            <AntDesign
+              name={isChatActive ? "picture" : "wechat"} // Brug "message1" for begge tilstande
+              size={32}
+              color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+            />
           </Pressable>
 
           {/* Comment-knap f8 */}
