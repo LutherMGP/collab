@@ -19,7 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ProjectData } from "@/types/ProjectData";
 
 const InfoPanelDueDiligence = () => {
-  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [projects, setProjects] = useState<(ProjectData & { chatData?: DocumentData })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useColorScheme() || "light";
@@ -91,7 +91,8 @@ const InfoPanelDueDiligence = () => {
                   transferMethod:
                     projectData.transferMethod || "Standard metode",
                   applicant: projectData.applicant || null,
-                } as ProjectData;
+                  chatData, // Inkluder chatData
+                } as ProjectData & { chatData?: DocumentData };
               } else {
                 console.log(`Projekt ikke fundet for projectId: ${projectId}`);
               }
@@ -109,7 +110,7 @@ const InfoPanelDueDiligence = () => {
 
         const resolvedProjects = (await Promise.all(projectPromises)).filter(
           (project) => project !== null
-        ) as ProjectData[];
+        ) as (ProjectData & { chatData?: DocumentData })[];
 
         console.log("Alle projekter efter hentning:", resolvedProjects);
         setProjects(resolvedProjects);
@@ -145,7 +146,7 @@ const InfoPanelDueDiligence = () => {
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel5 key={project.id} projectData={project} />
+        <InfoPanel5 key={project.id} projectData={project} chatData={project.chatData} />
       ))}
     </View>
   );

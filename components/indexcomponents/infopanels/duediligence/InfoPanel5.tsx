@@ -17,7 +17,7 @@ import {
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, setDoc, DocumentData } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/duediligence/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -58,10 +58,11 @@ type ProjectData = {
 
 type InfoPanelProps = {
   projectData: ProjectData;
+  chatData?: DocumentData; // Ny prop til chatdata
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
-const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
+const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: InfoPanelProps) => {
   const theme = useColorScheme() || "light";
   const { width } = Dimensions.get("window");
   const height = (width * 8) / 5;
@@ -105,9 +106,13 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setProjectData(initialProjectData);
   }, [initialProjectData]);
 
-  // Funktion til at togglere Edit-tilstand
+  // Din toggleEdit funktion
   const toggleEdit = () => {
-    setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
+    if (chatData?.userId === currentUser) {
+      setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
+    } else {
+      Alert.alert("Adgang nægtet", "Kun provideren kan redigere dette projekt.");
+    }
   };
 
   // Funktion til at opdatere projektdata efter ændringer
