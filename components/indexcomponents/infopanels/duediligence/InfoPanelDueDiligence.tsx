@@ -18,52 +18,76 @@ const InfoPanelDueDiligence = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log("Bruger ikke logget ind.");
+      return;
+    }
 
-    // Hent alle projekter, hvor brugeren er `Provider` eller `Applicant`, og status er `DueDiligence`
     const projectsCollection = collection(database, "projects");
-    const projectsQuery = query(
+
+    const providersQuery = query(
       projectsCollection,
       where("status", "==", "DueDiligence"),
-      where("participants", "array-contains", user)
+      where("providers", "array-contains", user)
     );
 
-    // Lyt til ændringer i projekter, der matcher kriterierne
-    const unsubscribe = onSnapshot(
-      projectsQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const filteredProjects: ProjectData[] = snapshot.docs.map((doc) => {
-          const projectData = doc.data();
-          return {
-            id: doc.id,
-            userId: projectData.userId || null,
-            name: projectData.name || "Uden navn",
-            description: projectData.description || "Ingen beskrivelse",
-            status: projectData.status || "Project",
-            f8CoverImageLowRes: projectData.assets?.f8CoverImageLowRes || null,
-            f5CoverImageLowRes: projectData.assets?.f5CoverImageLowRes || null,
-            f3CoverImageLowRes: projectData.assets?.f3CoverImageLowRes || null,
-            f2CoverImageLowRes: projectData.assets?.f2CoverImageLowRes || null,
-            projectImage: projectData.assets?.projectImage || null,
-            price: projectData.price || 0,
-            transferMethod: projectData.transferMethod || "Standard metode",
-            applicant: projectData.applicant || null,
-          };
-        });
+    const applicantsQuery = query(
+      projectsCollection,
+      where("status", "==", "DueDiligence"),
+      where("applicants", "array-contains", user)
+    );
 
-        setProjects(filteredProjects);
-        setIsLoading(false);
+    const unsubscribeProviders = onSnapshot(
+      providersQuery,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const providerProjects = snapshot.docs.map((doc) => mapToProjectData(doc.id, doc.data()));
+
+        const unsubscribeApplicants = onSnapshot(
+          applicantsQuery,
+          (appSnapshot: QuerySnapshot<DocumentData>) => {
+            const applicantProjects = appSnapshot.docs.map((doc) =>
+              mapToProjectData(doc.id, doc.data())
+            );
+
+            const allProjects = [...providerProjects, ...applicantProjects];
+            setProjects(allProjects);
+            setIsLoading(false);
+          },
+          (error) => {
+            console.error("Fejl ved hentning af applicant-projekter:", error);
+            setError("Kunne ikke hente Applicant-projekterne.");
+            setIsLoading(false);
+          }
+        );
+
+        return () => unsubscribeApplicants();
       },
       (error) => {
-        console.error("Fejl ved hentning af projekter fra Firestore:", error);
-        setError("Kunne ikke hente projekterne. Prøv igen senere.");
+        console.error("Fejl ved hentning af provider-projekter:", error);
+        setError("Kunne ikke hente Provider-projekterne.");
         setIsLoading(false);
       }
     );
 
-    // Ryd op ved unmount
-    return () => unsubscribe();
+    return () => unsubscribeProviders();
   }, [user]);
+
+  // Helper-funktion til at mappe Firestore-data til typen ProjectData
+  const mapToProjectData = (id: string, data: DocumentData): ProjectData => ({
+    id,
+    userId: data.userId || null,
+    name: data.name || "Uden navn",
+    description: data.description || "Ingen beskrivelse",
+    status: data.status || "Project",
+    f8CoverImageLowRes: data.assets?.f8CoverImageLowRes || null,
+    f5CoverImageLowRes: data.assets?.f5CoverImageLowRes || null,
+    f3CoverImageLowRes: data.assets?.f3CoverImageLowRes || null,
+    f2CoverImageLowRes: data.assets?.f2CoverImageLowRes || null,
+    projectImage: data.assets?.projectImage || null,
+    price: data.price || 0,
+    transferMethod: data.transferMethod || "Standard metode",
+    applicant: data.applicant || null,
+  });
 
   if (isLoading) {
     return (

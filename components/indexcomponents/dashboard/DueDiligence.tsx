@@ -1,73 +1,67 @@
 // @/components/indexcomponents/dashboard/DueDiligence.tsx
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, doc, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
+import { collection, query, where, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const DueDiligence = () => {
   const { user } = useAuth();
   const { isInfoPanelDueDiligenceVisible, showPanel, hideAllPanels } = useVisibility();
-  const [applicationCount, setApplicationCount] = useState(0);
-  const projectListenersRef = useRef<{ [projectId: string]: () => void }>({});
+  const [dueDiligenceCount, setDueDiligenceCount] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
-    
-    const userProjectsCollection = collection(database, "users", user, "projects");
-    
-    const unsubscribeProjects = onSnapshot(
-      userProjectsCollection,
-      (projectsSnapshot: QuerySnapshot<DocumentData>) => {
-        const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
-        Object.keys(projectListenersRef.current).forEach((projectId) => {
-          if (!existingProjectIds.has(projectId)) {
-            projectListenersRef.current[projectId]();
-            delete projectListenersRef.current[projectId];
+    if (!user) {
+      console.log("Bruger ikke logget ind.");
+      return;
+    }
+
+    const projectsCollection = collection(database, "projects");
+
+    // Query for projekter, hvor brugeren er Provider
+    const providersQuery = query(
+      projectsCollection,
+      where("status", "==", "DueDiligence"),
+      where("providers", "array-contains", user)
+    );
+
+    const unsubscribeProviders = onSnapshot(
+      providersQuery,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        console.log("Provider-projekter hentet:", snapshot.docs.map((doc) => doc.data()));
+        const providerCount = snapshot.size;
+
+        // Query for projekter, hvor brugeren er Applicant
+        const applicantsQuery = query(
+          projectsCollection,
+          where("status", "==", "DueDiligence"),
+          where("applicants", "array-contains", user)
+        );
+
+        onSnapshot(
+          applicantsQuery,
+          (appSnapshot: QuerySnapshot<DocumentData>) => {
+            console.log("Applicant-projekter hentet:", appSnapshot.docs.map((doc) => doc.data()));
+            const applicantCount = appSnapshot.size;
+
+            // Samlet antal projekter
+            setDueDiligenceCount(providerCount + applicantCount);
+          },
+          (error) => {
+            console.error("Fejl ved hentning af applicant-projekter:", error);
           }
-        });
-    
-        let totalDueDiligence = 0; // Ændret variabelnavn for klarhed
-    
-        projectsSnapshot.docs.forEach((projectDoc) => {
-          const projectId = projectDoc.id;
-    
-          if (projectListenersRef.current[projectId]) return;
-    
-          const projectRef = doc(database, "users", user, "projects", projectId);
-    
-          const unsubscribeProject = onSnapshot(
-            projectRef,
-            (docSnapshot) => {
-              const projectData = docSnapshot.data();
-    
-              // Tæl kun projekter med status 'DueDiligence'
-              if (projectData?.status === "DueDiligence") {
-                totalDueDiligence += 1;
-              }
-    
-              setApplicationCount(totalDueDiligence); // Opdater tæller
-            },
-            (error) => {
-              console.error(`Fejl ved lytning til projekt ${projectId}:`, error);
-            }
-          );
-    
-          projectListenersRef.current[projectId] = unsubscribeProject;
-        });
+        );
       },
       (error) => {
-        console.error("Fejl ved hentning af brugerens projekter:", error);
+        console.error("Fejl ved hentning af provider-projekter:", error);
       }
     );
-    
+
     return () => {
-      unsubscribeProjects();
-      Object.values(projectListenersRef.current).forEach((unsub) => unsub());
-      projectListenersRef.current = {};
+      unsubscribeProviders();
     };
   }, [user]);
 
@@ -75,7 +69,7 @@ const DueDiligence = () => {
     if (isInfoPanelDueDiligenceVisible) {
       hideAllPanels();
     } else {
-      showPanel("provider");
+      showPanel("duediligence");
     }
   };
 
@@ -93,7 +87,7 @@ const DueDiligence = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{applicationCount}</Text>
+        <Text style={styles.countText}>{dueDiligenceCount}</Text>
       </TouchableOpacity>
       <View style={styles.textContainer}>
         <Text style={styles.text}>DD</Text>
