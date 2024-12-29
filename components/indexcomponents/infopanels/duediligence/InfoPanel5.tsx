@@ -70,6 +70,9 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const { user: currentUser } = useAuth();
   const userId = currentUser;
 
+  const { isProvider, isApplicant } = useRole();
+  const hasFullAccess = isProvider || isApplicant;
+
   // Definer projectData som en state-variabel
   const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
   const [selectedOption, setSelectedOption] = useState<string | null>(null); 
@@ -179,7 +182,6 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
-  // Generisk handlePress funktion med conditional
   const handlePress = async (button: string) => {
     if (isEditEnabled) {
       // Åbn modal, hvis Edit er aktiveret
@@ -199,8 +201,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         default:
           Alert.alert("Knappen blev trykket", `Du trykkede på: ${button}`);
       }
-    } else {
-      // Vis HighRes-billede, hvis Edit er deaktiveret
+    } else if (hasFullAccess) { // Tjek om brugeren er Provider eller Applicant
       try {
         const category = button.replace("F", "f") as "f8" | "f5" | "f3" | "f2";
         const highResPath = FilePaths.coverImage(userId, projectData.id, category, "HighRes");
@@ -211,6 +212,8 @@ const InfoPanel5 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         console.error(`Fejl ved hentning af HighRes-billede for ${button}:`, error);
         Alert.alert("Fejl", `Kunne ikke hente HighRes-billede for ${button}.`);
       }
+    } else {
+      Alert.alert("Adgang nægtet", "Du har ikke tilladelse til at udføre denne handling.");
     }
   };
 
