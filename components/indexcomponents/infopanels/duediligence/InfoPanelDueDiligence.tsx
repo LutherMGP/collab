@@ -2,15 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  doc,
-  getDoc,
-  DocumentData,
-} from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel5 from "@/components/indexcomponents/infopanels/duediligence/InfoPanel5";
 import { Colors } from "@/constants/Colors";
@@ -31,9 +23,9 @@ const InfoPanelDueDiligence = () => {
       return;
     }
 
+    const chatsCollection = collection(database, "chats");
     console.log("Starter forespørgsel på chats for bruger:", user);
 
-    const chatsCollection = collection(database, "chats");
     const chatsQuery = query(
       chatsCollection,
       where("participants", "array-contains", user),
@@ -57,7 +49,7 @@ const InfoPanelDueDiligence = () => {
           console.log("Chat fundet:", chatData);
 
           const projectId = chatData.projectId;
-          const userId = chatData.userId;
+          const userId = chatData.participants?.[0]; // Antager første deltager som bruger-ID
 
           if (userId && projectId) {
             try {
@@ -68,6 +60,8 @@ const InfoPanelDueDiligence = () => {
                 "projects",
                 projectId
               );
+
+              console.log(`Henter projektdata for projectId: ${projectId} og userId: ${userId}`);
 
               const projectSnap = await getDoc(projectDocRef);
 
@@ -88,18 +82,14 @@ const InfoPanelDueDiligence = () => {
                   f3CoverImageLowRes: assets.f3CoverImageLowRes || null,
                   f2CoverImageLowRes: assets.f2CoverImageLowRes || null,
                   projectImage: assets.projectImage || null,
-                  transferMethod:
-                    projectData.transferMethod || "Standard metode",
+                  transferMethod: projectData.transferMethod || "Standard metode",
                   applicant: projectData.applicant || null,
                 } as ProjectData;
               } else {
                 console.log(`Projekt ikke fundet for projectId: ${projectId}`);
               }
             } catch (error) {
-              console.error(
-                `Fejl ved hentning af projektdata for projectId: ${projectId}`,
-                error
-              );
+              console.error(`Fejl ved hentning af projektdata for projectId: ${projectId}`, error);
             }
           } else {
             console.log("Mangler nødvendige data i chat:", chatData);

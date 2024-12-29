@@ -14,6 +14,22 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import * as SecureStore from "expo-secure-store";
 import * as AppleAuthentication from "expo-apple-authentication";
 
+// Roller og rettigheder
+export const Roles = {
+  USER: "Bruger",
+  DESIGNER: "Designer",
+  ADMIN: "Admin",
+  PROVIDER: "Provider",
+  APPLICANT: "Applicant",
+};
+
+export const Permissions = {
+  VIEW_PROJECTS: "view_projects",
+  EDIT_PROJECTS: "edit_projects",
+  DELETE_PROJECTS: "delete_projects",
+  APPLY_PROJECTS: "apply_projects",
+};
+
 type AuthContextType = {
   user: string | null;
   userRole: string | null;
@@ -22,6 +38,8 @@ type AuthContextType = {
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   updateUserProfile: (userId: string, profileData: any) => Promise<void>;
+  hasPermission: (permission: string) => boolean;
+  hasRole: (role: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -32,26 +50,50 @@ const AuthContext = createContext<AuthContextType>({
   signInWithApple: async () => {},
   signOut: async () => {},
   updateUserProfile: async () => {},
+  hasPermission: () => false,
+  hasRole: () => false,
 });
 
 export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Hjælpefunktion til at håndtere brugerroller
+// Hjælpefunktion til at håndtere brugerroller og tilladelser
 export const useRole = () => {
-  const { userRole } = useAuth();
+  const { userRole, hasPermission, hasRole } = useAuth();
 
-  const isDesigner = userRole === "Designer";
-  const isAdmin = userRole === "Admin";
+  const isDesigner = userRole === Roles.DESIGNER;
+  const isAdmin = userRole === Roles.ADMIN;
+  const isProvider = userRole === Roles.PROVIDER;
+  const isApplicant = userRole === Roles.APPLICANT;
 
-  return { isDesigner, isAdmin };
+  return {
+    isDesigner,
+    isAdmin,
+    isProvider,
+    isApplicant,
+    hasPermission,
+    hasRole,
+  };
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Roller og deres tilladelser
+  const permissionsForRoles: Record<string, string[]> = {
+    [Roles.USER]: [Permissions.VIEW_PROJECTS],
+    [Roles.DESIGNER]: [Permissions.VIEW_PROJECTS, Permissions.EDIT_PROJECTS],
+    [Roles.ADMIN]: [
+      Permissions.VIEW_PROJECTS,
+      Permissions.EDIT_PROJECTS,
+      Permissions.DELETE_PROJECTS,
+    ],
+    [Roles.PROVIDER]: [Permissions.VIEW_PROJECTS],
+    [Roles.APPLICANT]: [Permissions.APPLY_PROJECTS],
+  };
 
   useEffect(() => {
     const checkStoredUser = async () => {
@@ -97,13 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await setDoc(userDocRef, {
             email: userEmail,
             name: appleAuth.fullName?.givenName || "Bruger",
-            role: "Bruger",
+            role: Roles.USER,
             createdAt: new Date().toISOString(),
           });
         }
 
         setUser(userId);
-        setUserRole("Bruger");
+        setUserRole(Roles.USER);
         router.replace("/(app)/(tabs)");
       }
     } catch (error) {
@@ -134,6 +176,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Tjek om brugeren har en bestemt rolle
+  const hasRole = (role: string): boolean => {
+    return userRole === role;
+  };
+
+  // Tjek om brugeren har en bestemt tilladelse
+  const hasPermission = (permission: string): boolean => {
+    return permissionsForRoles[userRole || ""]?.includes(permission) || false;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -144,6 +196,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithApple,
         signOut,
         updateUserProfile,
+        hasPermission,
+        hasRole,
       }}
     >
       {children}
