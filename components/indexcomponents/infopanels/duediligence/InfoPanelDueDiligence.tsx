@@ -2,7 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { collection, query, where, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  getDoc,
+  DocumentData,
+} from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import InfoPanel5 from "@/components/indexcomponents/infopanels/duediligence/InfoPanel5";
 import { Colors } from "@/constants/Colors";
@@ -23,75 +31,100 @@ const InfoPanelDueDiligence = () => {
       return;
     }
 
-    console.log("Aktuel bruger-ID:", user);
+    console.log("Starter forespørgsel på chats for bruger:", user);
 
-    const projectsCollection = collection(database, "projects");
-
-    const providersQuery = query(
-      projectsCollection,
-      where("status", "==", "DueDiligence"),
-      where("providers", "array-contains", user)
+    const chatsCollection = collection(database, "chats");
+    const chatsQuery = query(
+      chatsCollection,
+      where("participants", "array-contains", user),
+      where("status", "==", "DueDiligence")
     );
 
-    const applicantsQuery = query(
-      projectsCollection,
-      where("status", "==", "DueDiligence"),
-      where("applicants", "array-contains", user)
-    );
+    const unsubscribe = onSnapshot(
+      chatsQuery,
+      async (snapshot) => {
+        console.log("Antal chats fundet:", snapshot.size);
 
-    const unsubscribeProviders = onSnapshot(
-      providersQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const providerProjects = snapshot.docs.map((doc) => mapToProjectData(doc.id, doc.data()));
-        console.log("Provider-projekter fundet i Firestore:", providerProjects);
+        if (snapshot.empty) {
+          console.log("Ingen chats fundet.");
+          setProjects([]);
+          setIsLoading(false);
+          return;
+        }
 
-        const unsubscribeApplicants = onSnapshot(
-          applicantsQuery,
-          (appSnapshot: QuerySnapshot<DocumentData>) => {
-            const applicantProjects = appSnapshot.docs.map((doc) =>
-              mapToProjectData(doc.id, doc.data())
-            );
+        const projectPromises = snapshot.docs.map(async (chatDoc) => {
+          const chatData = chatDoc.data();
+          console.log("Chat fundet:", chatData);
 
-            console.log("Applicant-projekter fundet i Firestore:", applicantProjects);
+          const projectId = chatData.projectId;
+          const userId = chatData.userId;
 
-            const allProjects = [...providerProjects, ...applicantProjects];
-            setProjects(allProjects);
-            setIsLoading(false);
-          },
-          (error) => {
-            console.error("Fejl ved hentning af applicant-projekter:", error);
-            setError("Kunne ikke hente Applicant-projekterne.");
-            setIsLoading(false);
+          if (userId && projectId) {
+            try {
+              const projectDocRef = doc(
+                database,
+                "users",
+                userId,
+                "projects",
+                projectId
+              );
+
+              const projectSnap = await getDoc(projectDocRef);
+
+              if (projectSnap.exists()) {
+                const projectData = projectSnap.data();
+                console.log("Projektdata fundet:", projectData);
+
+                const assets = projectData.assets || {};
+                return {
+                  id: projectId,
+                  userId,
+                  name: projectData.name || "Uden navn",
+                  description: projectData.description || "Ingen beskrivelse",
+                  status: projectData.status || "Project",
+                  price: projectData.price !== undefined ? projectData.price : 0,
+                  f8CoverImageLowRes: assets.f8CoverImageLowRes || null,
+                  f5CoverImageLowRes: assets.f5CoverImageLowRes || null,
+                  f3CoverImageLowRes: assets.f3CoverImageLowRes || null,
+                  f2CoverImageLowRes: assets.f2CoverImageLowRes || null,
+                  projectImage: assets.projectImage || null,
+                  transferMethod:
+                    projectData.transferMethod || "Standard metode",
+                  applicant: projectData.applicant || null,
+                } as ProjectData;
+              } else {
+                console.log(`Projekt ikke fundet for projectId: ${projectId}`);
+              }
+            } catch (error) {
+              console.error(
+                `Fejl ved hentning af projektdata for projectId: ${projectId}`,
+                error
+              );
+            }
+          } else {
+            console.log("Mangler nødvendige data i chat:", chatData);
           }
-        );
+          return null;
+        });
 
-        return () => unsubscribeApplicants();
+        const resolvedProjects = (await Promise.all(projectPromises)).filter(
+          (project) => project !== null
+        ) as ProjectData[];
+
+        console.log("Alle projekter efter hentning:", resolvedProjects);
+        setProjects(resolvedProjects);
+        setIsLoading(false);
+        setError(null);
       },
-      (error) => {
-        console.error("Fejl ved hentning af provider-projekter:", error);
-        setError("Kunne ikke hente Provider-projekterne.");
+      (err) => {
+        console.error("Fejl ved hentning af chats:", err);
+        setError("Kunne ikke hente chats. Prøv igen senere.");
         setIsLoading(false);
       }
     );
 
-    return () => unsubscribeProviders();
+    return () => unsubscribe();
   }, [user]);
-
-  const mapToProjectData = (id: string, data: DocumentData): ProjectData => ({
-    id,
-    userId: data.userId || null,
-    name: data.name || "Uden navn",
-    description: data.description || "Ingen beskrivelse",
-    status: data.status || "Project",
-    f8CoverImageLowRes: data.assets?.f8CoverImageLowRes || null,
-    f5CoverImageLowRes: data.assets?.f5CoverImageLowRes || null,
-    f3CoverImageLowRes: data.assets?.f3CoverImageLowRes || null,
-    f2CoverImageLowRes: data.assets?.f2CoverImageLowRes || null,
-    projectImage: data.assets?.projectImage || null,
-    price: data.price || 0,
-    transferMethod: data.transferMethod || "Standard metode",
-    applicant: data.applicant || null,
-  });
 
   if (isLoading) {
     return (

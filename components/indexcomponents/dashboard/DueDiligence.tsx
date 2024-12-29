@@ -21,54 +21,31 @@ const DueDiligence = () => {
 
     console.log("Aktuel bruger-ID:", user);
 
-    const projectsCollection = collection(database, "projects");
+    // Reference til chats-samlingen
+    const chatsCollection = collection(database, "chats");
 
-    const providersQuery = query(
-      projectsCollection,
-      where("status", "==", "DueDiligence"),
-      where("providers", "array-contains", user)
+    // Query for chats, hvor brugeren er deltager, og status er 'DueDiligence'
+    const chatsQuery = query(
+      chatsCollection,
+      where("participants", "array-contains", user),
+      where("status", "==", "DueDiligence")
     );
 
-    const applicantsQuery = query(
-      projectsCollection,
-      where("status", "==", "DueDiligence"),
-      where("applicants", "array-contains", user)
+    // Lyt til ændringer i query'en
+    const unsubscribe = onSnapshot(
+      chatsQuery,
+      (snapshot) => {
+        const count = snapshot.size;
+        console.log("Chats fundet i Firestore:", snapshot.docs.map((doc) => doc.data()));
+        setDueDiligenceCount(count); // Opdater tælleren med antallet af fundne dokumenter
+      },
+      (error) => {
+        console.error("Fejl ved hentning af Due Diligence-chats:", error);
+      }
     );
 
-    const userIdQuery = query(
-      projectsCollection,
-      where("status", "==", "DueDiligence"),
-      where("userId", "==", user)
-    );
-
-    const unsubscribeProviders = onSnapshot(providersQuery, (snapshot) => {
-      const providerCount = snapshot.size;
-      console.log("Provider-projekter fundet:", snapshot.docs.map((doc) => doc.data()));
-
-      const unsubscribeApplicants = onSnapshot(applicantsQuery, (appSnapshot) => {
-        const applicantCount = appSnapshot.size;
-        console.log("Applicant-projekter fundet:", appSnapshot.docs.map((doc) => doc.data()));
-
-        const unsubscribeUserId = onSnapshot(userIdQuery, (userIdSnapshot) => {
-          const userIdCount = userIdSnapshot.size;
-          console.log(
-            "Projekter fundet med userId:",
-            userIdSnapshot.docs.map((doc) => doc.data())
-          );
-
-          // Samlet antal projekter
-          const totalCount = providerCount + applicantCount + userIdCount;
-          setDueDiligenceCount(totalCount);
-          console.log("Samlet DueDiligence-antal:", totalCount);
-        });
-
-        return () => unsubscribeUserId();
-      });
-
-      return () => unsubscribeApplicants();
-    });
-
-    return () => unsubscribeProviders();
+    // Ryd op efter listener ved unmount
+    return () => unsubscribe();
   }, [user]);
 
   const handlePress = () => {

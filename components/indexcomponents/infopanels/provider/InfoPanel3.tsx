@@ -77,13 +77,27 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
     setProjectData(initialProjectData);
   }, [initialProjectData]);
 
-  // Godkend ansøger
+  // Godkend ansøger og opret chat i chats-samlingen i roden
   const handleApproveApplicant = async () => {
     try {
       if (!projectData.userId || !projectData.id || !projectData.applicant?.id) {
         throw new Error("Nødvendige data mangler.");
       }
   
+      const chatDocRef = doc(database, "chats", projectData.id); // Brug projectId som chat-ID
+  
+      // 1. Opret en ny chat i 'chats'-samlingen
+      await setDoc(chatDocRef, {
+        projectId: projectData.id, // Reference til projektet
+        participants: [projectData.userId, projectData.applicant.id], // Deltagere
+        userId: projectData.userId, // Tilføj userId til chat-dokumentet
+        status: "DueDiligence", // Status for chatten/projektet
+        createdAt: new Date().toISOString(), // Tidsstempel for oprettelsen
+        name: projectData.name || "Uden navn", // Projektets navn
+        description: projectData.description || "Ingen beskrivelse", // Beskrivelse
+      });
+  
+      // 2. Opdater projektstatus i brugerens samling
       const projectDocRef = doc(
         database,
         "users",
@@ -91,29 +105,16 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         "projects",
         projectData.id
       );
-      const chatCollectionRef = collection(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id,
-        "chats"
-      );
-  
-      // 1. Opdater projektets status til 'DueDiligence'
       await setDoc(
         projectDocRef,
-        { status: "DueDiligence" },
+        { status: "DueDiligence" }, // Opdater status
         { merge: true }
       );
   
-      // 2. Opret et nyt dokument i 'chats'-samlingen
-      await addDoc(chatCollectionRef, {
-        participants: [projectData.userId, projectData.applicant.id],
-        createdAt: new Date().toISOString(),
-      });
-  
-      Alert.alert("Godkendt", "Ansøgeren er blevet godkendt, og chatten er oprettet.");
+      Alert.alert(
+        "Godkendt",
+        "Ansøgeren er blevet godkendt, og chatten er oprettet i 'chats'-samlingen."
+      );
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
       Alert.alert("Fejl", "Der opstod en fejl under godkendelsen. Prøv igen senere.");
