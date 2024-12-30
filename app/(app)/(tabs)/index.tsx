@@ -21,6 +21,7 @@ import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/
 import InfoPanelProvider from "@/components/indexcomponents/infopanels/provider/InfoPanelProvider";
 import InfoPanelApplicant from "@/components/indexcomponents/infopanels/applicant/InfoPanelApplicant";
 import InfoPanelDueDiligence from "@/components/indexcomponents/infopanels/duediligence/InfoPanelDueDiligence";
+import InfoPanelFiboShare from "@/components/indexcomponents/infopanels/fiboshare/InfoPanelFiboShare";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
