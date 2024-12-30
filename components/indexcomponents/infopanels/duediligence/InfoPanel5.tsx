@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Linking,
+  TextInput,
   Modal,
   StyleSheet,
   ScrollView,
@@ -17,7 +18,8 @@ import {
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc, setDoc, DocumentData } from "firebase/firestore";
+import { useVisibility } from "@/hooks/useVisibilityContext";
+import { doc, getDoc, setDoc, DocumentData, collection, addDoc, Timestamp, onSnapshot } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/duediligence/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -59,6 +61,7 @@ type ProjectData = {
 type InfoPanelProps = {
   projectData: ProjectData;
   chatData?: DocumentData; // Ny prop til chatdata
+  setIsChatActive: (isActive: boolean) => void;
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
@@ -91,7 +94,9 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isChatActive, setIsChatActive] = useState(false);
+  const { isChatActive, toggleChat } = useVisibility(); // Brug den nye tilstand og funktion
+  const [newMessage, setNewMessage] = useState(""); // State for beskedinput
+  const [messages, setMessages] = useState(chatData?.messages || []); // Chatbeskeder
 
   // Tjek for manglende data
   if (!projectData || !projectData.id || !userId) {
@@ -113,6 +118,50 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
     } else {
       Alert.alert("Adgang nægtet", "Kun provideren kan redigere dette projekt.");
+    }
+  };
+
+  // Funktion til at sende en besked  
+  type ChatMessage = {
+    sender: string;
+    text: string;
+  };
+
+  // Real-time opdatering af chatbeskeder
+  useEffect(() => {
+    if (!projectData.id) return;
+
+    const chatDocRef = doc(database, "chats", projectData.id);
+    const messagesCollection = collection(chatDocRef, "messages");
+
+    const unsubscribe = onSnapshot(messagesCollection, (snapshot) => {
+      const updatedMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(updatedMessages); // Opdater beskeder
+    });
+
+    return () => unsubscribe(); // Ryd op ved unmount
+  }, [projectData.id]); // Afhængighed af projectData.id
+  
+  const sendMessage = async () => {
+    if (!newMessage.trim()) return;
+  
+    const newChatMessage = {
+      sender: currentUser || "Unknown",
+      text: newMessage.trim(),
+      timestamp: Timestamp.now(),
+    };
+  
+    try {
+      const chatDocRef = doc(database, "chats", projectData.id);
+      const messagesCollection = collection(chatDocRef, "messages");
+      await addDoc(messagesCollection, newChatMessage);
+  
+      setNewMessage(""); // Ryd inputfeltet
+    } catch (error) {
+      console.error("Fejl ved afsendelse af besked:", error);
     }
   };
 
@@ -182,10 +231,6 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       console.error(`Fejl ved åbning af PDF for ${pdfType}:`, error);
       Alert.alert("Fejl", `Kunne ikke hente PDF for ${pdfType}. Prøv igen.`);
     }
-  };
-
-  const toggleChatActive = () => {
-    setIsChatActive((prev) => !prev); // Toggler tilstanden
   };
 
   // Generisk handlePress funktion med conditional
@@ -389,24 +434,82 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
-          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
+          onPress={() => {
+            if (!isChatActive) {
+              handlePress("F8"); // Standardfunktionalitet
+            }
+          }}
+          onLongPress={() => {
+            if (!isChatActive) {
+              handleLongPress("f8PDF"); // Standardfunktionalitet
+            }
+          }}
           accessibilityLabel="F8 Button"
         >
-          {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImageLowRes && (
-            <Image
-              source={{
-                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-              }}
-              style={baseStyles.f8CoverImage}
-            />
+          {isChatActive ? (
+            // Chat-UI
+            <View style={styles.chatContainer}>
+              <ScrollView contentContainerStyle={styles.chatMessages}>
+                {messages.map((message: ChatMessage, index: number) => (
+                  <Text
+                    key={index}
+                    style={[
+                      styles.chatMessage,
+                      message.sender === currentUser
+                        ? styles.chatMessageSender
+                        : styles.chatMessageReceiver,
+                    ]}
+                  >
+                    {message.text}
+                  </Text>
+                ))}
+              </ScrollView>
+              <View style={styles.chatInputContainer}>
+                <TextInput
+                  style={styles.chatInput}
+                  placeholder="Skriv en besked..."
+                  value={newMessage}
+                  onChangeText={setNewMessage}
+                />
+                <Pressable
+                  style={styles.chatSendButton}
+                  onPress={sendMessage}
+                  accessibilityLabel="Send Message Button"
+                >
+                  <AntDesign name="arrowup" size={20} color="#fff" />
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            // Standard `f8CoverImageLowRes` indhold
+            <>
+              {projectData.f8CoverImageLowRes && (
+                <Image
+                  source={{
+                    uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                  }}
+                  style={baseStyles.f8CoverImage}
+                />
+              )}
+              {/* Tekst i toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Specification</Text>
+              </View>
+            </>
           )}
 
-          {/* Tekst i f8 toppen */}
-          <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Specification</Text>
-          </View>
+          {/* Chat-knap */}
+          <Pressable
+            style={baseStyles.deleteIconContainer} // Behold eksisterende styling
+            onPress={toggleChat} // Brug contextens toggleChat
+            accessibilityLabel="Chat Toggle Button"
+          >
+            <AntDesign
+              name={isChatActive ? "picture" : "wechat"} // Skifter ikon afhængigt af tilstanden
+              size={32}
+              color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
+            />
+          </Pressable>
 
           {/* Projektbilledet i det runde felt med onPress */}
           {projectData.projectImage && (
@@ -430,34 +533,26 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
             </Pressable>
           )}
 
-          {/* Chat-knap */}
-          <Pressable
-            style={baseStyles.deleteIconContainer} // Behold eksisterende styling
-            onPress={toggleChatActive} // Toggler chat-tilstanden
-            accessibilityLabel="Chat Toggle Button"
-          >
-            <AntDesign
-              name={isChatActive ? "picture" : "wechat"} // Brug "message1" for begge tilstande
-              size={32}
-              color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
-            />
-          </Pressable>
+          {/* Comment-knap og Attachment-knap kun synlige, når chat er inaktiv */}
+          {!isChatActive && (
+            <>
+              {/* Comment-knap f8 */}
+              <Pressable
+                style={baseStyles.commentButtonf8}
+                onPress={() => handleOpenCommentModal("f8")}
+              >
+                <AntDesign name="message1" size={20} color="#0a7ea4" />
+              </Pressable>
 
-          {/* Comment-knap f8 */}
-          <Pressable
-            style={baseStyles.commentButtonf8}
-            onPress={() => handleOpenCommentModal("f8")}
-          >
-            <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
-
-          {/* Attachment-knap */}
-          <Pressable
-            style={baseStyles.attachmentButton}
-            onPress={openAttachmentModal}
-          >
-            <Entypo name="attachment" size={20} color="#0a7ea4" />
-          </Pressable>
+              {/* Attachment-knap */}
+              <Pressable
+                style={baseStyles.attachmentButton}
+                onPress={openAttachmentModal}
+              >
+                <Entypo name="attachment" size={20} color="#0a7ea4" />
+              </Pressable>
+            </>
+          )}
         </Pressable>
       </View>
 
@@ -896,6 +991,62 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
+  },
+  chatContainer: {
+    flex: 1, // Fylder hele containeren
+    width: "96%", // Sætter bredden til 90% af F8-feltet
+    height: "100%", // Sætter højden til 100% af F8-feltet
+    justifyContent: "space-between",
+    marginTop: 63, // Justerer afstanden til toppen af F8-feltet
+    marginBottom: 8, // Justerer afstanden til bunden af F8-feltet
+    padding: 11,
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Lys baggrund for chatten
+    borderRadius: 10, // Match F8-feltets afrundede kanter, hvis det har nogen
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  chatMessages: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+  },
+  chatMessage: {
+    marginVertical: 5,
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: "80%",
+  },
+  chatMessageSender: {
+    alignSelf: "flex-end",
+    backgroundColor: "#d4f5d4",
+  },
+  chatMessageReceiver: {
+    alignSelf: "flex-start",
+    backgroundColor: "#f5f5f5",
+  },
+  chatInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#ccc",
+    paddingTop: 13,
+  },
+  chatInput: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  chatSendButton: {
+    backgroundColor: "#0a7ea4",
+    padding: 10,
+    borderRadius: 50,
   },
 });
 

@@ -75,7 +75,7 @@ const FiboShare = () => {
     if (isInfoPanelFiboShareVisible) {
       hideAllPanels();
     } else {
-      showPanel("provider");
+      showPanel("fiboshare");
     }
   };
 

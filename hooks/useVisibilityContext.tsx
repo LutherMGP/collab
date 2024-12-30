@@ -11,6 +11,8 @@ interface VisibilityContextType {
   isInfoPanelApplicantVisible: boolean;
   isInfoPanelDueDiligenceVisible: boolean;
   isInfoPanelFiboShareVisible: boolean;
+  isChatActive: boolean; // Ny tilstand for chat
+  toggleChat: () => void; // Funktion til at skifte chattilstand
   showPanel: (
     panel:
       | "projects"
@@ -53,13 +55,14 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
   const [isInfoPanelFavoritesVisible, setIsInfoPanelFavoritesVisible] =
     useState(false);
   const [isInfoPanelProviderVisible, setIsInfoPanelProviderVisible] =
-  useState(false);   
+    useState(false);
   const [isInfoPanelApplicantVisible, setIsInfoPanelApplicantVisible] =
-  useState(false); 
+    useState(false);
   const [isInfoPanelDueDiligenceVisible, setIsInfoPanelDueDiligenceVisible] =
-  useState(false);
+    useState(false);
   const [isInfoPanelFiboShareVisible, setIsInfoPanelFiboShareVisible] =
-  useState(false);      
+    useState(false);
+  const [isChatActive, setIsChatActive] = useState(false); // Chat-tilstand
 
   // Logfunktion
   const logVisibilityChange = (panel: string | null) => {
@@ -104,6 +107,11 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
     logVisibilityChange(null); // Log at alle panels er skjult
   };
 
+  const toggleChat = () => {
+    setIsChatActive((prev) => !prev);
+    console.log("Chat-tilstand opdateret:", !isChatActive);
+  };
+
   return (
     <VisibilityContext.Provider
       value={{
@@ -115,6 +123,8 @@ export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({
         isInfoPanelApplicantVisible,
         isInfoPanelDueDiligenceVisible,
         isInfoPanelFiboShareVisible,
+        isChatActive, // Inkluder chat-tilstand
+        toggleChat, // Tilføj toggleChat-funktion
         showPanel,
         hideAllPanels,
       }}

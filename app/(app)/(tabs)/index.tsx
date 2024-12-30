@@ -21,6 +21,7 @@ import InfoPanelFavorites from "components/indexcomponents/infopanels/favorites/
 import InfoPanelProvider from "@/components/indexcomponents/infopanels/provider/InfoPanelProvider";
 import InfoPanelApplicant from "@/components/indexcomponents/infopanels/applicant/InfoPanelApplicant";
 import InfoPanelDueDiligence from "@/components/indexcomponents/infopanels/duediligence/InfoPanelDueDiligence";
+import InfoPanelFiboShare from "@/components/indexcomponents/infopanels/fiboshare/InfoPanelFiboShare";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
@@ -30,6 +31,13 @@ const Index = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isChatActive, setIsChatActive] = useState(false);
+
+  // Funktion til at opdatere chat-tilstanden
+  const handleChatToggle = (isActive: boolean) => {
+    console.log("Chat status opdateret:", isActive);
+    setIsChatActive(isActive);
+  };
 
   const {
     isInfoPanelProjectsVisible,
@@ -39,6 +47,7 @@ const Index = () => {
     isInfoPanelProviderVisible,
     isInfoPanelApplicantVisible,
     isInfoPanelDueDiligenceVisible,
+    isInfoPanelFiboShareVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
@@ -49,7 +58,8 @@ const Index = () => {
     isInfoPanelFavoritesVisible ||
     isInfoPanelProviderVisible ||
     isInfoPanelApplicantVisible ||
-    isInfoPanelDueDiligenceVisible
+    isInfoPanelDueDiligenceVisible ||
+    isInfoPanelFiboShareVisible
   );
 
   // Logger hvilken InfoPanel der er synlig
@@ -67,7 +77,9 @@ const Index = () => {
     } else if (isInfoPanelApplicantVisible) {
       console.log("Applicant panel er synligt.");  
     } else if (isInfoPanelDueDiligenceVisible) {
-      console.log("Due Diligence panel er synligt.");             
+      console.log("Due Diligence panel er synligt.");
+    } else if (isInfoPanelFiboShareVisible) {
+      console.log("FiboShare panel er synligt.");                
     } else {
       console.log("Ingen paneler er synlige.");
     }
@@ -79,6 +91,7 @@ const Index = () => {
     isInfoPanelProviderVisible,
     isInfoPanelApplicantVisible,
     isInfoPanelDueDiligenceVisible,
+    isInfoPanelFiboShareVisible,
   ]);
 
   useEffect(() => {
@@ -103,6 +116,7 @@ const Index = () => {
       style={[styles.container, { backgroundColor: Colors[theme].background }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      scrollEnabled={!isChatActive} // Lås scroll når chat er aktiv
       onScroll={Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
         { useNativeDriver: true }
@@ -181,7 +195,14 @@ const Index = () => {
       {/* Render InfoPanelDueDiligence kun hvis synlig */}
       {isInfoPanelDueDiligenceVisible && (
         <View style={styles.infoPanelDueDiligenceContainer}>
-          <InfoPanelDueDiligence />
+          <InfoPanelDueDiligence setIsChatActive={setIsChatActive} />
+        </View>
+      )}
+
+      {/* Render InfoPanelFiboShare kun hvis synlig */}
+      {isInfoPanelFiboShareVisible && (
+        <View style={styles.infoPanelFiboShareContainer}>
+          <InfoPanelFiboShare />
         </View>
       )}
     </Animated.ScrollView>
@@ -245,6 +266,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   infoPanelDueDiligenceContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelFiboShareContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
