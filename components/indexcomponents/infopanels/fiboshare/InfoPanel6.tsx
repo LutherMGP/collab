@@ -312,7 +312,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
                 {/* Tekst i f2 toppen */}
                 <View style={baseStyles.textTag}>
-                  <Text style={baseStyles.text}>Agreement</Text>
+                  <Text style={baseStyles.text}>ReSuit</Text>
                 </View>
               </Pressable>
             </View>
