@@ -266,7 +266,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
           {/* Tekst i f8 toppen */}
           <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Mads Nørgaard</Text>
+            <Text style={baseStyles.text}>Bestseller</Text>
           </View>
 
           {/* Projektbilledet i det runde felt med onPress */}
@@ -312,7 +312,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
                 {/* Tekst i f2 toppen */}
                 <View style={baseStyles.textTag}>
-                  <Text style={baseStyles.text}>ReSuit</Text>
+                  <Text style={baseStyles.text}>Bestseller</Text>
                 </View>
               </Pressable>
             </View>
