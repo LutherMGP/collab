@@ -15,7 +15,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
@@ -533,6 +533,26 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
             </Pressable>
           )}
 
+          {/* Comment-knap og Attachment-knap kun synlige, når chat er inaktiv */}
+          {!isChatActive && (
+            <>
+              {/* Comment-knap f8 */}
+              <Pressable
+                style={baseStyles.commentButtonf8}
+                onPress={() => handleOpenCommentModal("f8")}
+              >
+                <AntDesign name="message1" size={20} color="#0a7ea4" />
+              </Pressable>
+
+              {/* Attachment-knap */}
+              <Pressable
+                style={baseStyles.attachmentButton}
+                onPress={openAttachmentModal}
+              >
+                <Entypo name="attachment" size={20} color="#0a7ea4" />
+              </Pressable>
+            </>
+          )}
         </Pressable>
       </View>
 
