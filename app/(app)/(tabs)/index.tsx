@@ -47,6 +47,7 @@ const Index = () => {
     isInfoPanelProviderVisible,
     isInfoPanelApplicantVisible,
     isInfoPanelDueDiligenceVisible,
+    isInfoPanelFiboShareVisible,
   } = useVisibility();
 
   // Bestem om velkomsthilsen skal vises (hvis ingen InfoPanels er synlige)
@@ -57,7 +58,8 @@ const Index = () => {
     isInfoPanelFavoritesVisible ||
     isInfoPanelProviderVisible ||
     isInfoPanelApplicantVisible ||
-    isInfoPanelDueDiligenceVisible
+    isInfoPanelDueDiligenceVisible ||
+    isInfoPanelFiboShareVisible
   );
 
   // Logger hvilken InfoPanel der er synlig
@@ -75,7 +77,9 @@ const Index = () => {
     } else if (isInfoPanelApplicantVisible) {
       console.log("Applicant panel er synligt.");  
     } else if (isInfoPanelDueDiligenceVisible) {
-      console.log("Due Diligence panel er synligt.");             
+      console.log("Due Diligence panel er synligt.");
+    } else if (isInfoPanelFiboShareVisible) {
+      console.log("FiboShare panel er synligt.");                
     } else {
       console.log("Ingen paneler er synlige.");
     }
@@ -87,6 +91,7 @@ const Index = () => {
     isInfoPanelProviderVisible,
     isInfoPanelApplicantVisible,
     isInfoPanelDueDiligenceVisible,
+    isInfoPanelFiboShareVisible,
   ]);
 
   useEffect(() => {
@@ -193,6 +198,13 @@ const Index = () => {
           <InfoPanelDueDiligence setIsChatActive={setIsChatActive} />
         </View>
       )}
+
+      {/* Render InfoPanelFiboShare kun hvis synlig */}
+      {isInfoPanelFiboShareVisible && (
+        <View style={styles.infoPanelFiboShareContainer}>
+          <InfoPanelFiboShare />
+        </View>
+      )}
     </Animated.ScrollView>
   );
 };
@@ -254,6 +266,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   infoPanelDueDiligenceContainer: {
+    width: "100%",
+    marginTop: 0,
+    paddingTop: 0,
+    alignSelf: "center",
+  },
+  infoPanelFiboShareContainer: {
     width: "100%",
     marginTop: 0,
     paddingTop: 0,
