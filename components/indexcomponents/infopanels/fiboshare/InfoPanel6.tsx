@@ -266,7 +266,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
           {/* Tekst i f8 toppen */}
           <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Specification</Text>
+            <Text style={baseStyles.text}>Mads Nørgaard</Text>
           </View>
 
           {/* Projektbilledet i det runde felt med onPress */}
@@ -361,7 +361,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
               {/* Tekst i F3 toppen */}
               <View style={baseStyles.textTag}>
-                <Text style={baseStyles.text}>Sustainability</Text>
+                <Text style={baseStyles.text}>Sissel Edelbo</Text>
               </View>
             </Pressable>
           </View>
@@ -383,7 +383,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
 
             {/* Tekst i f5 toppen */}
             <View style={baseStyles.textTag}>
-              <Text style={baseStyles.text}>Terms & Condition</Text>
+              <Text style={baseStyles.text}>Genfødt</Text>
             </View>
           </Pressable>
         </View>
