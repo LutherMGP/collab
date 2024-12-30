@@ -510,6 +510,29 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
               color={isChatActive ? "#0a7ea4" : "#0a7ea4"} // Dynamisk farve
             />
           </Pressable>
+
+          {/* Projektbilledet i det runde felt med onPress */}
+          {projectData.projectImage && (
+            <Pressable
+              style={[
+                baseStyles.projectImageContainer,
+                { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
+              ]}
+              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
+              accessibilityLabel="Project Image Button"
+              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
+            >
+              <Image
+                source={{
+                  uri: projectData.projectImage
+                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
+                    : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+                }}
+                style={baseStyles.projectImage} // Tilføj dine styles her
+              />
+            </Pressable>
+          )}
+
         </Pressable>
       </View>
 
