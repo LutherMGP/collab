@@ -30,6 +30,13 @@ const Index = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isChatActive, setIsChatActive] = useState(false);
+
+  // Funktion til at opdatere chat-tilstanden
+  const handleChatToggle = (isActive: boolean) => {
+    console.log("Chat status opdateret:", isActive);
+    setIsChatActive(isActive);
+  };
 
   const {
     isInfoPanelProjectsVisible,
@@ -103,6 +110,7 @@ const Index = () => {
       style={[styles.container, { backgroundColor: Colors[theme].background }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      scrollEnabled={!isChatActive} // Lås scroll når chat er aktiv
       onScroll={Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
         { useNativeDriver: true }
@@ -181,7 +189,7 @@ const Index = () => {
       {/* Render InfoPanelDueDiligence kun hvis synlig */}
       {isInfoPanelDueDiligenceVisible && (
         <View style={styles.infoPanelDueDiligenceContainer}>
-          <InfoPanelDueDiligence />
+          <InfoPanelDueDiligence setIsChatActive={setIsChatActive} />
         </View>
       )}
     </Animated.ScrollView>

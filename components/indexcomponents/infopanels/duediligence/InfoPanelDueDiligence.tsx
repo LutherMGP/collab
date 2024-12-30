@@ -18,7 +18,11 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { ProjectData } from "@/types/ProjectData";
 
-const InfoPanelDueDiligence = () => {
+type InfoPanelDueDiligenceProps = {
+  setIsChatActive: (isActive: boolean) => void; // Prop for at styre chat-tilstanden
+};
+
+const InfoPanelDueDiligence = ({ setIsChatActive }: InfoPanelDueDiligenceProps) => {
   const [projects, setProjects] = useState<(ProjectData & { chatData?: DocumentData })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +150,12 @@ const InfoPanelDueDiligence = () => {
   return (
     <View style={styles.panelContainer}>
       {projects.map((project) => (
-        <InfoPanel5 key={project.id} projectData={project} chatData={project.chatData} />
+        <InfoPanel5
+          key={project.id}
+          projectData={project}
+          chatData={project.chatData}
+          setIsChatActive={setIsChatActive} // Send proppen videre
+        />
       ))}
     </View>
   );

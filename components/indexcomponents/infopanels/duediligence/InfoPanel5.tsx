@@ -18,6 +18,7 @@ import {
 import { AntDesign } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
+import { useVisibility } from "@/hooks/useVisibilityContext";
 import { doc, getDoc, setDoc, DocumentData, collection, addDoc, Timestamp, onSnapshot } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
@@ -60,6 +61,7 @@ type ProjectData = {
 type InfoPanelProps = {
   projectData: ProjectData;
   chatData?: DocumentData; // Ny prop til chatdata
+  setIsChatActive: (isActive: boolean) => void;
   onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
 };
 
@@ -92,7 +94,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
   const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isChatActive, setIsChatActive] = useState(false);
+  const { isChatActive, toggleChat } = useVisibility(); // Brug den nye tilstand og funktion
   const [newMessage, setNewMessage] = useState(""); // State for beskedinput
   const [messages, setMessages] = useState(chatData?.messages || []); // Chatbeskeder
 
@@ -118,11 +120,6 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       Alert.alert("Adgang nægtet", "Kun provideren kan redigere dette projekt.");
     }
   };
-
-  // Funktion til at Toggle chat-tilstanden
-  const toggleChatActive = () => {
-    setIsChatActive((prev) => !prev); 
-  };  
 
   // Funktion til at sende en besked  
   type ChatMessage = {
@@ -504,7 +501,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
           {/* Chat-knap */}
           <Pressable
             style={baseStyles.deleteIconContainer} // Behold eksisterende styling
-            onPress={toggleChatActive} // Toggler chat-tilstanden
+            onPress={toggleChat} // Brug contextens toggleChat
             accessibilityLabel="Chat Toggle Button"
           >
             <AntDesign
