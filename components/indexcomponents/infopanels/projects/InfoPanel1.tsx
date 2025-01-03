@@ -388,12 +388,12 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
-      <View style={baseStyles.textContainer}>
+        <View style={baseStyles.textContainer}>
         <Text
           style={[baseStyles.nameText, { color: Colors[theme].tint }]}
           onPress={() => handlePress("Name & Comment")}
         >
-          {projectData.name || "Uden navn"}
+          {String(projectData.name || "Uden navn")}
         </Text>
         <Text
           style={[baseStyles.commentText, { color: Colors[theme].text }]}
@@ -404,7 +404,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             setShowFullComment(!showFullComment);
           }}
         >
-          {projectData.description || "Ingen kommentar"}
+          {String(projectData.description || "Ingen kommentar")}
         </Text>
       </View>
 
@@ -436,19 +436,19 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         {/* Projektbilledet i det runde felt */}
         {projectData.projectImage ? (
           <Pressable
-            style={[
-              baseStyles.projectImageContainer,
-              // { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-            ]}
+            style={baseStyles.projectImageContainer}
             onPress={
               isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined
             }
             accessibilityLabel="Project Image Button"
-            disabled={!isEditEnabled} // Deaktiver knappen, når Edit er deaktiveret
+            disabled={!isEditEnabled}
           >
             <Image
               source={{
-                uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
+                uri:
+                  typeof projectData.projectImage === "string" && projectData.projectImage
+                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
+                    : "fallback-image-uri", // Angiv en fallback-URI
               }}
               style={baseStyles.projectImage}
             />
