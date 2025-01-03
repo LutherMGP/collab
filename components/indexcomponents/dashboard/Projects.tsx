@@ -17,10 +17,8 @@ import { database } from "@/firebaseConfig";
 
 const Projects = () => {
   const { user } = useAuth();
-  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
-    useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Samlet antal projekter
-  const [publishedCount, setPublishedCount] = useState(0); // Antal publicerede projekter
+  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } = useVisibility();
+  const [projectCount, setProjectCount] = useState(0); // Antal projekter med status "Project"
 
   useEffect(() => {
     if (!user) return;
@@ -32,21 +30,14 @@ const Projects = () => {
       "projects"
     ) as CollectionReference<DocumentData>;
 
-    // Forespørgsel for ALLE projekter
-    const allProjectsQuery = query(projectCollection);
-    const unsubscribeAll = onSnapshot(allProjectsQuery, (querySnapshot) => {
-      setTotalCount(querySnapshot.size);
-    });
-
-    // Forespørgsel for projekter med status "Published"
-    const publishedQuery = query(projectCollection, where("status", "==", "Published"));
-    const unsubscribePublished = onSnapshot(publishedQuery, (querySnapshot) => {
-      setPublishedCount(querySnapshot.size);
+    // Forespørgsel for projekter med status "Project"
+    const projectQuery = query(projectCollection, where("status", "==", "Project"));
+    const unsubscribeProjects = onSnapshot(projectQuery, (querySnapshot) => {
+      setProjectCount(querySnapshot.size); // Opdater antallet af projekter
     });
 
     return () => {
-      unsubscribeAll();
-      unsubscribePublished();
+      unsubscribeProjects(); // Ryd op efter forespørgslen
     };
   }, [user]);
 
@@ -57,8 +48,6 @@ const Projects = () => {
       showPanel("projects");
     }
   };
-
-  const unPublishedCount = totalCount - publishedCount; // Fratræk Published projekter
 
   return (
     <View style={styles.container}>
@@ -76,7 +65,7 @@ const Projects = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{unPublishedCount || 0}</Text>
+        <Text style={styles.countText}>{projectCount || 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.textContainer}>
