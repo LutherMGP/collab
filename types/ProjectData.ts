@@ -22,14 +22,21 @@ export type CircularEconomyData = {
   CO2Emission: { value: number; description: string };
 };
 
+export type PrizeDetails = {
+  description: string; // Beskrivelse af præmie
+  terms?: string; // Eventuelle vilkår for præmien (valgfrit felt)
+};
+
 export interface ProjectData {
   id: string; // Projektets ID
   userId: string; // Ejeren af projektet (ID)
   name: string; // Projektets navn
   description: string; // Projektets beskrivelse
-  status: "Project" | "Published" | "Application"; // Inkluder "Application" som en status
+  status: "Project" | "Published" | "Application"; // Mulige statusser
   price: number; // Pris på projektet
-  transferMethod: string; // Gør feltet obligatorisk
+
+  // Ny struktur til prizeDetails
+  prizeDetails: PrizeDetails; // Beskrivelse af præmie
 
   // Felter for hver kategori tillader string, null eller undefined
   projectImage?: string | null;

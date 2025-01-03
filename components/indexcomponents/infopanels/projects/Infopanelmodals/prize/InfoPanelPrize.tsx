@@ -15,12 +15,16 @@ import {
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
+type PrizeDetails = {
+  description: string;
+};
+
 type InfoPanelPrizeProps = {
   onClose: () => void;
   currentDescription: string | null; // Beskrivelse hentet fra projektdata
   projectId: string;
   userId: string;
-  onSave: (newDescription: string) => void;
+  onSave: (prizeDetails: PrizeDetails) => void;
   isEditable: boolean; // Angiver om redigering er aktiveret
 };
 
@@ -45,13 +49,15 @@ const InfoPanelPrize = ({
     setIsSaving(true);
 
     try {
+      const prizeDetails: PrizeDetails = { description };
+
       const projectRef = doc(database, "users", userId, "projects", projectId);
-      await updateDoc(projectRef, { transferMethod: description });
+      await updateDoc(projectRef, { prizeDetails });
 
       // Opdater i parent-komponenten
-      onSave(description);
+      onSave(prizeDetails);
 
-      Alert.alert("Opdateret", "Overdragelsesmetoden er blevet gemt.");
+      Alert.alert("Opdateret", "Overdragelsesdetaljerne er blevet gemt.");
       onClose();
     } catch (error) {
       console.error("Fejl ved gemning af beskrivelse:", error);
@@ -68,7 +74,7 @@ const InfoPanelPrize = ({
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>
-          {isEditable ? "Rediger Transfer Method" : "Transfer Method"}
+          {isEditable ? "Rediger Overdragelsesdetaljer" : "Overdragelsesdetaljer"}
         </Text>
 
         {isEditable ? (

@@ -34,6 +34,7 @@ import InfoPanelLegal from "@/components/indexcomponents/infopanels/projects/Inf
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
 import { FilePaths } from "@/utils/filePaths";
+import { ProjectData, PrizeDetails } from "@/types/ProjectData";
 
 type CircularEconomyData = {
   waterUsage: { value: number; description: string };
@@ -71,7 +72,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const userId = currentUser;
 
   // Definer projectData som en state-variabel
-  const [projectData, setProjectData] = useState<ProjectData>(initialProjectData);
+  const [projectData, setProjectData] = useState<ProjectData>({
+    ...initialProjectData,
+    prizeDetails: initialProjectData.prizeDetails || { description: "" }, // Sørg for, at det er initialiseret
+  });
   const [selectedOption, setSelectedOption] = useState<string | null>(null); 
   const [showFullComment, setShowFullComment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,6 +114,14 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
   };
 
+    // Funktion til opdatering af transferMethod og prizeDetails
+    const updateTransferMethod = (prizeDetails: PrizeDetails) => {
+      setProjectData((prev) => ({
+        ...prev,
+        prizeDetails, // Opdaterer hele prizeDetails-objektet
+      }));
+    };
+
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
@@ -120,13 +132,14 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       // Hent data fra Firestore
       const docRef = doc(database, "users", userId, "projects", projectData.id);
       const snapshot = await getDoc(docRef);
+  
       if (snapshot.exists()) {
         const data = snapshot.data();
         setProjectData((prev) => ({
           ...prev,
           name: data.name || "",
           description: data.description || "",
-          legalDescription: data.legalDescription || prev.legalDescription || null, // Tilføjet hentning af legalDescription
+          legalDescription: data.legalDescription || prev.legalDescription || null,
           f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
           f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
           f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
@@ -135,6 +148,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           status: data.status || prev.status || "",
           transferMethod: data.transferMethod || prev.transferMethod || "",
           circularEconomy: data.circularEconomy || prev.circularEconomy || undefined,
+          prizeDetails: data.prizeDetails || { description: "" }, // Tilføjet prizeDetails
         }));
       }
     } catch (error) {
@@ -146,11 +160,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   };
 
   // Funktion til opdatering af transferMethod og pris
-  const updateTransferMethod = (newMethod: string) => {
-    // Opdater kun transferMethod i projektdata
+  const updateTransferMethod = (prizeDetails: { description: string }) => {
     setProjectData((prev) => ({
       ...prev,
-      transferMethod: newMethod, // Opdater metoden
+      prizeDetails, // Opdaterer hele prizeDetails-objektet
     }));
   };
 
@@ -745,10 +758,12 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
-              currentDescription={projectData.transferMethod || "Ingen beskrivelse tilgængelig"} // Standardbeskrivelse
+              currentDescription={
+                projectData.prizeDetails?.description || "Ingen beskrivelse tilgængelig"
+              } // Standardbeskrivelse
               projectId={projectData.id}
               userId={userId || ""}
-              onSave={updateTransferMethod} // Gem ny beskrivelse
+              onSave={updateTransferMethod} // Opdater ny beskrivelse
               isEditable={isEditEnabled} // Brug toggleEdit til at styre redigering
             />
           </View>
