@@ -26,6 +26,7 @@ import {
 import { storage, database } from "@/firebaseConfig";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { FontAwesome } from "@expo/vector-icons";
 
 // Definer typer for Props og data
 type Props = {
@@ -167,7 +168,6 @@ const InfoPanelAttachment: React.FC<Props> = ({
   const fetchAttachments = async (type: Attachment["type"]) => {
     try {
       setIsLoading(true);
-
       const folderRef = ref(
         storage,
         `users/${userId}/projects/${projectId}/data/attachments/${type}`
@@ -181,10 +181,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
       ]);
     } catch (error) {
       console.error("Error fetching attachments:", error);
-      Alert.alert(
-        "Fetch Failed",
-        "An error occurred while fetching attachments."
-      );
+      Alert.alert("Fetch Failed", "An error occurred while fetching attachments.");
     } finally {
       setIsLoading(false);
     }
@@ -251,39 +248,33 @@ const InfoPanelAttachment: React.FC<Props> = ({
 
   // Render en enkelt vedhæftelse
   const renderAttachment = ({ item }: { item: Attachment }) => {
-    const fileName = item.url?.split("/").pop() || "unknown_file";
-  
     return (
       <View style={styles.attachmentContainer}>
-        {item.type === "videos" ? (
-          <VideoAttachment url={item.url} />
-        ) : (
-          <Pressable
-            onPress={() => {
-              if (item.url) {
-                Linking.openURL(item.url);
-              } else {
-                Alert.alert("Fejl", "Ugyldig URL.");
-              }
-            }}
-            style={styles.attachment}
-          >
-            {item.type === "images" ? (
-              <Image source={{ uri: item.url }} style={styles.attachmentImage} />
-            ) : (
-              <Image
-                source={require("@/assets/images/pdf_icon.png")}
-                style={styles.attachmentImage}
-              />
-            )}
-          </Pressable>
-        )}
+        <Pressable
+          onPress={() => {
+            if (item.url) {
+              Linking.openURL(item.url);
+            } else {
+              Alert.alert("Error", "Invalid URL.");
+            }
+          }}
+          style={styles.attachment}
+        >
+          {item.type === "images" ? (
+            <Image source={{ uri: item.url }} style={styles.attachmentImage} />
+          ) : (
+            <Image
+              source={require("@/assets/images/pdf_icon.png")}
+              style={styles.attachmentImage}
+            />
+          )}
+        </Pressable>
         {isEditEnabled && (
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={() => deleteFile(item.type, item.url || "unknown")}
           >
-            <Text style={styles.deleteText}>{fileName}</Text>
+            <FontAwesome name="trash" size={20} color="#FFF" /> {/* Ikon */}
           </TouchableOpacity>
         )}
       </View>
@@ -299,7 +290,8 @@ const InfoPanelAttachment: React.FC<Props> = ({
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Attachments</Text>
-      {isEditEnabled && ( // Betinget rendering af Upload-knapperne
+      {isEditEnabled && (
+        // Upload-knapperne vises kun, hvis Edit-tilstand er aktiveret
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.uploadButton}
@@ -324,7 +316,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
       {isLoading && <ActivityIndicator size="large" />}
       <FlatList
         data={attachments.filter((att) => att.url)}
-        keyExtractor={(item) => item.url || `${Date.now()}`}
+        keyExtractor={(item, index) => `${item.url}-${index}`}
         renderItem={({ item }) => (
           <View style={styles.attachmentContainer}>
             {item.type === "videos" ? (
@@ -335,7 +327,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
                   if (item.url) {
                     Linking.openURL(item.url);
                   } else {
-                    Alert.alert("Fejl", "Ugyldig URL.");
+                    Alert.alert("Error", "Invalid URL.");
                   }
                 }}
                 style={styles.attachment}
@@ -358,7 +350,7 @@ const InfoPanelAttachment: React.FC<Props> = ({
                 style={styles.deleteButton}
                 onPress={() => deleteFile(item.type, item.url || "unknown")}
               >
-                <Text style={styles.deleteText}>Delete</Text>
+                <FontAwesome name="trash" size={20} color="#FFF" />
               </TouchableOpacity>
             )}
           </View>
@@ -446,15 +438,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteButton: {
+    width: 40, // Justér størrelse efter behov
+    height: 40,
     marginTop: 5,
-    padding: 5,
-    backgroundColor: "#FF3B30",
-    borderRadius: 4,
+    padding: 10, // For bedre klikområde
+    backgroundColor: "#FF3B30", // Rød baggrund for Delete-knap
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteText: {
     color: "#FFF",
     fontSize: 12,
     textAlign: "center",
+  },
+  deleteIcon: {
+    width: 20, // Justér størrelse efter behov
+    height: 20,
+    tintColor: "#FFF", // Hvis dit ikon er gennemsigtigt, kan du ændre farven
   },
 });
 

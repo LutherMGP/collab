@@ -410,74 +410,80 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
-        <Pressable
-          style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
-          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
-          accessibilityLabel="F8 Button"
-        >
-          {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImageLowRes && (
+      <Pressable
+        style={baseStyles.F8}
+        onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
+        onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
+        accessibilityLabel="F8 Button"
+      >
+        {/* Vis billede, hvis det er tilgængeligt */}
+        {projectData.f8CoverImageLowRes ? (
+          <Image
+            source={{
+              uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+            }}
+            style={baseStyles.f8CoverImage}
+          />
+        ) : (
+          <Text style={baseStyles.text}>Ingen billede tilgængeligt</Text>
+        )}
+
+        {/* Tekst i f8 toppen */}
+        <View style={baseStyles.textTag}>
+          <Text style={baseStyles.text}>Specification</Text>
+        </View>
+
+        {/* Projektbilledet i det runde felt */}
+        {projectData.projectImage ? (
+          <Pressable
+            style={[
+              baseStyles.projectImageContainer,
+              // { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
+            ]}
+            onPress={
+              isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined
+            }
+            accessibilityLabel="Project Image Button"
+            disabled={!isEditEnabled} // Deaktiver knappen, når Edit er deaktiveret
+          >
             <Image
               source={{
-                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
               }}
-              style={baseStyles.f8CoverImage}
+              style={baseStyles.projectImage}
             />
-          )}
-
-          {/* Tekst i f8 toppen */}
-          <View style={baseStyles.textTag}>
-            <Text style={baseStyles.text}>Specification</Text>
-          </View>
-
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectData.projectImage && (
-            <Pressable
-              style={[
-                baseStyles.projectImageContainer,
-                { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-              ]}
-              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
-              accessibilityLabel="Project Image Button"
-              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
-            >
-              <Image
-                source={{
-                  uri: projectData.projectImage
-                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                    : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
-                }}
-                style={baseStyles.projectImage} // Tilføj dine styles her
-              />
-            </Pressable>
-          )}
-
-          {/* Delete-knap */}
-          <Pressable
-            style={baseStyles.deleteIconContainer}
-            onPress={handleDelete}
-            accessibilityLabel="Delete Button"
-          >
-            <AntDesign name="delete" size={20} color="#0a7ea4" />
           </Pressable>
+        ) : (
+          <Text style={baseStyles.text}>Ingen projektbillede</Text>
+        )}
 
-          {/* Comment-knap f8 */}
-          <Pressable
-            style={baseStyles.commentButtonf8}
-            onPress={() => handleOpenCommentModal("f8")}
-          >
-            <AntDesign name="message1" size={20} color="#0a7ea4" />
-          </Pressable>
-
-          {/* Attachment-knap */}
-          <Pressable
-            style={baseStyles.attachmentButton}
-            onPress={openAttachmentModal}
-          >
-            <Entypo name="attachment" size={20} color="#0a7ea4" />
-          </Pressable>
+        {/* Delete-knap */}
+        <Pressable
+          style={baseStyles.deleteIconContainer}
+          onPress={handleDelete}
+          accessibilityLabel="Delete Button"
+        >
+          <AntDesign name="delete" size={20} color="#0a7ea4" />
         </Pressable>
+
+        {/* Comment-knap f8 */}
+        <Pressable
+          style={baseStyles.commentButtonf8}
+          onPress={() => handleOpenCommentModal("f8")}
+          accessibilityLabel="Comment Button"
+        >
+          <AntDesign name="message1" size={20} color="#0a7ea4" />
+        </Pressable>
+
+        {/* Attachment-knap */}
+        <Pressable
+          style={baseStyles.attachmentButton}
+          onPress={openAttachmentModal}
+          accessibilityLabel="Attachment Button"
+        >
+          <Entypo name="attachment" size={20} color="#0a7ea4" />
+        </Pressable>
+      </Pressable>
       </View>
 
       {/* Nedre container */}
