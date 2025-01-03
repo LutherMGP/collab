@@ -1,0 +1,208 @@
+.
+├── README.md
+├── app
+│   ├── (app)
+│   │   ├── (auth)
+│   │   │   ├── _layout.tsx
+│   │   │   └── login.tsx
+│   │   ├── (tabs)
+│   │   │   ├── _layout.tsx
+│   │   │   ├── account.tsx
+│   │   │   ├── admin.tsx
+│   │   │   ├── cart.tsx
+│   │   │   └── index.tsx
+│   │   ├── _layout.tsx
+│   │   ├── modal.tsx
+│   │   ├── modal_account.tsx
+│   │   ├── modal_admin.tsx
+│   │   └── modal_cart.tsx
+│   └── _layout.tsx
+├── app.json
+├── assets
+│   ├── default
+│   │   ├── attachment
+│   │   │   ├── images
+│   │   │   │   └── attachmentImage.jpg
+│   │   │   └── pdf
+│   │   │       └── attachmentPDF.pdf
+│   │   ├── error
+│   │   │   ├── errorImage.jpg
+│   │   │   └── errorPDF.pdf
+│   │   ├── f2
+│   │   │   ├── f2CoverImageHighRes.jpg
+│   │   │   ├── f2CoverImageLowRes.jpg
+│   │   │   └── f2PDF.pdf
+│   │   ├── f3
+│   │   │   ├── f3CoverImageHighRes.jpg
+│   │   │   ├── f3CoverImageLowRes.jpg
+│   │   │   └── f3PDF.pdf
+│   │   ├── f5
+│   │   │   ├── f5CoverImageHighRes.jpg
+│   │   │   ├── f5CoverImageLowRes.jpg
+│   │   │   └── f5PDF.pdf
+│   │   ├── f8
+│   │   │   ├── f8CoverImageHighRes.jpg
+│   │   │   ├── f8CoverImageLowRes.jpg
+│   │   │   └── f8PDF.pdf
+│   │   ├── profileimage
+│   │   │   └── profileImage.jpg
+│   │   └── projectimage
+│   │       └── projectImage.jpg
+│   ├── fonts
+│   │   └── SpaceMono-Regular.ttf
+│   └── images
+│       ├── Krans.png
+│       ├── adaptive-icon.png
+│       ├── applicant.webp
+│       ├── applications.jpg
+│       ├── blomst.webp
+│       ├── catalog.webp
+│       ├── chat.webp
+│       ├── collaborations.webp
+│       ├── duediligence.webp
+│       ├── favicon.png
+│       ├── favorites.webp
+│       ├── fiboshare.webp
+│       ├── icon.png
+│       ├── join-full.png
+│       ├── logo
+│       │   ├── Fibonomic.png
+│       │   ├── company_logo.png
+│       │   ├── genfoedthub_dark.png
+│       │   └── genfoedthub_light.png
+│       ├── partial-react-logo.png
+│       ├── pdf_icon.png
+│       ├── products.webp
+│       ├── projects.webp
+│       ├── provider.webp
+│       ├── published.webp
+│       ├── purchased.webp
+│       ├── splash-icon.png
+│       └── splash.png
+├── components
+│   ├── __tests__
+│   │   ├── ThemedText-test.tsx
+│   │   └── __snapshots__
+│   │       └── ThemedText-test.tsx.snap
+│   ├── indexcomponents
+│   │   ├── dashboard
+│   │   │   ├── Applicant.tsx
+│   │   │   ├── Catalog.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── DueDiligence.tsx
+│   │   │   ├── Favorites.tsx
+│   │   │   ├── FiboShare.tsx
+│   │   │   ├── NewProject.tsx
+│   │   │   ├── Projects.tsx
+│   │   │   ├── Provider.tsx
+│   │   │   └── Published.tsx
+│   │   ├── infopanels
+│   │   │   ├── applicant
+│   │   │   │   ├── InfoPanel4.tsx
+│   │   │   │   ├── InfoPanelApplicant.tsx
+│   │   │   │   └── InfoPanelStyles4.tsx
+│   │   │   ├── catalog
+│   │   │   │   ├── InfoPanel2.tsx
+│   │   │   │   ├── InfoPanelCatalog.tsx
+│   │   │   │   └── InfoPanelStyles2.tsx
+│   │   │   ├── duediligence
+│   │   │   │   ├── InfoPanel5.tsx
+│   │   │   │   ├── InfoPanelDueDiligence.tsx
+│   │   │   │   ├── InfoPanelStyles5.tsx
+│   │   │   │   └── Infopanelmodals
+│   │   │   │       ├── attachment
+│   │   │   │       │   └── InfoPanelAttachment.tsx
+│   │   │   │       ├── circular
+│   │   │   │       │   └── InfoPanelCircular.tsx
+│   │   │   │       ├── comment
+│   │   │   │       │   └── InfoPanelCommentModal.tsx
+│   │   │   │       ├── f8f5f3f2
+│   │   │   │       │   ├── InfoPanelBase.tsx
+│   │   │   │       │   ├── InfoPanelF2.tsx
+│   │   │   │       │   ├── InfoPanelF3.tsx
+│   │   │   │       │   ├── InfoPanelF5.tsx
+│   │   │   │       │   └── InfoPanelF8.tsx
+│   │   │   │       ├── legal
+│   │   │   │       │   └── InfoPanelLegal.tsx
+│   │   │   │       ├── namecomment
+│   │   │   │       │   └── InfoPanelNameComment.tsx
+│   │   │   │       ├── prize
+│   │   │   │       │   └── InfoPanelPrize.tsx
+│   │   │   │       └── projectimage
+│   │   │   │           └── InfoPanelProjectImage.tsx
+│   │   │   ├── favorites
+│   │   │   │   └── InfoPanelFavorites.tsx
+│   │   │   ├── fiboshare
+│   │   │   │   ├── InfoPanel6.tsx
+│   │   │   │   ├── InfoPanelFiboShare.tsx
+│   │   │   │   └── InfoPanelStyles6.tsx
+│   │   │   ├── projects
+│   │   │   │   ├── InfoPanel1.tsx
+│   │   │   │   ├── InfoPanelProjects.tsx
+│   │   │   │   ├── InfoPanelStyles1.tsx
+│   │   │   │   └── Infopanelmodals
+│   │   │   │       ├── attachment
+│   │   │   │       │   └── InfoPanelAttachment.tsx
+│   │   │   │       ├── circular
+│   │   │   │       │   └── InfoPanelCircular.tsx
+│   │   │   │       ├── comment
+│   │   │   │       │   └── InfoPanelCommentModal.tsx
+│   │   │   │       ├── f8f5f3f2
+│   │   │   │       │   ├── InfoPanelBase.tsx
+│   │   │   │       │   ├── InfoPanelF2.tsx
+│   │   │   │       │   ├── InfoPanelF3.tsx
+│   │   │   │       │   ├── InfoPanelF5.tsx
+│   │   │   │       │   └── InfoPanelF8.tsx
+│   │   │   │       ├── legal
+│   │   │   │       │   └── InfoPanelLegal.tsx
+│   │   │   │       ├── namecomment
+│   │   │   │       │   └── InfoPanelNameComment.tsx
+│   │   │   │       ├── prize
+│   │   │   │       │   └── InfoPanelPrize.tsx
+│   │   │   │       └── projectimage
+│   │   │   │           └── InfoPanelProjectImage.tsx
+│   │   │   ├── provider
+│   │   │   │   ├── InfoPanel3.tsx
+│   │   │   │   ├── InfoPanelProvider.tsx
+│   │   │   │   └── InfoPanelStyles3.tsx
+│   │   │   └── published
+│   │   │       └── InfoPanelPublished.tsx
+│   │   └── welcome
+│   │       ├── WelcomeMessage.tsx
+│   │       ├── WelcomeMessageAdmin.tsx
+│   │       ├── WelcomeMessageBruger.tsx
+│   │       └── WelcomeMessageDesigner.tsx
+│   ├── newuser
+│   │   └── EnsureProfileImage.tsx
+│   └── themed
+│       ├── Themed.tsx
+│       ├── ThemedText.tsx
+│       └── ThemedView.tsx
+├── constants
+│   ├── Colors.ts
+│   ├── ImageConfig.ts
+│   └── types
+│       └── index.ts
+├── eas.json
+├── expo-env.d.ts
+├── filtræ.txt
+├── firebaseConfig.ts
+├── hooks
+│   ├── useAuth.tsx
+│   ├── useColorScheme.ts
+│   ├── useColorScheme.web.ts
+│   ├── useThemeColor.ts
+│   └── useVisibilityContext.tsx
+├── metro.config.js
+├── package-lock.json
+├── package.json
+├── scripts
+│   └── reset-project.js
+├── tsconfig.json
+├── types
+│   └── ProjectData.ts
+└── utils
+    ├── filePaths.ts
+    └── storageUtils.ts
+
+61 directories, 145 files

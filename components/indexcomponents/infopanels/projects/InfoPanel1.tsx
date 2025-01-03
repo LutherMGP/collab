@@ -30,7 +30,7 @@ import InfoPanelProjectImage from "@/components/indexcomponents/infopanels/proje
 import InfoPanelCommentModal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/comment/InfoPanelCommentModal";
 import InfoPanelAttachment from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/attachment/InfoPanelAttachment";
 import InfoPanelCircular from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/circular/InfoPanelCircular";
-import InfoPanelLegal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/legal/InfoPanelLegal"; // Tilføjet import
+import InfoPanelLegal from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/legal/InfoPanelLegal";
 import { Colors } from "@/constants/Colors";
 import { styles as baseStyles } from "components/indexcomponents/infopanels/projects/InfoPanelStyles1";
 import { FilePaths } from "@/utils/filePaths";
@@ -878,13 +878,15 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               currentDescription={projectData.legalDescription || "Ingen beskrivelse tilgængelig"}
               projectId={projectData.id}
               userId={userId || ""}
-              onSave={(newDescription) => {
+              onSave={(legalDetails) => {
                 setProjectData((prev) => ({
                   ...prev,
-                  legalDescription: newDescription, // Opdaterer juridisk beskrivelse
+                  legalDescription: legalDetails.description,
+                  containsBrand: legalDetails.containsBrand,
+                  brandConsent: legalDetails.brandConsent,
                 }));
               }}
-              isEditable={isEditEnabled}
+              isEditable={isEditEnabled} // Prop sikrer beskyttelse
             />
           </View>
         </View>

@@ -8,6 +8,15 @@ export interface Applicant {
   appliedAt: string; // Tidsstempel for ansøgning
 }
 
+export interface InfoPanelCircularProps {
+  onClose: () => void;
+  projectId: string;
+  userId: string;
+  onSave: (data: CircularEconomyData) => void;
+  isEditable: boolean;
+  currentData?: CircularEconomyData;
+}
+
 export type CircularEconomyData = {
   waterUsage: { value: number; description: string };
   CO2Emission: { value: number; description: string };

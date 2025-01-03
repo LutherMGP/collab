@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
-import { Colors } from "@/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImageManipulator from 'expo-image-manipulator';

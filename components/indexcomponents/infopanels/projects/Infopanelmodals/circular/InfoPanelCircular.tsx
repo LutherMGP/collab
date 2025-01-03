@@ -61,7 +61,7 @@ const InfoPanelCircular = ({
       ...prevData,
       [field]: {
         ...prevData[field],
-        [key]: key === "value" ? parseFloat(value) || 0 : value,
+        [key]: key === "value" ? parseInt(value.replace(/,/g, ''), 10) || 0 : value,
       },
     }));
   };
@@ -106,7 +106,7 @@ const InfoPanelCircular = ({
         {/* Vandforbrug */}
         <View style={styles.section}>
           <FontAwesome5 name="water" size={24} color="#0a7ea4" />
-          <Text style={styles.sectionTitle}>Vandforbrug</Text>
+          <Text style={styles.sectionTitle}>Vandforbrug (liter)</Text>
           {isEditable ? (
             <>
               <TextInput
@@ -141,7 +141,7 @@ const InfoPanelCircular = ({
         {/* CO2-aftryk */}
         <View style={styles.section}>
           <FontAwesome5 name="cloud" size={24} color="#0a7ea4" />
-          <Text style={styles.sectionTitle}>CO2 Udledning</Text>
+          <Text style={styles.sectionTitle}>CO2 Udledning (kg)</Text>
           {isEditable ? (
             <>
               <TextInput

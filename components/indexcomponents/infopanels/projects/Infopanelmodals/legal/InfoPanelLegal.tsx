@@ -1,6 +1,6 @@
 // @/components/indexcomponents/infopanels/projects/infopanelmodals/legal/InfoPanelLegal.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   ScrollView,
   Switch,
 } from "react-native";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 type InfoPanelLegalProps = {
@@ -21,7 +21,11 @@ type InfoPanelLegalProps = {
   currentDescription: string | null;
   projectId: string;
   userId: string;
-  onSave: (newDescription: string, brandConsent: boolean) => void;
+  onSave: (legalDetails: { 
+    description: string; 
+    containsBrand: boolean; 
+    brandConsent: boolean; 
+  }) => void;
   isEditable: boolean;
 };
 
@@ -31,11 +35,37 @@ const InfoPanelLegal = ({
   projectId,
   userId,
   onSave,
+  isEditable,
 }: InfoPanelLegalProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [description, setDescription] = useState(currentDescription || "");
   const [containsBrand, setContainsBrand] = useState(false);
   const [brandConsent, setBrandConsent] = useState(false);
+
+  // Hent data fra Firestore, når komponenten mountes
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const projectRef = doc(database, "users", userId, "projects", projectId);
+        const snapshot = await getDoc(projectRef);
+        if (snapshot.exists()) {
+          const legalDetails = snapshot.data()?.legalDetails;
+          if (legalDetails) {
+            setDescription(legalDetails.description || "");
+            setContainsBrand(legalDetails.containsBrand || false);
+            setBrandConsent(legalDetails.brandConsent || false);
+          }
+        } else {
+          Alert.alert("Fejl", "Data kunne ikke hentes.");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af data:", error);
+        Alert.alert("Fejl", "Kunne ikke hente data. Prøv igen senere.");
+      }
+    };
+
+    fetchData();
+  }, [projectId, userId]);
 
   const handleSave = async () => {
     if (!description.trim()) {
@@ -53,15 +83,16 @@ const InfoPanelLegal = ({
     setIsSaving(true);
 
     try {
-      const projectRef = doc(database, "users", userId, "projects", projectId);
-      await updateDoc(projectRef, {
-        legalDescription: description,
+      const legalDetails = {
+        description,
         containsBrand,
         brandConsent,
-      });
+      };
 
-      onSave(description, brandConsent);
+      const projectRef = doc(database, "users", userId, "projects", projectId);
+      await updateDoc(projectRef, { legalDetails });
 
+      onSave(legalDetails); // Send det opdaterede objekt tilbage
       Alert.alert("Opdateret", "Juridiske data er blevet gemt.");
       onClose();
     } catch (error) {
@@ -84,7 +115,7 @@ const InfoPanelLegal = ({
           placeholder="Beskriv juridiske detaljer"
           value={description}
           onChangeText={setDescription}
-          editable={!isSaving}
+          editable={isEditable && !isSaving}
           multiline
         />
         <View style={styles.switchContainer}>
@@ -92,7 +123,7 @@ const InfoPanelLegal = ({
           <Switch
             value={containsBrand}
             onValueChange={setContainsBrand}
-            disabled={isSaving}
+            disabled={!isEditable || isSaving}
           />
         </View>
         {containsBrand && (
@@ -101,7 +132,7 @@ const InfoPanelLegal = ({
             <Switch
               value={brandConsent}
               onValueChange={setBrandConsent}
-              disabled={isSaving}
+              disabled={!isEditable || isSaving}
             />
           </View>
         )}
@@ -109,7 +140,7 @@ const InfoPanelLegal = ({
           <Pressable
             style={styles.saveButton}
             onPress={handleSave}
-            disabled={isSaving}
+            disabled={!isEditable || isSaving}
           >
             <Text style={styles.saveButtonText}>
               {isSaving ? "Gemmer..." : "Gem"}
