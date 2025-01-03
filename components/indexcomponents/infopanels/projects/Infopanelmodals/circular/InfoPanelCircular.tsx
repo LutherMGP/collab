@@ -128,10 +128,10 @@ const InfoPanelCircular = ({
           ) : (
             <>
               <Text style={styles.readOnly}>
-                Vandforbrug: {data.waterUsage.value} liter
+                Vandforbrug: {data.waterUsage.value || "Ikke angivet"} liter
               </Text>
               <Text style={styles.readOnly}>
-                Beskrivelse: {data.waterUsage.description || "Ingen beskrivelse"}
+                CO2 Udledning: {data.CO2Emission.value || "Ikke angivet"} kg
               </Text>
             </>
           )}
