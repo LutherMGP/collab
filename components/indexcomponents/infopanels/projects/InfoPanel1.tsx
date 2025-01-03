@@ -393,8 +393,12 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           style={[baseStyles.nameText, { color: Colors[theme].tint }]}
           onPress={() => handlePress("Name & Comment")}
         >
-          {String(projectData.name || "Uden navn")}
+          {/* Sikrer, at teksten altid er en streng */}
+          {typeof projectData.name === "string" && projectData.name.trim() !== ""
+            ? projectData.name
+            : "Uden navn"}
         </Text>
+
         <Text
           style={[baseStyles.commentText, { color: Colors[theme].text }]}
           numberOfLines={showFullComment ? undefined : 1}
@@ -404,151 +408,167 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             setShowFullComment(!showFullComment);
           }}
         >
-          {String(projectData.description || "Ingen kommentar")}
+          {/* Sikrer, at beskrivelsen altid er en streng */}
+          {typeof projectData.description === "string" && projectData.description.trim() !== ""
+            ? projectData.description
+            : "Ingen kommentar"}
         </Text>
       </View>
 
       {/* F8 felt */}
       <View style={baseStyles.f8Container}>
-      <Pressable
-        style={baseStyles.F8}
-        onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
-        onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
-        accessibilityLabel="F8 Button"
-      >
-        {/* Vis billede, hvis det er tilgængeligt */}
-        {projectData.f8CoverImageLowRes ? (
-          <Image
-            source={{
-              uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-            }}
-            style={baseStyles.f8CoverImage}
-          />
-        ) : (
-          <Text style={baseStyles.text}>Ingen billede tilgængeligt</Text>
-        )}
-
-        {/* Tekst i f8 toppen */}
-        <View style={baseStyles.textTag}>
-          <Text style={baseStyles.text}>Specification</Text>
-        </View>
-
-        {/* Projektbilledet i det runde felt */}
-        {projectData.projectImage ? (
-          <Pressable
-            style={baseStyles.projectImageContainer}
-            onPress={
-              isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined
-            }
-            accessibilityLabel="Project Image Button"
-            disabled={!isEditEnabled}
-          >
+        <Pressable
+          style={baseStyles.F8}
+          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
+          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
+          accessibilityLabel="F8 Button"
+        >
+          {/* Vis billede, hvis det er tilgængeligt */}
+          {projectData?.f8CoverImageLowRes && typeof projectData.f8CoverImageLowRes === "string" ? (
             <Image
               source={{
-                uri:
-                  typeof projectData.projectImage === "string" && projectData.projectImage
-                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                    : "fallback-image-uri", // Angiv en fallback-URI
+                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
               }}
-              style={baseStyles.projectImage}
+              style={baseStyles.f8CoverImage}
+              resizeMode="contain" // Tilføjer bedre skalering af billedet
             />
+          ) : (
+            <Text style={[baseStyles.text, { color: "gray", textAlign: "center", fontStyle: "italic" }]}>
+              Ingen billede tilgængeligt
+            </Text>
+          )}
+
+          {/* Tekst i f8 toppen */}
+          <View style={baseStyles.textTag}>
+            <Text style={baseStyles.text}>Specification</Text>
+          </View>
+
+          {/* Projektbilledet i det runde felt */}
+          {projectData?.projectImage && typeof projectData.projectImage === "string" ? (
+            <Pressable
+              style={baseStyles.projectImageContainer}
+              onPress={
+                isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined
+              }
+              accessibilityLabel="Project Image Button"
+              disabled={!isEditEnabled}
+            >
+              <Image
+                source={{
+                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
+                }}
+                style={baseStyles.projectImage}
+              />
+            </Pressable>
+          ) : (
+            <Text style={[baseStyles.text, { color: "gray", textAlign: "center" }]}>
+              Ingen projektbillede
+            </Text>
+          )}
+
+          {/* Delete-knap */}
+          <Pressable
+            style={baseStyles.deleteIconContainer}
+            onPress={handleDelete}
+            accessibilityLabel="Delete Button"
+          >
+            <AntDesign name="delete" size={20} color="#0a7ea4" />
           </Pressable>
-        ) : (
-          <Text style={baseStyles.text}>Ingen projektbillede</Text>
-        )}
 
-        {/* Delete-knap */}
-        <Pressable
-          style={baseStyles.deleteIconContainer}
-          onPress={handleDelete}
-          accessibilityLabel="Delete Button"
-        >
-          <AntDesign name="delete" size={20} color="#0a7ea4" />
-        </Pressable>
+          {/* Comment-knap f8 */}
+          <Pressable
+            style={baseStyles.commentButtonf8}
+            onPress={() => handleOpenCommentModal("f8")}
+            accessibilityLabel="Comment Button"
+          >
+            <AntDesign name="message1" size={20} color="#0a7ea4" />
+          </Pressable>
 
-        {/* Comment-knap f8 */}
-        <Pressable
-          style={baseStyles.commentButtonf8}
-          onPress={() => handleOpenCommentModal("f8")}
-          accessibilityLabel="Comment Button"
-        >
-          <AntDesign name="message1" size={20} color="#0a7ea4" />
+          {/* Attachment-knap */}
+          <Pressable
+            style={baseStyles.attachmentButton}
+            onPress={openAttachmentModal}
+            accessibilityLabel="Attachment Button"
+          >
+            <Entypo name="attachment" size={20} color="#0a7ea4" />
+          </Pressable>
         </Pressable>
-
-        {/* Attachment-knap */}
-        <Pressable
-          style={baseStyles.attachmentButton}
-          onPress={openAttachmentModal}
-          accessibilityLabel="Attachment Button"
-        >
-          <Entypo name="attachment" size={20} color="#0a7ea4" />
-        </Pressable>
-      </Pressable>
       </View>
 
       {/* Nedre container */}
       <View style={baseStyles.lowerContainer}>
         <View style={baseStyles.leftSide}>
           <View style={baseStyles.topSide}>
-            <View style={baseStyles.f2leftTop}>
-              <Pressable
-                style={baseStyles.F2}
-                onPress={() => handlePress("F2")}
-                onLongPress={() => handleLongPress("f2PDF")}
-                accessibilityLabel="F2 Button"
-              >
-                {/* Vis billede, hvis det er tilgængeligt */}
-                {projectData.f2CoverImageLowRes && (
-                  <Image
-                    source={{
-                      uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                    }}
-                    style={baseStyles.f2CoverImage}
-                  />
-                )}
+          <View style={baseStyles.f2leftTop}>
+            <Pressable
+              style={baseStyles.F2}
+              onPress={() => handlePress("F2")}
+              onLongPress={() => handleLongPress("f2PDF")}
+              accessibilityLabel="F2 Button"
+            >
+              {/* Vis billede, hvis det er tilgængeligt */}
+              {projectData?.f2CoverImageLowRes && typeof projectData.f2CoverImageLowRes === "string" ? (
+                <Image
+                  source={{
+                    uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                  }}
+                  style={baseStyles.f2CoverImage}
+                  resizeMode="contain" // Sikrer korrekt skalering af billedet
+                />
+              ) : (
+                <Text style={[baseStyles.text, { color: "gray", textAlign: "center", fontStyle: "italic" }]}>
+                  Ingen billede tilgængeligt
+                </Text>
+              )}
 
-                {/* Tekst i f2 toppen */}
-                <View style={baseStyles.textTag}>
-                  <Text style={baseStyles.text}>Agreement</Text>
-                </View>
-              </Pressable>
+              {/* Tekst i f2 toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Agreement</Text>
+              </View>
+            </Pressable>
 
-              {/* Comment-knap f2 */}
+            {/* Comment-knap f2 */}
+            <Pressable
+              style={baseStyles.commentButtonf2}
+              onPress={() => handleOpenCommentModal("f2")}
+              accessibilityLabel="Comment Button"
+            >
+              <AntDesign name="message1" size={20} color="#0a7ea4" />
+            </Pressable>
+          </View>
+          <View style={baseStyles.rightTop}>
+            <View style={baseStyles.f1topHalf}>
               <Pressable
-                style={baseStyles.commentButtonf2}
-                onPress={() => handleOpenCommentModal("f2")}
+                style={baseStyles.F1A}
+                onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
+                accessibilityLabel="Edit Button"
               >
-                <AntDesign name="message1" size={20} color="#0a7ea4" />
+                <AntDesign
+                  name="edit" // Ikon ændret til "edit"
+                  size={24}
+                  color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
+                />
               </Pressable>
             </View>
-            <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
-                  accessibilityLabel="Edit Button"
-                >
-                  <AntDesign
-                    name="edit" // Ikon ændret til "edit"
-                    size={24}
-                    color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
-                  />
-                </Pressable>
-              </View>
-              <View style={baseStyles.f1bottomHalf}>
-                <Pressable
-                  style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Kalder funktionen for at skifte status
-                  accessibilityLabel="Status Toggle Button"
-                >
-                  <AntDesign
-                    name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
-                    size={24}
-                    color="#0a7ea4" // Farve forbliver ens
-                  />
-                </Pressable>
-              </View>
+
+            <View style={baseStyles.f1bottomHalf}>
+              <Pressable
+                style={baseStyles.F1B}
+                onPress={handleStatusToggle} // Kalder funktionen for at skifte status
+                accessibilityLabel="Status Toggle Button"
+              >
+                <AntDesign
+                  name={
+                    projectData?.status === "Published" // Tjekker om status er defineret og om den er "Published"
+                      ? "unlock"
+                      : "lock"
+                  } // Dynamisk ikon
+                  size={24}
+                  color="#0a7ea4" // Farve forbliver ens
+                />
+              </Pressable>
             </View>
+          </View>
           </View>
           <View style={baseStyles.f3bottomSide}>
             <Pressable
@@ -558,13 +578,17 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
-              {projectData.f3CoverImageLowRes && (
+              {projectData?.f3CoverImageLowRes && typeof projectData.f3CoverImageLowRes === "string" ? (
                 <Image
                   source={{
                     uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
                   }}
                   style={baseStyles.f3CoverImage}
                 />
+              ) : (
+                <Text style={[baseStyles.text, { color: "gray", textAlign: "center" }]}>
+                  Ingen billede tilgængeligt
+                </Text>
               )}
 
               {/* Tekst i F3 toppen */}
@@ -576,6 +600,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <Pressable
                 style={baseStyles.commentButtonf3}
                 onPress={() => handleOpenCommentModal("f3")}
+                accessibilityLabel="Comment Button"
               >
                 <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
@@ -592,53 +617,72 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
         </View>
         <View style={baseStyles.f5Side}>
+        <Pressable
+          style={[baseStyles.F5, { right: rightMargin }]}
+          onPress={() => handlePress("F5")}
+          onLongPress={() => handleLongPress("f5PDF")}
+          accessibilityLabel="F5 Button"
+        >
+          {/* Vis billede, hvis det er tilgængeligt */}
+          {projectData?.f5CoverImageLowRes && typeof projectData.f5CoverImageLowRes === "string" ? (
+            <Image
+              source={{
+                uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+              }}
+              style={baseStyles.f5CoverImage}
+            />
+          ) : (
+            <Text style={[baseStyles.text, { color: "gray", textAlign: "center" }]}>
+              Ingen billede tilgængeligt
+            </Text>
+          )}
+
+          {/* Tekst i f5 toppen */}
+          <View style={baseStyles.textTag}>
+            <Text style={baseStyles.text}>Terms & Condition</Text>
+          </View>
+
+          {/* Comment-knap f5 */}
           <Pressable
-            style={[baseStyles.F5, { right: rightMargin }]}
-            onPress={() => handlePress("F5")}
-            onLongPress={() => handleLongPress("f5PDF")}
-            accessibilityLabel="F5 Button"
+            style={baseStyles.commentButtonf5}
+            onPress={() => handleOpenCommentModal("f5")}
+            accessibilityLabel="Comment Button"
           >
-            {/* Vis billede, hvis det er tilgængeligt */}
-            {projectData.f5CoverImageLowRes && (
-              <Image
-                source={{
-                  uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                }}
-                style={baseStyles.f5CoverImage}
-              />
-            )}
-
-            {/* Tekst i f5 toppen */}
-            <View style={baseStyles.textTag}>
-              <Text style={baseStyles.text}>Terms & Condition</Text>
-            </View>
-
-            {/* Comment-knap f5 */}
-            <Pressable
-              style={baseStyles.commentButtonf5}
-              onPress={() => handleOpenCommentModal("f5")}
-            >
-              <AntDesign name="message1" size={20} color="#0a7ea4" />
-            </Pressable>
+            <AntDesign name="message1" size={20} color="#0a7ea4" />
           </Pressable>
+        </Pressable>
 
-          {/* Prize-knap */}
-          <Pressable
-            style={baseStyles.prizeTagF5}
-            onPress={handlePrizePress} // Brug den nye funktion
-            accessibilityLabel="Prize Button"
-          >
-            <AntDesign name="swap" size={20} color="#0a7ea4" />
-          </Pressable>
+        {/* Prize-knap */}
+        <Pressable
+          style={baseStyles.prizeTagF5}
+          onPress={() => {
+            try {
+              handlePrizePress(); // Brug den nye funktion
+            } catch (error) {
+              console.error("Fejl ved Prize-knap:", error);
+              Alert.alert("Fejl", "Kunne ikke udføre handlingen. Prøv igen.");
+            }
+          }}
+          accessibilityLabel="Prize Button"
+        >
+          <AntDesign name="swap" size={20} color="#0a7ea4" />
+        </Pressable>
 
-          {/* Legal-knap placeret nederst i midten */}
-          <Pressable
-            style={[baseStyles.legalTagF5, { alignSelf: "center", marginTop: 10 }]} // Placer centralt og justér margin
-            onPress={() => setIsLegalModalVisible(true)} // Åbn modal
-            accessibilityLabel="Legal Button"
-          >
-            <AntDesign name="copyright" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
-          </Pressable>
+        {/* Legal-knap placeret nederst i midten */}
+        <Pressable
+          style={[baseStyles.legalTagF5, { alignSelf: "center", marginTop: 10 }]} // Placer centralt og justér margin
+          onPress={() => {
+            try {
+              setIsLegalModalVisible(true); // Åbn modal
+            } catch (error) {
+              console.error("Fejl ved Legal-knap:", error);
+              Alert.alert("Fejl", "Kunne ikke åbne legal modal. Prøv igen.");
+            }
+          }}
+          accessibilityLabel="Legal Button"
+        >
+          <AntDesign name="copyright" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
+        </Pressable>
         </View>
       </View>
 
