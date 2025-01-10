@@ -113,7 +113,7 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   
       Alert.alert(
         "Godkendt",
-        "Ansøgeren er blevet godkendt, og chatten er oprettet i 'chats'-samlingen."
+        "Du er blevet godkendt, gå til DD for at fortsætte."
       );
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);
