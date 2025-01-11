@@ -63,6 +63,14 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: true,
+        headerStyle: {
+          borderBottomWidth: 0.3,
+          borderBottomColor: "#0a7ea4",
+        },
+        tabBarStyle: {
+          borderTopWidth: 0.3,
+          borderTopColor: "#0a7ea4",
+        },
       }}
     >
       {/* 'index' Tab */}
@@ -91,10 +99,11 @@ export default function TabLayout() {
             <Image
               source={
                 colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
+                  ? require("assets/icons/Fibonomic_icon688x315_light.png")
+                  : require("assets/icons/Fibonomic_icon688x315_light.png")
               }
-              style={{ width: 85, height: 43, marginLeft: 14 }}
+              style={{ width: 67, height: 50, marginLeft: 5, marginBottom: 6 }}
+              resizeMode="contain"
             />
           ),
           headerRight: () => (
