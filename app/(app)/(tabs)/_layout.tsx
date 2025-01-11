@@ -168,6 +168,69 @@ export default function TabLayout() {
         }}
       />
 
+      {/* 'FiboShare' Tab */}
+      <Tabs.Screen
+        name="fiboshare"
+        options={{
+          title: "",
+          tabBarLabel: "",
+          tabBarIcon: () => (
+            <View
+              style={{
+                width: 45,
+                height: 45,
+                borderRadius: 14,
+                //borderWidth: 1,
+                borderColor: "#ccc",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+                marginBottom: -10,
+              }}
+            >
+              <Image
+                source={
+                  colorScheme === "dark"
+                    ? require("assets/icons/FiboShare_icon180x180.png")
+                    : require("assets/icons/FiboShare_icon180x180.png")
+                }
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  resizeMode: "cover",
+                }}
+              />
+            </View>
+          ),
+          headerLeft: () => (
+            <Image
+              source={
+                colorScheme === "dark"
+                  ? require("@/assets/images/logo/genfoedthub_dark.png")
+                  : require("@/assets/images/logo/genfoedthub_light.png")
+              }
+              style={{ width: 85, height: 43, marginLeft: 14 }}
+            />
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: "row" }}>
+              <Link href="/modal_account" asChild>
+                <Pressable>
+                  {({ pressed }) => (
+                    <FontAwesome
+                      name="info-circle"
+                      size={28}
+                      color={Colors[colorScheme ?? "light"].text}
+                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                    />
+                  )}
+                </Pressable>
+              </Link>
+            </View>
+          ),
+        }}
+      />
+
       {/* 'admin' Tab */}
       <Tabs.Screen
         name="admin"
