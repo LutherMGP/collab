@@ -394,7 +394,7 @@ const InfoPanel6 = ({ projectData: initialProjectData }: InfoPanelProps) => {
           <ActivityIndicator size="large" color="blue" />
         </View>
       )}
-      <View style={[baseStyles.separator, { backgroundColor: Colors[theme].icon }]} />
+      <View style={[baseStyles.separator]} />
     </ScrollView>
   );
 };

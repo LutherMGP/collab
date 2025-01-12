@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: "1.5%",
     marginTop: "0.3%",
+    borderColor: "#0a7ea4",
   },
   infoPanelProjectsContainer: {
     width: "100%",

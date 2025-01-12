@@ -403,6 +403,7 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: "1.5%",
     marginTop: "3%",
+    backgroundColor: "#0a7ea4",
   },
   // Modal styles
   modalContainer: {
