@@ -17,7 +17,7 @@ import {
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -178,8 +178,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
+  // Delete-funktion til at slette projektet og fjerne det fra favoritter hos andre brugere
   const handleDelete = () => {
-    // Always show Delete button since config.showDelete is removed
     Alert.alert(
       "Bekræft Sletning",
       "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
@@ -195,11 +195,34 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 console.log("userId:", userId, "projectData.id:", projectData.id);
                 return;
               }
-
+  
               const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-              await deleteDoc(projectDocRef); 
+  
+              // Fjern projektet fra alle `favorites` collections
+              const usersRef = collection(database, "users");
+              const usersSnapshot = await getDocs(usersRef);
+  
+              for (const userDoc of usersSnapshot.docs) {
+                const favoritesRef = doc(
+                  database,
+                  "users",
+                  userDoc.id,
+                  "favorites",
+                  projectData.id
+                );
+  
+                const favoriteSnap = await getDoc(favoritesRef);
+  
+                if (favoriteSnap.exists()) {
+                  await deleteDoc(favoritesRef);
+                  console.log(`Projekt ${projectData.id} fjernet fra bruger ${userDoc.id}'s favorites.`);
+                }
+              }
+  
+              // Slet selve projektet
+              await deleteDoc(projectDocRef);
               console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
+              Alert.alert("Success", "Projektet er blevet slettet og fjernet fra favoritter.");
             } catch (error) {
               console.error("Fejl ved sletning af projekt:", error);
               Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");

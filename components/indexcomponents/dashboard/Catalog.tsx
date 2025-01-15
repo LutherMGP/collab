@@ -37,7 +37,7 @@ const Catalog = () => {
 
       const usersRef = collection(database, "users");
       const usersUnsubscribe = onSnapshot(usersRef, (usersSnapshot) => {
-        catalogProjects.clear(); // Rens mængden for at opdatere dynamisk
+        catalogProjects.clear(); // Nulstil projekter ved hver ændring
 
         usersSnapshot.docs.forEach((userDoc) => {
           if (userDoc.id === user) return; // Spring den aktuelle bruger over
@@ -68,11 +68,6 @@ const Catalog = () => {
                   getProjectCounts("Catalog").then((updatedCount) => {
                     setCatalogCount(updatedCount);
                   });
-                });
-              } else {
-                // Hvis ingen ændring, brug den aktuelle JSON-værdi
-                getProjectCounts("Catalog").then((unchangedCount) => {
-                  setCatalogCount(unchangedCount);
                 });
               }
             });
