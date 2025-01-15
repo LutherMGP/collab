@@ -5,40 +5,25 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  CollectionReference,
-  DocumentData,
-} from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { syncWithFirestore } from "@/services/syncWithFirestore";
+import { getProjectCounts } from "@/services/projectCountsService";
 
 const Projects = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // user er en string (brugerens ID)
   const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } = useVisibility();
   const [projectCount, setProjectCount] = useState(0); // Antal projekter med status "Project"
 
   useEffect(() => {
     if (!user) return;
 
-    const projectCollection = collection(
-      database,
-      "users",
-      user,
-      "projects"
-    ) as CollectionReference<DocumentData>;
+    // Start Firestore-synkronisering
+    syncWithFirestore(user, "Project"); // Brug user direkte som ID
 
-    // Forespørgsel for projekter med status "Project"
-    const projectQuery = query(projectCollection, where("status", "==", "Project"));
-    const unsubscribeProjects = onSnapshot(projectQuery, (querySnapshot) => {
-      setProjectCount(querySnapshot.size); // Opdater antallet af projekter
-    });
-
-    return () => {
-      unsubscribeProjects(); // Ryd op efter forespørgslen
-    };
+    // Hent initialt antal projekter fra lokal JSON-fil
+    (async () => {
+      const count = await getProjectCounts("Project");
+      setProjectCount(count);
+    })();
   }, [user]);
 
   const handlePress = () => {
