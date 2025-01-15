@@ -10,9 +10,9 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Catalog = () => {
-  const { user } = useAuth(); // Brugerens ID
+  const { user } = useAuth();
   const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } = useVisibility();
-  const [catalogCount, setCatalogCount] = useState(0); // Antal ikke-favoritprojekter
+  const [catalogCount, setCatalogCount] = useState(0); // Antal katalogprojekter
 
   useEffect(() => {
     if (!user) return;
@@ -20,46 +20,49 @@ const Catalog = () => {
     const catalogProjects = new Set<string>();
     const favoriteProjectIds = new Set<string>();
 
-    // Overvåg katalogprojekter
-    const usersRef = collection(database, "users");
-    const usersUnsubscribe = onSnapshot(usersRef, (usersSnapshot) => {
-      catalogProjects.clear();
+    // Overvåg favoritter og filtrer katalogprojekter
+    const favoritesRef = collection(database, "users", user, "favorites");
+    const favoritesUnsubscribe = onSnapshot(favoritesRef, (favoritesSnapshot) => {
+      favoriteProjectIds.clear();
+      favoritesSnapshot.docs.forEach((doc) => {
+        favoriteProjectIds.add(doc.data().projectId);
+      });
 
-      usersSnapshot.docs.forEach((userDoc) => {
-        if (userDoc.id === user) return; // Spring den aktuelle bruger over
-        const projectsRef = collection(userDoc.ref, "projects");
-        const projectsQuery = query(projectsRef, where("status", "==", "Published"));
+      // Overvåg katalogprojekter
+      const usersRef = collection(database, "users");
+      const usersUnsubscribe = onSnapshot(usersRef, (usersSnapshot) => {
+        catalogProjects.clear();
 
-        onSnapshot(projectsQuery, (projectsSnapshot) => {
-          projectsSnapshot.forEach((projectDoc) => {
-            if (!favoriteProjectIds.has(projectDoc.id)) {
-              catalogProjects.add(projectDoc.id);
-            }
-          });
+        usersSnapshot.docs.forEach((userDoc) => {
+          if (userDoc.id === user) return; // Spring den aktuelle bruger over
+          const projectsRef = collection(userDoc.ref, "projects");
+          const projectsQuery = query(projectsRef, where("status", "==", "Published"));
 
-          const newCatalogCount = catalogProjects.size;
-          setCatalogCount(newCatalogCount);
+          onSnapshot(projectsQuery, (projectsSnapshot) => {
+            projectsSnapshot.forEach((projectDoc) => {
+              if (!favoriteProjectIds.has(projectDoc.id)) {
+                catalogProjects.add(projectDoc.id);
+              }
+            });
 
-          // Opdater Catalog i JSON
-          updateProjectCounts("Catalog", newCatalogCount).then(() => {
-            console.log("Catalog opdateret i JSON:", newCatalogCount);
+            const newCatalogCount = catalogProjects.size;
+            setCatalogCount(newCatalogCount);
+
+            // Opdater Catalog i JSON
+            updateProjectCounts("Catalog", newCatalogCount).then(() => {
+              console.log("Catalog opdateret i JSON:", newCatalogCount);
+            });
           });
         });
       });
+
+      return () => usersUnsubscribe(); // Ryd op efter overvågning af brugere
     });
 
     return () => {
-      usersUnsubscribe();
+      favoritesUnsubscribe();
     };
   }, [user]);
-
-  const handlePress = () => {
-    if (isInfoPanelCatalogVisible) {
-      hideAllPanels();
-    } else {
-      showPanel("catalog");
-    }
-  };
 
   useEffect(() => {
     // Hent initialt antal fra JSON
@@ -68,6 +71,14 @@ const Catalog = () => {
       setCatalogCount(initialCatalogCount);
     })();
   }, []);
+
+  const handlePress = () => {
+    if (isInfoPanelCatalogVisible) {
+      hideAllPanels();
+    } else {
+      showPanel("catalog");
+    }
+  };
 
   return (
     <View style={styles.container}>
