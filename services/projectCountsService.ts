@@ -5,6 +5,9 @@ import * as FileSystem from "expo-file-system";
 // Sti til den lokale JSON-fil
 const projectCountsFile = `${FileSystem.documentDirectory}projectCounts.json`;
 
+// Log filens sti
+console.log("JSON-filen er gemt her:", projectCountsFile);
+
 // Definer typen for dataobjektet
 type ProjectCountsData = { [key: string]: number };
 
@@ -38,8 +41,10 @@ export const getProjectCounts = async (status: string): Promise<number> => {
     if (await FileSystem.getInfoAsync(projectCountsFile).then((info) => info.exists)) {
       const fileContent = await FileSystem.readAsStringAsync(projectCountsFile);
       const data = JSON.parse(fileContent) as ProjectCountsData;
+      console.log("Hentet data fra JSON-fil:", data);
       return data[status] || 0; // TypeScript accepterer nu string-indeksering
     }
+    console.log("JSON-fil findes ikke. Returnerer 0.");
     return 0;
   } catch (error) {
     console.error("Fejl ved hentning af projektantal:", error);

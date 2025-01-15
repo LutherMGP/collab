@@ -5,8 +5,8 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { syncWithFirestore } from "@/services/syncWithFirestore";
-import { getProjectCounts } from "@/services/projectCountsService";
+import { syncWithFirestore } from "services/syncWithFirestore";
+import { getProjectCounts } from "services/projectCountsService";
 
 const Projects = () => {
   const { user } = useAuth(); // user er en string (brugerens ID)
@@ -16,8 +16,10 @@ const Projects = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Start Firestore-synkronisering
-    syncWithFirestore(user, "Project"); // Brug user direkte som ID
+    // Start Firestore-synkronisering med en callback
+    syncWithFirestore(user, "Project", (count) => {
+      setProjectCount(count); // Opdater state direkte
+    });
 
     // Hent initialt antal projekter fra lokal JSON-fil
     (async () => {
