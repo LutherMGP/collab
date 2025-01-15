@@ -5,59 +5,52 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  query,
-  onSnapshot,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { updateProjectCounts, getProjectCounts } from "services/projectCountsService";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 
 const Catalog = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Brugerens ID
   const { isInfoPanelCatalogVisible, showPanel, hideAllPanels } = useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Total antal projekter
+  const [catalogCount, setCatalogCount] = useState(0); // Antal ikke-favoritprojekter
 
-  // Logik: Tæller antallet af projekter fra andre brugere, der IKKE er markeret som favoritter 
-  // af den aktuelle bruger. Kun projekter med status "Project" inkluderes.
   useEffect(() => {
     if (!user) return;
-  
-    const fetchNonFavoriteProjectsCount = () => {
-      // Lyt til ændringer i favoritter
-      const favoritesCollection = collection(database, "users", user, "favorites");
-      const favoritesUnsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-        const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
-  
-        // Lyt til projekter fra andre brugere
-        const usersCollection = collection(database, "users");
-        const usersUnsubscribe = onSnapshot(usersCollection, async (usersSnapshot) => {
-          const fetchedProjects: string[] = [];
-  
-          for (const userDoc of usersSnapshot.docs) {
-            if (userDoc.id === user) continue; // Spring den aktuelle bruger over
-            const userProjectsCollection = collection(userDoc.ref, "projects");
-            const projectsQuery = query(userProjectsCollection, where("status", "==", "Published"));
-  
-            const projectsSnapshot = await getDocs(projectsQuery);
-            projectsSnapshot.forEach((projectDoc) => {
-              if (!favoriteProjectIds.includes(projectDoc.id)) {
-                fetchedProjects.push(projectDoc.id);
-              }
-            });
-          }
-  
-          setTotalCount(fetchedProjects.length);
+
+    const catalogProjects = new Set<string>();
+    const favoriteProjectIds = new Set<string>();
+
+    // Overvåg katalogprojekter
+    const usersRef = collection(database, "users");
+    const usersUnsubscribe = onSnapshot(usersRef, (usersSnapshot) => {
+      catalogProjects.clear();
+
+      usersSnapshot.docs.forEach((userDoc) => {
+        if (userDoc.id === user) return; // Spring den aktuelle bruger over
+        const projectsRef = collection(userDoc.ref, "projects");
+        const projectsQuery = query(projectsRef, where("status", "==", "Published"));
+
+        onSnapshot(projectsQuery, (projectsSnapshot) => {
+          projectsSnapshot.forEach((projectDoc) => {
+            if (!favoriteProjectIds.has(projectDoc.id)) {
+              catalogProjects.add(projectDoc.id);
+            }
+          });
+
+          const newCatalogCount = catalogProjects.size;
+          setCatalogCount(newCatalogCount);
+
+          // Opdater Catalog i JSON
+          updateProjectCounts("Catalog", newCatalogCount).then(() => {
+            console.log("Catalog opdateret i JSON:", newCatalogCount);
+          });
         });
-  
-        return () => usersUnsubscribe(); // Stop lytning på brugere
       });
-  
-      return () => favoritesUnsubscribe(); // Stop lytning på favoritter
+    });
+
+    return () => {
+      usersUnsubscribe();
     };
-  
-    fetchNonFavoriteProjectsCount();
   }, [user]);
 
   const handlePress = () => {
@@ -68,6 +61,14 @@ const Catalog = () => {
     }
   };
 
+  useEffect(() => {
+    // Hent initialt antal fra JSON
+    (async () => {
+      const initialCatalogCount = await getProjectCounts("Catalog");
+      setCatalogCount(initialCatalogCount);
+    })();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Image
@@ -75,8 +76,6 @@ const Catalog = () => {
         style={styles.profileImg}
         resizeMode="cover"
       />
-
-      {/* Tæller-knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
@@ -84,9 +83,8 @@ const Catalog = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{totalCount || 0}</Text>
+        <Text style={styles.countText}>{catalogCount || 0}</Text>
       </TouchableOpacity>
-
       <View style={styles.textContainer}>
         <Text style={styles.text}>Catalog</Text>
       </View>

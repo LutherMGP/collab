@@ -5,45 +5,21 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { getProjectCounts } from "services/projectCountsService";
 
 const Favorites = () => {
   const { user } = useAuth();
   const { isInfoPanelFavoritesVisible, showPanel, hideAllPanels } = useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Total antal favoritter
+  const [favoritesCount, setFavoritesCount] = useState(0); // Antal favoritprojekter
 
   useEffect(() => {
     if (!user) return;
 
-    // Reference til `favorites`-samlingen med filtrering
-    const favoritesCollection = collection(database, "users", user, "favorites");
-
-    // Lyt til ændringer i favoritter og opdater tælleren
-    const unsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-      const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
-
-      if (favoriteProjectIds.length === 0) {
-        setTotalCount(0);
-        return;
-      }
-
-      // Filtrer kun projekter med status "Published"
-      const projectsQuery = query(
-        collection(database, "projects"),
-        where("status", "==", "Published"),
-        where("__name__", "in", favoriteProjectIds) // Filtrér kun favoritprojekter
-      );
-
-      const unsubscribeProjects = onSnapshot(projectsQuery, (projectsSnapshot) => {
-        setTotalCount(projectsSnapshot.size); // Antallet af projekter med status "Published"
-      });
-
-      return () => unsubscribeProjects(); // Stop overvågning af projekter
-    });
-
-    // Ryd op ved unmount
-    return () => unsubscribe();
+    // Hent antal favoritter fra JSON-dokumentet
+    (async () => {
+      const count = await getProjectCounts("Favorites");
+      setFavoritesCount(count); // Opdater state baseret på JSON-data
+    })();
   }, [user]);
 
   const handlePress = () => {
@@ -70,7 +46,7 @@ const Favorites = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{totalCount || 0}</Text>
+        <Text style={styles.countText}>{favoritesCount || 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.textContainer}>

@@ -5,42 +5,25 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  CollectionReference,
-  DocumentData,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { syncWithFirestore } from "services/syncWithFirestore";
+import { getProjectCounts } from "services/projectCountsService";
 
 const Published = () => {
-  const theme = "light";
-  const { user } = useAuth();
-  const { isInfoPanelPublishedVisible, showPanel, hideAllPanels } =
-    useVisibility();
-  const [publishedCount, setPublishedCount] = useState(0);
+  const { user } = useAuth(); // user er en string (brugerens ID)
+  const { isInfoPanelPublishedVisible, showPanel, hideAllPanels } = useVisibility();
+  const [publishedCount, setPublishedCount] = useState(0); // Antal projekter med status "Published"
 
   useEffect(() => {
     if (!user) return;
 
-    // Opdater samlingsnavnet og status til de nye værdier
-    const projectCollection = collection(
-      database,
-      "users",
-      user,
-      "projects" // Opdateret samlingsnavn
-    ) as CollectionReference<DocumentData>;
+    // Start Firestore-synkronisering og opdater React state
+    syncWithFirestore(user, "Published", setPublishedCount);
 
-    // Opdater statusfilteret til den nye statusværdi
-    const q = query(projectCollection, where("status", "==", "Published")); // Opdateret statusværdi
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      setPublishedCount(querySnapshot.size); // Opdaterer publishedCount i realtid
-    });
-
-    return () => unsubscribe(); // Ryd op ved at unsubscribe, når komponenten unmountes
+    // Hent initialt antal projekter fra lokal JSON-fil
+    (async () => {
+      const count = await getProjectCounts("Published");
+      setPublishedCount(count);
+    })();
   }, [user]);
 
   const handlePress = () => {
@@ -49,9 +32,6 @@ const Published = () => {
     } else {
       showPanel("published");
     }
-    console.log(
-      `Published count button pressed. InfoPanelPublished visibility set to ${!isInfoPanelPublishedVisible}.`
-    );
   };
 
   return (
@@ -65,15 +45,15 @@ const Published = () => {
       <TouchableOpacity
         style={[
           styles.iconContainer,
-          isInfoPanelPublishedVisible ? styles.iconPressed : null, // Ændrer stil ved tryk
+          isInfoPanelPublishedVisible ? styles.iconPressed : null,
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.draftCountText}>{publishedCount}</Text>
+        <Text style={styles.draftCountText}>{publishedCount || 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.createStoryTextContainer}>
-        <Text style={[styles.createStoryText, { color: Colors[theme].text }]}>
+        <Text style={[styles.createStoryText, { color: Colors.light.text }]}>
           Published
         </Text>
       </View>
