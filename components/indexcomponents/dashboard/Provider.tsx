@@ -1,74 +1,57 @@
 // @/components/indexcomponents/dashboard/Provider.tsx
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, doc, onSnapshot, QuerySnapshot, DocumentData } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { updateProjectCounts, getProjectCounts } from "services/projectCountsService";
 
 const Provider = () => {
   const { user } = useAuth();
   const { isInfoPanelProviderVisible, showPanel, hideAllPanels } = useVisibility();
-  const [applicationCount, setApplicationCount] = useState(0);
-  const projectListenersRef = useRef<{ [projectId: string]: () => void }>({});
+  const [applicationCount, setApplicationCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
-  
-    const userProjectsCollection = collection(database, "users", user, "projects");
-  
-    const unsubscribeProjects = onSnapshot(
-      userProjectsCollection,
-      (projectsSnapshot: QuerySnapshot<DocumentData>) => {
-        const existingProjectIds = new Set(projectsSnapshot.docs.map((doc) => doc.id));
-        Object.keys(projectListenersRef.current).forEach((projectId) => {
-          if (!existingProjectIds.has(projectId)) {
-            projectListenersRef.current[projectId]();
-            delete projectListenersRef.current[projectId];
-          }
-        });
-  
-        let totalApplications = 0;
-  
-        projectsSnapshot.docs.forEach((projectDoc) => {
-          const projectId = projectDoc.id;
-  
-          if (projectListenersRef.current[projectId]) return;
-  
-          const projectRef = doc(database, "users", user, "projects", projectId);
-  
-          const unsubscribeApplicant = onSnapshot(
-            projectRef,
-            (docSnapshot) => {
-              const projectData = docSnapshot.data();
-  
-              // Tæl kun projekter med status 'Application'
-              if (projectData?.status === "Application") {
-                totalApplications += 1;
-              }
-  
-              setApplicationCount(totalApplications);
-            },
-            (error) => {
-              console.error(`Fejl ved lytning til projekt ${projectId}:`, error);
-            }
-          );
-  
-          projectListenersRef.current[projectId] = unsubscribeApplicant;
-        });
+
+    // 1. Start med at læse antallet fra JSON
+    (async () => {
+      const initialCount = await getProjectCounts("Provider");
+      setApplicationCount(initialCount);
+      console.log("Initialt antal (fra JSON):", initialCount);
+    })();
+
+    // 2. Lyt til Firestore og opdater JSON, hvis nødvendigt
+    const projectsRef = collection(database, "users", user, "projects");
+    const projectsQuery = query(projectsRef, where("status", "==", "Application"));
+
+    const unsubscribe = onSnapshot(
+      projectsQuery,
+      async (snapshot) => {
+        const firestoreCount = snapshot.size;
+
+        // Læs det tidligere antal fra JSON
+        const previousCount = await getProjectCounts("Provider");
+
+        // Hvis antallet i Firestore er anderledes, opdater JSON og state
+        if (firestoreCount !== previousCount) {
+          await updateProjectCounts("Provider", firestoreCount);
+          console.log("Provider opdateret i JSON:", firestoreCount);
+        }
+
+        // 3. Læs igen fra JSON for at sikre synkronisering
+        const updatedCount = await getProjectCounts("Provider");
+        setApplicationCount(updatedCount);
       },
       (error) => {
-        console.error("Fejl ved hentning af brugerens projekter:", error);
+        console.error("Fejl ved overvågning af Firestore:", error);
       }
     );
-  
-    return () => {
-      unsubscribeProjects();
-      Object.values(projectListenersRef.current).forEach((unsub) => unsub());
-      projectListenersRef.current = {};
-    };
+
+    return () => unsubscribe(); // Ryd op ved unmount
   }, [user]);
 
   const handlePress = () => {
@@ -93,7 +76,7 @@ const Provider = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{applicationCount}</Text>
+        <Text style={styles.countText}>{applicationCount ?? 0}</Text>
       </TouchableOpacity>
       <View style={styles.textContainer}>
         <Text style={styles.text}>Provider</Text>

@@ -20,7 +20,14 @@ const Catalog = () => {
     const catalogProjects = new Set<string>();
     const favoriteProjectIds = new Set<string>();
 
-    // Overvåg favoritter og filtrer katalogprojekter
+    // Hent initialt antal fra JSON
+    (async () => {
+      const initialCatalogCount = await getProjectCounts("Catalog");
+      setCatalogCount(initialCatalogCount);
+      console.log("Initialt antal (fra JSON):", initialCatalogCount);
+    })();
+
+    // Overvåg favoritter
     const favoritesRef = collection(database, "users", user, "favorites");
     const favoritesUnsubscribe = onSnapshot(favoritesRef, (favoritesSnapshot) => {
       favoriteProjectIds.clear();
@@ -33,26 +40,42 @@ const Catalog = () => {
       const usersUnsubscribe = onSnapshot(usersRef, (usersSnapshot) => {
         catalogProjects.clear();
 
-        usersSnapshot.docs.forEach((userDoc) => {
-          if (userDoc.id === user) return; // Spring den aktuelle bruger over
+        const promises = usersSnapshot.docs.map((userDoc) => {
+          if (userDoc.id === user) return Promise.resolve(); // Spring egen bruger over
+
           const projectsRef = collection(userDoc.ref, "projects");
           const projectsQuery = query(projectsRef, where("status", "==", "Published"));
 
-          onSnapshot(projectsQuery, (projectsSnapshot) => {
-            projectsSnapshot.forEach((projectDoc) => {
-              if (!favoriteProjectIds.has(projectDoc.id)) {
-                catalogProjects.add(projectDoc.id);
-              }
+          return new Promise<void>((resolve) => {
+            const unsubscribeProjects = onSnapshot(projectsQuery, (projectsSnapshot) => {
+              projectsSnapshot.forEach((projectDoc) => {
+                if (!favoriteProjectIds.has(projectDoc.id)) {
+                  catalogProjects.add(projectDoc.id);
+                }
+              });
+              resolve();
             });
 
-            const newCatalogCount = catalogProjects.size;
-            setCatalogCount(newCatalogCount);
-
-            // Opdater Catalog i JSON
-            updateProjectCounts("Catalog", newCatalogCount).then(() => {
-              console.log("Catalog opdateret i JSON:", newCatalogCount);
-            });
+            // Ryd op efter hver lytter
+            return () => unsubscribeProjects();
           });
+        });
+
+        // Når alle lyttere er opdateret, opdater state og JSON
+        Promise.all(promises).then(() => {
+          const newCatalogCount = catalogProjects.size;
+
+          // Kun opdater JSON, hvis værdien er ændret
+          getProjectCounts("Catalog").then((previousCount) => {
+            if (newCatalogCount !== previousCount) {
+              updateProjectCounts("Catalog", newCatalogCount).then(() => {
+                console.log("Catalog opdateret i JSON:", newCatalogCount);
+              });
+            }
+          });
+
+          // Opdater state
+          setCatalogCount(newCatalogCount);
         });
       });
 
@@ -60,17 +83,9 @@ const Catalog = () => {
     });
 
     return () => {
-      favoritesUnsubscribe();
+      favoritesUnsubscribe(); // Ryd op efter overvågning af favoritter
     };
   }, [user]);
-
-  useEffect(() => {
-    // Hent initialt antal fra JSON
-    (async () => {
-      const initialCatalogCount = await getProjectCounts("Catalog");
-      setCatalogCount(initialCatalogCount);
-    })();
-  }, []);
 
   const handlePress = () => {
     if (isInfoPanelCatalogVisible) {

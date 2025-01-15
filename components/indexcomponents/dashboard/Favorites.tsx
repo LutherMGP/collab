@@ -5,59 +5,36 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { updateProjectCounts, getProjectCounts } from "services/projectCountsService";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { updateProjectCounts, getProjectCounts } from "services/projectCountsService";
 
 const Favorites = () => {
   const { user } = useAuth();
   const { isInfoPanelFavoritesVisible, showPanel, hideAllPanels } = useVisibility();
-  const [favoritesCount, setFavoritesCount] = useState(0); // Antal favoritter
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
-    // Overvågning af `favorites`-samlingen
+    // Overvåg antallet af favoritter i Firestore
     const favoritesRef = collection(database, "users", user, "favorites");
-    const unsubscribe = onSnapshot(favoritesRef, (favoritesSnapshot) => {
-      const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
+    const unsubscribe = onSnapshot(favoritesRef, async (snapshot) => {
+      const count = snapshot.size;
+      setFavoriteCount(count);
 
-      if (favoriteProjectIds.length === 0) {
-        setFavoritesCount(0);
-
-        // Opdater JSON til 0 favoritter
-        updateProjectCounts("Favorites", 0).then(() => {
-          console.log("Favorites opdateret i JSON: 0");
-        });
-        return;
-      }
-
-      // Filtrer favoritter med status "Published"
-      const projectsQuery = query(
-        collection(database, "projects"),
-        where("status", "==", "Published"),
-        where("__name__", "in", favoriteProjectIds)
-      );
-
-      const unsubscribeProjects = onSnapshot(projectsQuery, async (projectsSnapshot) => {
-        const count = projectsSnapshot.size;
-        setFavoritesCount(count);
-
-        // Opdater JSON med det nye antal favoritter
-        await updateProjectCounts("Favorites", count);
-        console.log("Favorites opdateret i JSON:", count);
-      });
-
-      return () => unsubscribeProjects(); // Stop overvågning af projekter
+      // Opdater JSON-filen med antallet af favoritter
+      await updateProjectCounts("Favorites", count);
+      console.log("Favorites opdateret i JSON:", count);
     });
 
-    // Hent initialt antal fra JSON
+    // Indlæs initialt antal fra JSON-filen
     (async () => {
-      const initialFavoritesCount = await getProjectCounts("Favorites");
-      setFavoritesCount(initialFavoritesCount);
+      const initialCount = await getProjectCounts("Favorites");
+      setFavoriteCount(initialCount);
     })();
 
-    return () => unsubscribe(); // Ryd op efter overvågning
+    return () => unsubscribe(); // Ryd op ved unmount
   }, [user]);
 
   const handlePress = () => {
@@ -75,7 +52,6 @@ const Favorites = () => {
         style={styles.profileImg}
         resizeMode="cover"
       />
-
       <TouchableOpacity
         style={[
           styles.iconContainer,
@@ -83,9 +59,8 @@ const Favorites = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{favoritesCount || 0}</Text>
+        <Text style={styles.countText}>{favoriteCount || 0}</Text>
       </TouchableOpacity>
-
       <View style={styles.textContainer}>
         <Text style={styles.text}>Favorites</Text>
       </View>
