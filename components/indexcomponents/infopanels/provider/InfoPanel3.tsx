@@ -111,9 +111,19 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
         { merge: true }
       );
   
+      // 3. Slet projektet fra ansøgerens 'applications'-samling
+      const applicantDocRef = doc(
+        database,
+        "users",
+        projectData.applicant.id, // Ansøgerens bruger-ID
+        "applications",
+        projectData.id // Projektets ID
+      );
+      await deleteDoc(applicantDocRef);
+  
       Alert.alert(
         "Godkendt",
-        "Ansøgeren er blevet godkendt, og chatten er oprettet i 'chats'-samlingen."
+        "Ansøgeren er blevet godkendt, og projektet er opdateret."
       );
     } catch (error) {
       console.error("Fejl ved godkendelse af ansøger:", error);

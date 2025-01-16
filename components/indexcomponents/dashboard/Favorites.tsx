@@ -5,45 +5,53 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { updateProjectCounts, getProjectCounts } from "services/projectCountsService";
 
 const Favorites = () => {
   const { user } = useAuth();
   const { isInfoPanelFavoritesVisible, showPanel, hideAllPanels } = useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Total antal favoritter
+  const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
-    // Reference til `favorites`-samlingen med filtrering
-    const favoritesCollection = collection(database, "users", user, "favorites");
+    // 1. Indlæs initial værdi fra JSON
+    (async () => {
+      const initialCount = await getProjectCounts("Favorites");
+      setFavoriteCount(initialCount);
+      console.log("Initial værdi fra JSON:", initialCount);
+    })();
 
-    // Lyt til ændringer i favoritter og opdater tælleren
-    const unsubscribe = onSnapshot(favoritesCollection, (favoritesSnapshot) => {
-      const favoriteProjectIds = favoritesSnapshot.docs.map((doc) => doc.data().projectId);
+    // 2. Overvåg ændringer i Firestore
+    const favoritesRef = collection(database, "users", user, "favorites");
+    const favoritesQuery = query(favoritesRef);
 
-      if (favoriteProjectIds.length === 0) {
-        setTotalCount(0);
-        return;
+    const unsubscribe = onSnapshot(
+      favoritesQuery,
+      async (snapshot) => {
+        const firestoreCount = snapshot.size;
+
+        // Læs tidligere antal fra JSON
+        const previousCount = await getProjectCounts("Favorites");
+
+        // Hvis værdien er ændret, opdater JSON og state
+        if (firestoreCount !== previousCount) {
+          await updateProjectCounts("Favorites", firestoreCount);
+          console.log("Favorites opdateret i JSON:", firestoreCount);
+
+          // Læs den nye værdi fra JSON og opdater tælleren
+          const updatedCount = await getProjectCounts("Favorites");
+          setFavoriteCount(updatedCount);
+        }
+      },
+      (error) => {
+        console.error("Fejl ved overvågning af Firestore:", error);
       }
+    );
 
-      // Filtrer kun projekter med status "Published"
-      const projectsQuery = query(
-        collection(database, "projects"),
-        where("status", "==", "Published"),
-        where("__name__", "in", favoriteProjectIds) // Filtrér kun favoritprojekter
-      );
-
-      const unsubscribeProjects = onSnapshot(projectsQuery, (projectsSnapshot) => {
-        setTotalCount(projectsSnapshot.size); // Antallet af projekter med status "Published"
-      });
-
-      return () => unsubscribeProjects(); // Stop overvågning af projekter
-    });
-
-    // Ryd op ved unmount
-    return () => unsubscribe();
+    return () => unsubscribe(); // Ryd op ved unmount
   }, [user]);
 
   const handlePress = () => {
@@ -57,12 +65,10 @@ const Favorites = () => {
   return (
     <View style={styles.container}>
       <Image
-        source={require("@/assets/images/favorites.webp")} // Billede til favorites
+        source={require("@/assets/images/favorites.webp")}
         style={styles.profileImg}
         resizeMode="cover"
       />
-
-      {/* Tæller-knap */}
       <TouchableOpacity
         style={[
           styles.iconContainer,
@@ -70,9 +76,8 @@ const Favorites = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{totalCount || 0}</Text>
+        <Text style={styles.countText}>{favoriteCount ?? 0}</Text>
       </TouchableOpacity>
-
       <View style={styles.textContainer}>
         <Text style={styles.text}>Favorites</Text>
       </View>

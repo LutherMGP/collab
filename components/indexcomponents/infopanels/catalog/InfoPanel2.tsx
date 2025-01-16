@@ -150,6 +150,7 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     "projects",
                     projectData.id
                   );
+  
                   const projectSnap = await getDoc(projectDocRef);
   
                   if (!projectSnap.exists()) {
@@ -173,6 +174,21 @@ const InfoPanel2 = ({ projectData: initialProjectData }: InfoPanelProps) => {
                     },
                     { merge: true }
                   );
+  
+                  // Fjern projektet fra `favorites`, hvis det eksisterer
+                  const favoriteDocRef = doc(
+                    database,
+                    "users",
+                    userId,
+                    "favorites",
+                    projectData.id
+                  );
+                  const favoriteSnap = await getDoc(favoriteDocRef);
+  
+                  if (favoriteSnap.exists()) {
+                    await deleteDoc(favoriteDocRef);
+                    console.log("Projekt fjernet fra favorites:", projectData.id);
+                  }
   
                   // Reference til ansøgerens `applications`-collection
                   const applicationsCollectionRef = collection(

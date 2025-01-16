@@ -5,31 +5,51 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { updateProjectCounts, getProjectCounts } from "services/projectCountsService";
 
 const Applicant = () => {
   const { user } = useAuth();
   const { isInfoPanelApplicantVisible, showPanel, hideAllPanels } = useVisibility();
-  const [applicationCount, setApplicationCount] = useState(0); // Antal ansøgninger
+  const [applicationCount, setApplicationCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchApplicationCount = async () => {
-      try {
-        // Hent dokumenter fra brugerens 'applications'-samling
-        const applicationsRef = collection(database, "users", user, "applications");
-        const applicationsSnapshot = await getDocs(applicationsRef);
+    // 1. Start med at læse antallet fra JSON
+    (async () => {
+      const initialCount = await getProjectCounts("Applicant");
+      setApplicationCount(initialCount);
+      console.log("Initialt antal ansøgninger (fra JSON):", initialCount);
+    })();
 
-        // Opdater tælleren med antallet af dokumenter
-        setApplicationCount(applicationsSnapshot.docs.length);
-      } catch (error) {
-        console.error("Fejl ved hentning af ansøgninger:", error);
+    // 2. Lyt til Firestore og opdater JSON, hvis nødvendigt
+    const applicationsRef = collection(database, "users", user, "applications");
+    const unsubscribe = onSnapshot(
+      applicationsRef,
+      async (snapshot) => {
+        const firestoreCount = snapshot.size;
+
+        // Læs det tidligere antal fra JSON
+        const previousCount = await getProjectCounts("Applicant");
+
+        // Hvis antallet i Firestore er anderledes, opdater JSON og state
+        if (firestoreCount !== previousCount) {
+          await updateProjectCounts("Applicant", firestoreCount);
+          console.log("Applicant opdateret i JSON:", firestoreCount);
+        }
+
+        // 3. Læs igen fra JSON for at sikre synkronisering
+        const updatedCount = await getProjectCounts("Applicant");
+        setApplicationCount(updatedCount);
+      },
+      (error) => {
+        console.error("Fejl ved overvågning af Firestore:", error);
       }
-    };
+    );
 
-    fetchApplicationCount();
+    return () => unsubscribe(); // Ryd op ved unmount
   }, [user]);
 
   const handlePress = () => {
@@ -56,7 +76,7 @@ const Applicant = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{applicationCount}</Text>
+        <Text style={styles.countText}>{applicationCount ?? 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.textContainer}>

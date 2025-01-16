@@ -17,7 +17,7 @@ import {
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/projects/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -42,11 +42,11 @@ type CircularEconomyData = {
 
 type ProjectData = {
   id: string;
-  name: string; // Default-værdi kan være en tom streng
+  name: string; 
   description: string;
   status: string;
   transferMethod: string;
-  legalDescription?: string | null; // Tilføjet felt til juridisk beskrivelse
+  legalDescription?: string | null; 
   circularEconomy?: CircularEconomyData; 
   f8CoverImageLowRes?: string | null;
   f5CoverImageLowRes?: string | null;
@@ -58,7 +58,7 @@ type ProjectData = {
 
 type InfoPanelProps = {
   projectData: ProjectData;
-  onUpdate?: (updatedProject: ProjectData) => void; // Callback til opdatering
+  onUpdate?: (updatedProject: ProjectData) => void; 
 };
 
 const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProps) => {
@@ -88,7 +88,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   const [activeCategory, setActiveCategory] = useState<"f8" | "f5" | "f3" | "f2" | null>(null);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
   const [isCircularModalVisible, setIsCircularModalVisible] = useState(false);
-  const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); // Tilføjet state for Legal Modal
+  const [isLegalModalVisible, setIsLegalModalVisible] = useState(false); 
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Tjek for manglende data
@@ -107,7 +107,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
   // Funktion til at togglere Edit-tilstand
   const toggleEdit = () => {
-    setIsEditEnabled((prev) => !prev); // Skifter tilstanden for Edit
+    setIsEditEnabled((prev) => !prev); 
   };
 
   // Funktion til at opdatere projektdata efter ændringer
@@ -126,7 +126,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           ...prev,
           name: data.name || "",
           description: data.description || "",
-          legalDescription: data.legalDescription || prev.legalDescription || null, // Tilføjet hentning af legalDescription
+          legalDescription: data.legalDescription || prev.legalDescription || null, 
           f8CoverImageLowRes: data.f8CoverImageLowRes || prev.f8CoverImageLowRes || null,
           f5CoverImageLowRes: data.f5CoverImageLowRes || prev.f5CoverImageLowRes || null,
           f3CoverImageLowRes: data.f3CoverImageLowRes || prev.f3CoverImageLowRes || null,
@@ -150,7 +150,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     // Opdater kun transferMethod i projektdata
     setProjectData((prev) => ({
       ...prev,
-      transferMethod: newMethod, // Opdater metoden
+      transferMethod: newMethod, 
     }));
   };
 
@@ -178,8 +178,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
     }
   };
 
+  // Delete-funktion til at slette projektet og fjerne det fra favoritter hos andre brugere
   const handleDelete = () => {
-    // Always show Delete button since config.showDelete is removed
     Alert.alert(
       "Bekræft Sletning",
       "Er du sikker på, at du vil slette dette projekt? Denne handling kan ikke fortrydes.",
@@ -195,11 +195,34 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 console.log("userId:", userId, "projectData.id:", projectData.id);
                 return;
               }
-
+  
               const projectDocRef = doc(database, "users", userId, "projects", projectData.id);
-              await deleteDoc(projectDocRef); // Sletning fra Firestore
+  
+              // Fjern projektet fra alle `favorites` collections
+              const usersRef = collection(database, "users");
+              const usersSnapshot = await getDocs(usersRef);
+  
+              for (const userDoc of usersSnapshot.docs) {
+                const favoritesRef = doc(
+                  database,
+                  "users",
+                  userDoc.id,
+                  "favorites",
+                  projectData.id
+                );
+  
+                const favoriteSnap = await getDoc(favoritesRef);
+  
+                if (favoriteSnap.exists()) {
+                  await deleteDoc(favoritesRef);
+                  console.log(`Projekt ${projectData.id} fjernet fra bruger ${userDoc.id}'s favorites.`);
+                }
+              }
+  
+              // Slet selve projektet
+              await deleteDoc(projectDocRef);
               console.log(`Project ${projectData.id} slettet.`);
-              Alert.alert("Success", "Projektet er blevet slettet.");
+              Alert.alert("Success", "Projektet er blevet slettet og fjernet fra favoritter.");
             } catch (error) {
               console.error("Fejl ved sletning af projekt:", error);
               Alert.alert("Fejl", "Der opstod en fejl under sletningen. Prøv igen senere.");
@@ -238,7 +261,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         const highResPath = FilePaths.coverImage(userId, projectData.id, category, "HighRes");
         const highResRef = ref(storage, highResPath);
         const highResURL = await getDownloadURL(highResRef);
-        await Linking.openURL(highResURL); // Åbner billedet i iOS-vieweren
+        await Linking.openURL(highResURL); 
       } catch (error) {
         console.error(`Fejl ved hentning af HighRes-billede for ${button}:`, error);
         Alert.alert("Fejl", `Kunne ikke hente HighRes-billede for ${button}.`);
@@ -249,7 +272,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   // Funktioner til at lukke modaler
   const closeF8Modal = () => {
     setIsF8ModalVisible(false);
-    refreshProjectData(); // Opdater data efter lukning
+    refreshProjectData(); 
   };
 
   const closeF5Modal = () => {
@@ -279,8 +302,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
 
   const closeProjectImageModal = () => {
     setIsProjectImageModalVisible(false);
-    setRefreshKey((prevKey) => prevKey + 1); // Tving opdatering
-    refreshProjectData(); // Opdater data, inkl. billed-URL
+    setRefreshKey((prevKey) => prevKey + 1); 
+    refreshProjectData(); 
   };
 
   const handleOpenCommentModal = (category: "f8" | "f5" | "f3" | "f2") => {
@@ -337,7 +360,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                     : "Projektet er nu tilbage som kladde."
                 );
 
-                setProjectData((prev) => ({ ...prev, status: newStatus })); // Opdater lokalt
+                setProjectData((prev) => ({ ...prev, status: newStatus })); 
               } catch (error) {
                 console.error("Fejl ved opdatering af status:", error);
                 Alert.alert("Fejl", "Kunne ikke opdatere status. Prøv igen senere.");
@@ -355,9 +378,9 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   // Funktion til at håndtere "Prize"-feltet
   const handlePrizePress = () => {
     if (isEditEnabled) {
-      setIsPrizeModalVisible(true); // Åbn modal i redigeringstilstand
+      setIsPrizeModalVisible(true); 
     } else {
-      fetchTransferMethod(); // Hent data on-demand
+      fetchTransferMethod(); 
     }
   };
 
@@ -388,13 +411,17 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
   return (
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
-      <View style={baseStyles.textContainer}>
+        <View style={baseStyles.textContainer}>
         <Text
           style={[baseStyles.nameText, { color: Colors[theme].tint }]}
           onPress={() => handlePress("Name & Comment")}
         >
-          {projectData.name || "Uden navn"}
+          {/* Sikrer, at teksten altid er en streng */}
+          {typeof projectData.name === "string" && projectData.name.trim() !== ""
+            ? projectData.name
+            : "Uden navn"}
         </Text>
+
         <Text
           style={[baseStyles.commentText, { color: Colors[theme].text }]}
           numberOfLines={showFullComment ? undefined : 1}
@@ -404,7 +431,10 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             setShowFullComment(!showFullComment);
           }}
         >
-          {projectData.description || "Ingen kommentar"}
+          {/* Sikrer, at beskrivelsen altid er en streng */}
+          {typeof projectData.description === "string" && projectData.description.trim() !== ""
+            ? projectData.description
+            : "Ingen kommentar"}
         </Text>
       </View>
 
@@ -412,18 +442,23 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       <View style={baseStyles.f8Container}>
         <Pressable
           style={baseStyles.F8}
-          onPress={() => handlePress("F8")} // Kalder handlePress med knapnavn
-          onLongPress={() => handleLongPress("f8PDF")} // Henter og viser PDF ved long-press
+          onPress={() => handlePress("F8")} 
+          onLongPress={() => handleLongPress("f8PDF")} 
           accessibilityLabel="F8 Button"
         >
           {/* Vis billede, hvis det er tilgængeligt */}
-          {projectData.f8CoverImageLowRes && (
+          {projectData?.f8CoverImageLowRes && typeof projectData.f8CoverImageLowRes === "string" ? (
             <Image
               source={{
-                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                uri: `${projectData.f8CoverImageLowRes}?timestamp=${Date.now()}`, 
               }}
               style={baseStyles.f8CoverImage}
+              resizeMode="cover" 
             />
+          ) : (
+            <Text style={[baseStyles.text, { color: "gray", textAlign: "center", fontStyle: "italic" }]}>
+              Ingen billede tilgængeligt
+            </Text>
           )}
 
           {/* Tekst i f8 toppen */}
@@ -431,26 +466,27 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             <Text style={baseStyles.text}>Specification</Text>
           </View>
 
-          {/* Projektbilledet i det runde felt med onPress */}
-          {projectData.projectImage && (
+          {/* Projektbilledet i det runde felt */}
+          {projectData?.projectImage && typeof projectData.projectImage === "string" ? (
             <Pressable
-              style={[
-                baseStyles.projectImageContainer,
-                { opacity: isEditEnabled ? 1 : 1 }, // Reducer synligheden, når knappen er deaktiveret
-              ]}
-              onPress={isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined} // Åbn modal kun når Edit er aktiveret
+              style={baseStyles.projectImageContainer}
+              onPress={
+                isEditEnabled ? () => setIsProjectImageModalVisible(true) : undefined
+              }
               accessibilityLabel="Project Image Button"
-              disabled={!isEditEnabled} // Deaktiver pressable, når Edit er deaktiveret
+              disabled={!isEditEnabled}
             >
               <Image
                 source={{
-                  uri: projectData.projectImage
-                    ? `${projectData.projectImage}?timestamp=${Date.now()}`
-                    : require("@/assets/default/projectimage/projectImage.jpg"), // Standardbillede
+                  uri: `${projectData.projectImage}?timestamp=${Date.now()}`,
                 }}
-                style={baseStyles.projectImage} // Tilføj dine styles her
+                style={baseStyles.projectImage}
               />
             </Pressable>
+          ) : (
+            <Text style={[baseStyles.text, { color: "gray", textAlign: "center" }]}>
+              Ingen projektbillede
+            </Text>
           )}
 
           {/* Delete-knap */}
@@ -466,6 +502,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <Pressable
             style={baseStyles.commentButtonf8}
             onPress={() => handleOpenCommentModal("f8")}
+            accessibilityLabel="Comment Button"
           >
             <AntDesign name="message1" size={20} color="#0a7ea4" />
           </Pressable>
@@ -474,6 +511,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <Pressable
             style={baseStyles.attachmentButton}
             onPress={openAttachmentModal}
+            accessibilityLabel="Attachment Button"
           >
             <Entypo name="attachment" size={20} color="#0a7ea4" />
           </Pressable>
@@ -484,65 +522,76 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
       <View style={baseStyles.lowerContainer}>
         <View style={baseStyles.leftSide}>
           <View style={baseStyles.topSide}>
-            <View style={baseStyles.f2leftTop}>
-              <Pressable
-                style={baseStyles.F2}
-                onPress={() => handlePress("F2")}
-                onLongPress={() => handleLongPress("f2PDF")}
-                accessibilityLabel="F2 Button"
-              >
-                {/* Vis billede, hvis det er tilgængeligt */}
-                {projectData.f2CoverImageLowRes && (
-                  <Image
-                    source={{
-                      uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                    }}
-                    style={baseStyles.f2CoverImage}
-                  />
-                )}
+          <View style={baseStyles.f2leftTop}>
+            <Pressable
+              style={baseStyles.F2}
+              onPress={() => handlePress("F2")}
+              onLongPress={() => handleLongPress("f2PDF")}
+              accessibilityLabel="F2 Button"
+            >
+              {/* Vis billede, hvis det er tilgængeligt */}
+              {projectData?.f2CoverImageLowRes && typeof projectData.f2CoverImageLowRes === "string" ? (
+                <Image
+                  source={{
+                    uri: `${projectData.f2CoverImageLowRes}?timestamp=${Date.now()}`, 
+                  }}
+                  style={baseStyles.f2CoverImage}
+                  resizeMode="contain" 
+                />
+              ) : (
+                <Text style={[baseStyles.text, { color: "gray", textAlign: "center", fontStyle: "italic" }]}>
+                  Ingen billede tilgængeligt
+                </Text>
+              )}
 
-                {/* Tekst i f2 toppen */}
-                <View style={baseStyles.textTag}>
-                  <Text style={baseStyles.text}>Agreement</Text>
-                </View>
-              </Pressable>
+              {/* Tekst i f2 toppen */}
+              <View style={baseStyles.textTag}>
+                <Text style={baseStyles.text}>Agreement</Text>
+              </View>
+            </Pressable>
 
-              {/* Comment-knap f2 */}
+            {/* Comment-knap f2 */}
+            <Pressable
+              style={baseStyles.commentButtonf2}
+              onPress={() => handleOpenCommentModal("f2")}
+              accessibilityLabel="Comment Button"
+            >
+              <AntDesign name="message1" size={20} color="#0a7ea4"/>
+            </Pressable>
+          </View>
+          <View style={baseStyles.rightTop}>
+            <View style={baseStyles.f1topHalf}>
               <Pressable
-                style={baseStyles.commentButtonf2}
-                onPress={() => handleOpenCommentModal("f2")}
+                style={baseStyles.F1A}
+                onPress={toggleEdit} 
+                accessibilityLabel="Edit Button"
               >
-                <AntDesign name="message1" size={20} color="#0a7ea4" />
+                <AntDesign
+                  name="edit" 
+                  size={24}
+                  color={isEditEnabled ? "red" : "#0a7ea4"} 
+                />
               </Pressable>
             </View>
-            <View style={baseStyles.rightTop}>
-              <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
-                  accessibilityLabel="Edit Button"
-                >
-                  <AntDesign
-                    name="edit" // Ikon ændret til "edit"
-                    size={24}
-                    color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
-                  />
-                </Pressable>
-              </View>
-              <View style={baseStyles.f1bottomHalf}>
-                <Pressable
-                  style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Kalder funktionen for at skifte status
-                  accessibilityLabel="Status Toggle Button"
-                >
-                  <AntDesign
-                    name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
-                    size={24}
-                    color="#0a7ea4" // Farve forbliver ens
-                  />
-                </Pressable>
-              </View>
+
+            <View style={baseStyles.f1bottomHalf}>
+              <Pressable
+                style={baseStyles.F1B}
+                onPress={handleStatusToggle} 
+                accessibilityLabel="Status Toggle Button"
+              >
+                <AntDesign
+                  name={
+                    projectData?.status === "Published" 
+                      ? "unlock"
+                      : "lock"
+                  } 
+                  size={24}
+                  color="#0a7ea4" 
+                />
+              </Pressable>
             </View>
+          </View>
           </View>
           <View style={baseStyles.f3bottomSide}>
             <Pressable
@@ -552,13 +601,17 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               accessibilityLabel="F3 Button"
             >
               {/* Vis billede, hvis det er tilgængeligt */}
-              {projectData.f3CoverImageLowRes && (
+              {projectData?.f3CoverImageLowRes && typeof projectData.f3CoverImageLowRes === "string" ? (
                 <Image
                   source={{
-                    uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
+                    uri: `${projectData.f3CoverImageLowRes}?timestamp=${Date.now()}`,
                   }}
                   style={baseStyles.f3CoverImage}
                 />
+              ) : (
+                <Text style={[baseStyles.text, { color: "gray", textAlign: "center" }]}>
+                  Ingen billede tilgængeligt
+                </Text>
               )}
 
               {/* Tekst i F3 toppen */}
@@ -570,6 +623,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <Pressable
                 style={baseStyles.commentButtonf3}
                 onPress={() => handleOpenCommentModal("f3")}
+                accessibilityLabel="Comment Button"
               >
                 <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
@@ -578,7 +632,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
             {/* Ny knap for cirkulær økonomi */}
             <Pressable
               style={baseStyles.circularEconomyButton}
-              onPress={() => setIsCircularModalVisible(true)} // Åbn modal
+              onPress={() => setIsCircularModalVisible(true)}
               accessibilityLabel="Circular Economy Button"
             >
               <AntDesign name="sync" size={20} color="#0a7ea4" />
@@ -586,53 +640,72 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           </View>
         </View>
         <View style={baseStyles.f5Side}>
+        <Pressable
+          style={[baseStyles.F5, { right: rightMargin }]}
+          onPress={() => handlePress("F5")}
+          onLongPress={() => handleLongPress("f5PDF")}
+          accessibilityLabel="F5 Button"
+        >
+          {/* Vis billede, hvis det er tilgængeligt */}
+          {projectData?.f5CoverImageLowRes && typeof projectData.f5CoverImageLowRes === "string" ? (
+            <Image
+              source={{
+                uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`,
+              }}
+              style={baseStyles.f5CoverImage}
+            />
+          ) : (
+            <Text style={[baseStyles.text, { color: "gray", textAlign: "center" }]}>
+              Ingen billede tilgængeligt
+            </Text>
+          )}
+
+          {/* Tekst i f5 toppen */}
+          <View style={baseStyles.textTag}>
+            <Text style={baseStyles.text}>Terms & Condition</Text>
+          </View>
+
+          {/* Comment-knap f5 */}
           <Pressable
-            style={[baseStyles.F5, { right: rightMargin }]}
-            onPress={() => handlePress("F5")}
-            onLongPress={() => handleLongPress("f5PDF")}
-            accessibilityLabel="F5 Button"
+            style={baseStyles.commentButtonf5}
+            onPress={() => handleOpenCommentModal("f5")}
+            accessibilityLabel="Comment Button"
           >
-            {/* Vis billede, hvis det er tilgængeligt */}
-            {projectData.f5CoverImageLowRes && (
-              <Image
-                source={{
-                  uri: `${projectData.f5CoverImageLowRes}?timestamp=${Date.now()}`, // Tilføj timestamp
-                }}
-                style={baseStyles.f5CoverImage}
-              />
-            )}
-
-            {/* Tekst i f5 toppen */}
-            <View style={baseStyles.textTag}>
-              <Text style={baseStyles.text}>Terms & Condition</Text>
-            </View>
-
-            {/* Comment-knap f5 */}
-            <Pressable
-              style={baseStyles.commentButtonf5}
-              onPress={() => handleOpenCommentModal("f5")}
-            >
-              <AntDesign name="message1" size={20} color="#0a7ea4" />
-            </Pressable>
+            <AntDesign name="message1" size={20} color="#0a7ea4"/>
           </Pressable>
+        </Pressable>
 
-          {/* Prize-knap */}
-          <Pressable
-            style={baseStyles.prizeTagF5}
-            onPress={handlePrizePress} // Brug den nye funktion
-            accessibilityLabel="Prize Button"
-          >
-            <AntDesign name="swap" size={20} color="#0a7ea4" />
-          </Pressable>
+        {/* Prize-knap */}
+        <Pressable
+          style={baseStyles.prizeTagF5}
+          onPress={() => {
+            try {
+              handlePrizePress(); 
+            } catch (error) {
+              console.error("Fejl ved Prize-knap:", error);
+              Alert.alert("Fejl", "Kunne ikke udføre handlingen. Prøv igen.");
+            }
+          }}
+          accessibilityLabel="Prize Button"
+        >
+          <AntDesign name="swap" size={20} color="#0a7ea4" />
+        </Pressable>
 
-          {/* Legal-knap placeret nederst i midten */}
-          <Pressable
-            style={[baseStyles.legalTagF5, { alignSelf: "center", marginTop: 10 }]} // Placer centralt og justér margin
-            onPress={() => setIsLegalModalVisible(true)} // Åbn modal
-            accessibilityLabel="Legal Button"
-          >
-            <AntDesign name="copyright" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
-          </Pressable>
+        {/* Legal-knap placeret nederst i midten */}
+        <Pressable
+          style={[baseStyles.legalTagF5, { alignSelf: "center", marginTop: 10 }]}
+          onPress={() => {
+            try {
+              setIsLegalModalVisible(true); // Åbn modal
+            } catch (error) {
+              console.error("Fejl ved Legal-knap:", error);
+              Alert.alert("Fejl", "Kunne ikke åbne legal modal. Prøv igen.");
+            }
+          }}
+          accessibilityLabel="Legal Button"
+        >
+          <AntDesign name="copyright" size={20} color="#0a7ea4" /> {/* Ikon for lovparagrafer */}
+        </Pressable>
         </View>
       </View>
 
@@ -652,8 +725,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF8
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} 
+              userId={userId || ""} 
               onClose={closeF8Modal}
             />
           </View>
@@ -670,8 +743,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF5
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} 
+              userId={userId || ""} 
               onClose={closeF5Modal}
             />
           </View>
@@ -688,8 +761,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF3
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} 
+              userId={userId || ""} 
               onClose={closeF3Modal}
             />
           </View>
@@ -706,8 +779,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <InfoPanelF2
-              projectId={projectData.id} // Tilføj projectId
-              userId={userId || ""} // Tilføj userId
+              projectId={projectData.id} 
+              userId={userId || ""} 
               onClose={closeF2Modal}
             />
           </View>
@@ -727,8 +800,8 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               onClose={closeNameCommentModal}
               name={projectData.name || "Uden navn"}
               comment={projectData.description || "Ingen kommentar"}
-              projectId={projectData.id} // Tilføj projectId hvis nødvendigt
-              userId={userId || ""} // Tilføj userId hvis nødvendigt
+              projectId={projectData.id} 
+              userId={userId || ""} 
             />
           </View>
         </View>
@@ -745,11 +818,11 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
           <View style={styles.modalContent}>
             <InfoPanelPrize
               onClose={closePrizeModal}
-              currentDescription={projectData.transferMethod || "Ingen beskrivelse tilgængelig"} // Standardbeskrivelse
+              currentDescription={projectData.transferMethod || "Ingen beskrivelse tilgængelig"} 
               projectId={projectData.id}
               userId={userId || ""}
-              onSave={updateTransferMethod} // Gem ny beskrivelse
-              isEditable={isEditEnabled} // Brug toggleEdit til at styre redigering
+              onSave={updateTransferMethod} 
+              isEditable={isEditEnabled} 
             />
           </View>
         </View>
@@ -773,7 +846,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                 console.log("Upload successful:", downloadURL);
                 setProjectData((prev) => ({
                   ...prev,
-                  projectImage: downloadURL, // Opdater med den nye URL
+                  projectImage: downloadURL, 
                 }));
               }}
               onUploadFailure={(error) => {
@@ -798,7 +871,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               <InfoPanelCommentModal
                 projectId={projectData.id}
                 userId={userId || ""}
-                category={activeCategory} // Dette er nu sikkert
+                category={activeCategory} 
                 categoryName={
                   activeCategory === "f8"
                     ? "Specification"
@@ -829,7 +902,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               userId={userId || ""}
               projectId={projectData.id}
               onClose={closeAttachmentModal}
-              isEditEnabled={isEditEnabled} // Pass isEditEnabled
+              isEditEnabled={isEditEnabled} 
             />
           </View>
         </View>
@@ -851,7 +924,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
               onSave={(newData: CircularEconomyData) => {
                 setProjectData((prev) => ({
                   ...prev,
-                  circularEconomy: newData, // Opdaterer hele circularEconomy-strukturen
+                  circularEconomy: newData, 
                 }));
               }}
               isEditable={isEditEnabled}
@@ -886,7 +959,7 @@ const InfoPanel1 = ({ projectData: initialProjectData, onUpdate }: InfoPanelProp
                   brandConsent: legalDetails.brandConsent,
                 }));
               }}
-              isEditable={isEditEnabled} // Prop sikrer beskyttelse
+              isEditable={isEditEnabled} 
             />
           </View>
         </View>
@@ -911,7 +984,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
-  legalTagF5: { // Tilføjet stil for Legal-knap
+  legalTagF5: { 
     backgroundColor: "#f5f5f5",
     padding: 10,
     borderRadius: 50,

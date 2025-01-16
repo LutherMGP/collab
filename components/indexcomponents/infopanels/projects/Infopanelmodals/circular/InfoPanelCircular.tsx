@@ -36,24 +36,23 @@ const InfoPanelCircular = ({
   // Hent data fra Firestore hvis ikke i redigeringstilstand
   useEffect(() => {
     const fetchData = async () => {
-      if (!isEditable) {
-        try {
-          const projectRef = doc(database, "users", userId, "projects", projectId);
-          const snapshot = await getDoc(projectRef);
-          if (snapshot.exists()) {
-            const circularData = snapshot.data()?.circularEconomy || data;
-            setData(circularData);
-          } else {
-            Alert.alert("Fejl", "Data kunne ikke hentes.");
-          }
-        } catch (error) {
-          console.error("Fejl ved hentning af data:", error);
-          Alert.alert("Fejl", "Kunne ikke hente data. Prøv igen senere.");
+      try {
+        const projectRef = doc(database, "users", userId, "projects", projectId);
+        const snapshot = await getDoc(projectRef);
+        if (snapshot.exists()) {
+          const circularData = snapshot.data()?.circularEconomy || data;
+          setData(circularData); // Opdater med data fra Firestore
+        } else {
+          Alert.alert("Fejl", "Data kunne ikke hentes.");
         }
+      } catch (error) {
+        console.error("Fejl ved hentning af data:", error);
+        Alert.alert("Fejl", "Kunne ikke hente data. Prøv igen senere.");
       }
     };
+  
     fetchData();
-  }, [isEditable, userId, projectId]);
+  }, [userId, projectId, isEditable]);
 
   // Håndter inputændringer
   const handleInputChange = (field: keyof CircularEconomyData, key: "value" | "description", value: string) => {
@@ -129,10 +128,10 @@ const InfoPanelCircular = ({
           ) : (
             <>
               <Text style={styles.readOnly}>
-                Vandforbrug: {data.waterUsage.value} liter
+                Vandforbrug: {data.waterUsage.value || "Ikke angivet"} liter
               </Text>
               <Text style={styles.readOnly}>
-                Beskrivelse: {data.waterUsage.description || "Ingen beskrivelse"}
+                CO2 Udledning: {data.CO2Emission.value || "Ikke angivet"} kg
               </Text>
             </>
           )}

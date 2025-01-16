@@ -5,49 +5,27 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  CollectionReference,
-  DocumentData,
-} from "firebase/firestore";
-import { database } from "@/firebaseConfig";
+import { syncWithFirestore } from "services/syncWithFirestore";
+import { getProjectCounts } from "services/projectCountsService";
 
 const Projects = () => {
-  const { user } = useAuth();
-  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } =
-    useVisibility();
-  const [totalCount, setTotalCount] = useState(0); // Samlet antal projekter
-  const [publishedCount, setPublishedCount] = useState(0); // Antal publicerede projekter
+  const { user } = useAuth(); // user er en string (brugerens ID)
+  const { isInfoPanelProjectsVisible, showPanel, hideAllPanels } = useVisibility();
+  const [projectCount, setProjectCount] = useState(0); // Antal projekter med status "Project"
 
   useEffect(() => {
     if (!user) return;
 
-    const projectCollection = collection(
-      database,
-      "users",
-      user,
-      "projects"
-    ) as CollectionReference<DocumentData>;
-
-    // Forespørgsel for ALLE projekter
-    const allProjectsQuery = query(projectCollection);
-    const unsubscribeAll = onSnapshot(allProjectsQuery, (querySnapshot) => {
-      setTotalCount(querySnapshot.size);
+    // Start Firestore-synkronisering med en callback
+    syncWithFirestore(user, "Project", (count) => {
+      setProjectCount(count); // Opdater state direkte
     });
 
-    // Forespørgsel for projekter med status "Published"
-    const publishedQuery = query(projectCollection, where("status", "==", "Published"));
-    const unsubscribePublished = onSnapshot(publishedQuery, (querySnapshot) => {
-      setPublishedCount(querySnapshot.size);
-    });
-
-    return () => {
-      unsubscribeAll();
-      unsubscribePublished();
-    };
+    // Hent initialt antal projekter fra lokal JSON-fil
+    (async () => {
+      const count = await getProjectCounts("Project");
+      setProjectCount(count);
+    })();
   }, [user]);
 
   const handlePress = () => {
@@ -57,8 +35,6 @@ const Projects = () => {
       showPanel("projects");
     }
   };
-
-  const unPublishedCount = totalCount - publishedCount; // Fratræk Published projekter
 
   return (
     <View style={styles.container}>
@@ -76,7 +52,7 @@ const Projects = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{unPublishedCount || 0}</Text>
+        <Text style={styles.countText}>{projectCount || 0}</Text>
       </TouchableOpacity>
 
       <View style={styles.textContainer}>

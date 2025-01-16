@@ -7,11 +7,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
+import { updateProjectCounts, getProjectCounts } from "services/projectCountsService"; // JSON-service
 
 const DueDiligence = () => {
   const { user } = useAuth();
   const { isInfoPanelDueDiligenceVisible, showPanel, hideAllPanels } = useVisibility();
-  const [dueDiligenceCount, setDueDiligenceCount] = useState(0);
+  const [dueDiligenceCount, setDueDiligenceCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -21,23 +22,39 @@ const DueDiligence = () => {
 
     console.log("Aktuel bruger-ID:", user);
 
-    // Reference til chats-samlingen
-    const chatsCollection = collection(database, "chats");
+    // 1. Indlæs initial værdi fra JSON
+    (async () => {
+      const initialCount = await getProjectCounts("DueDiligence");
+      setDueDiligenceCount(initialCount);
+      console.log("Initial værdi fra JSON:", initialCount);
+    })();
 
-    // Query for chats, hvor brugeren er deltager, og status er 'DueDiligence'
+    // 2. Query til Firestore
+    const chatsCollection = collection(database, "chats");
     const chatsQuery = query(
       chatsCollection,
       where("participants", "array-contains", user),
       where("status", "==", "DueDiligence")
     );
 
-    // Lyt til ændringer i query'en
+    // 3. Lyt til ændringer i Firestore
     const unsubscribe = onSnapshot(
       chatsQuery,
-      (snapshot) => {
-        const count = snapshot.size;
-        console.log("Chats fundet i Firestore:", snapshot.docs.map((doc) => doc.data()));
-        setDueDiligenceCount(count); // Opdater tælleren med antallet af fundne dokumenter
+      async (snapshot) => {
+        const firestoreCount = snapshot.size;
+
+        // Læs tidligere antal fra JSON
+        const previousCount = await getProjectCounts("DueDiligence");
+
+        // Hvis værdien er ændret, opdater JSON og state
+        if (firestoreCount !== previousCount) {
+          await updateProjectCounts("DueDiligence", firestoreCount);
+          console.log("Due Diligence opdateret i JSON:", firestoreCount);
+
+          // Læs den nye værdi fra JSON og opdater tælleren
+          const updatedCount = await getProjectCounts("DueDiligence");
+          setDueDiligenceCount(updatedCount);
+        }
       },
       (error) => {
         console.error("Fejl ved hentning af Due Diligence-chats:", error);
@@ -70,7 +87,7 @@ const DueDiligence = () => {
         ]}
         onPress={handlePress}
       >
-        <Text style={styles.countText}>{dueDiligenceCount}</Text>
+        <Text style={styles.countText}>{dueDiligenceCount ?? 0}</Text>
       </TouchableOpacity>
       <View style={styles.textContainer}>
         <Text style={styles.text}>DD</Text>

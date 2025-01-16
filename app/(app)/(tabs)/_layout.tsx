@@ -63,6 +63,14 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: true,
+        headerStyle: {
+          borderBottomWidth: 0.3,
+          borderBottomColor: "#0a7ea4",
+        },
+        tabBarStyle: {
+          borderTopWidth: 0.3,
+          borderTopColor: "#0a7ea4",
+        },
       }}
     >
       {/* 'index' Tab */}
@@ -91,10 +99,11 @@ export default function TabLayout() {
             <Image
               source={
                 colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
+                  ? require("assets/icons/Fibonomic_icon688x315_dark.png")
+                  : require("assets/icons/Fibonomic_icon688x315_light.png")
               }
-              style={{ width: 85, height: 43, marginLeft: 14 }}
+              style={{ width: 67, height: 50, marginLeft: 5, marginBottom: 6 }}
+              resizeMode="contain"
             />
           ),
           headerRight: () => (
@@ -168,6 +177,70 @@ export default function TabLayout() {
         }}
       />
 
+      {/* 'FiboShare' Tab */}
+      <Tabs.Screen
+        name="fiboshare"
+        options={{
+          title: "",
+          tabBarLabel: "",
+          tabBarIcon: () => (
+            <View
+              style={{
+                width: 65,
+                height: 65,
+                borderRadius: 14,
+                //borderWidth: 1,
+                borderColor: "#ccc",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+                marginBottom: -12,
+              }}
+            >
+              <Image
+                source={
+                  colorScheme === "dark"
+                    ? require("assets/icons/FiboShare_icon432x432_dark.png")
+                    : require("assets/icons/FiboShare_icon432x432_light.png")
+                }
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  resizeMode: "cover",
+                }}
+              />
+            </View>
+          ),
+          headerLeft: () => (
+            <Image
+              source={
+                colorScheme === "dark"
+                  ? require("assets/icons/Fibonomic_icon688x315_dark.png")
+                  : require("assets/icons/Fibonomic_icon688x315_light.png")
+              }
+              style={{ width: 67, height: 50, marginLeft: 5, marginBottom: 6 }}
+              resizeMode="contain"
+            />
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: "row" }}>
+              <Link href="/modal_account" asChild>
+                <Pressable>
+                  {({ pressed }) => (
+                    <FontAwesome
+                      name="info-circle"
+                      size={28}
+                      color={Colors[colorScheme ?? "light"].text}
+                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                    />
+                  )}
+                </Pressable>
+              </Link>
+            </View>
+          ),
+        }}
+      />
+
       {/* 'admin' Tab */}
       <Tabs.Screen
         name="admin"
@@ -187,10 +260,11 @@ export default function TabLayout() {
             <Image
               source={
                 colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
+                  ? require("assets/icons/Fibonomic_icon688x315_dark.png")
+                  : require("assets/icons/Fibonomic_icon688x315_light.png")
               }
-              style={{ width: 85, height: 43, marginLeft: 14 }}
+              style={{ width: 67, height: 50, marginLeft: 5, marginBottom: 6 }}
+              resizeMode="contain"
             />
           ),
           headerRight: () => (
@@ -250,10 +324,11 @@ export default function TabLayout() {
             <Image
               source={
                 colorScheme === "dark"
-                  ? require("@/assets/images/logo/genfoedthub_dark.png")
-                  : require("@/assets/images/logo/genfoedthub_light.png")
+                  ? require("assets/icons/Fibonomic_icon688x315_dark.png")
+                  : require("assets/icons/Fibonomic_icon688x315_light.png")
               }
-              style={{ width: 85, height: 43, marginLeft: 14 }}
+              style={{ width: 67, height: 50, marginLeft: 5, marginBottom: 6 }}
+              resizeMode="contain"
             />
           ),
           headerRight: () => (

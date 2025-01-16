@@ -14,9 +14,11 @@ import {
   DocumentData,
   DocumentSnapshot,
 } from "firebase/firestore";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function WelcomeMessageBruger() {
   const { user } = useAuth();
+  const colorScheme = useColorScheme();
   const [userName, setUserName] = useState("Bruger");
   const [goodiesCount, setGoodiesCount] = useState(0);
   const [pendingPayments, setPendingPayments] = useState(0);
@@ -141,8 +143,13 @@ export default function WelcomeMessageBruger() {
         style={[styles.imageContainer, { width: imageSize, height: imageSize }]}
       >
         <Image
-          source={require("@/assets/images/logo/Fibonomic.png")}
-          style={styles.backgroundImage}
+          source={
+            colorScheme === "dark"
+              ? require("assets/icons/Fibonomic_icon688x315_dark.png")
+              : require("assets/icons/Fibonomic_icon688x315_light.png")
+          }
+          style={{ width: 240, height: 250, marginLeft: 5, marginBottom: 6 }}
+          resizeMode="contain"
         />
       </View>
       <View style={styles.roundedContainer}>

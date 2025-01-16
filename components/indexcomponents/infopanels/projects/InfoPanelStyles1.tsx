@@ -34,9 +34,8 @@ export const styles = StyleSheet.create({
     width: "94%",
     height: "98.7%",
     borderRadius: 10,
-    justifyContent: "flex-start", // Placér indholdet øverst
-    alignItems: "center", // Centrer indholdet vandret
-    // paddingTop: 5, // Giv afstand fra toppen
+    justifyContent: "flex-start", 
+    alignItems: "center", 
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.7)",
@@ -404,6 +403,7 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: "1.5%",
     marginTop: "3%",
+    backgroundColor: "#0a7ea4",
   },
   // Modal styles
   modalContainer: {
