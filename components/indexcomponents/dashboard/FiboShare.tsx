@@ -96,7 +96,7 @@ const FiboShare = () => {
         <Text style={styles.countText}>{applicationCount}</Text>
       </TouchableOpacity>
       <View style={styles.textContainer}>
-        <Text style={styles.text}>FiboStories</Text>
+        <Text style={styles.text}>FiboStory</Text>
       </View>
     </View>
   );
