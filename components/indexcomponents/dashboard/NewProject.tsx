@@ -57,7 +57,7 @@ const NewProject: React.FC = () => {
       await uploadBytes(destinationRef, fileBlob);
       console.log(`${destinationPath} kopieret til Firebase Storage.`);
     } catch (error) {
-      console.error(`Fejl ved upload af ${destinationPath}:`, error);
+      // console.error(`Fejl ved upload af ${destinationPath}:`, error);
       throw new Error(`Kunne ikke uploade filen: ${destinationPath}`);
     }
   };
@@ -81,7 +81,7 @@ const NewProject: React.FC = () => {
     try {
       // Opret en ny projekt-reference
       const projectRef = doc(collection(database, "users", user, "projects"));
-      console.log("Opretter nyt projekt med ID:", projectRef.id);
+      // console.log("Opretter nyt projekt med ID:", projectRef.id);
 
       // Initialiser projektdata med grundlæggende information
       const projectData: any = {
@@ -196,7 +196,7 @@ const NewProject: React.FC = () => {
       }
 
       // Gem projektdata i Firestore inklusive download URL'erne
-      console.log("Gemmer projektdata i Firestore:", projectData);
+      // console.log("Gemmer projektdata i Firestore:", projectData);
       await setDoc(projectRef, projectData);
 
       Alert.alert("Projekt oprettet!", "Dit projekt er blevet oprettet.");

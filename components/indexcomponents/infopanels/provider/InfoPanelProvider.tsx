@@ -28,7 +28,7 @@ const InfoPanelProvider = () => {
       (projectsSnapshot: QuerySnapshot<DocumentData>) => {
         const updatedProjects: ProjectData[] = [];
   
-        console.log("Alle dokumenter fundet i Firestore:", projectsSnapshot.docs.map((doc) => doc.data()));
+        // console.log("Alle dokumenter fundet i Firestore:", projectsSnapshot.docs.map((doc) => doc.data()));
   
         projectsSnapshot.docs.forEach((projectDoc) => {
           const projectId = projectDoc.id;
@@ -56,7 +56,7 @@ const InfoPanelProvider = () => {
           }
         });
   
-        console.log("Filtrerede projekter med status 'Application':", updatedProjects);
+        // console.log("Filtrerede projekter med status 'Application':", updatedProjects);
   
         setProjects(updatedProjects);
         setIsLoading(false);

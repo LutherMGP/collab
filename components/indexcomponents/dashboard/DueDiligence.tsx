@@ -36,7 +36,7 @@ const DueDiligence = () => {
       chatsQuery,
       (snapshot) => {
         const count = snapshot.size;
-        console.log("Chats fundet i Firestore:", snapshot.docs.map((doc) => doc.data()));
+        // console.log("Chats fundet i Firestore:", snapshot.docs.map((doc) => doc.data()));
         setDueDiligenceCount(count); // Opdater tælleren med antallet af fundne dokumenter
       },
       (error) => {

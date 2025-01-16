@@ -58,7 +58,7 @@ const InfoPanelDueDiligence = ({ setIsChatActive }: InfoPanelDueDiligenceProps) 
 
         const projectPromises = snapshot.docs.map(async (chatDoc) => {
           const chatData = chatDoc.data();
-          console.log("Chat fundet:", chatData);
+          // console.log("Chat fundet:", chatData);
 
           const projectId = chatData.projectId;
           const userId = chatData.userId;
@@ -77,7 +77,7 @@ const InfoPanelDueDiligence = ({ setIsChatActive }: InfoPanelDueDiligenceProps) 
 
               if (projectSnap.exists()) {
                 const projectData = projectSnap.data();
-                console.log("Projektdata fundet:", projectData);
+                // console.log("Projektdata fundet:", projectData);
 
                 const assets = projectData.assets || {};
                 return {
@@ -116,7 +116,7 @@ const InfoPanelDueDiligence = ({ setIsChatActive }: InfoPanelDueDiligenceProps) 
           (project) => project !== null
         ) as (ProjectData & { chatData?: DocumentData })[];
 
-        console.log("Alle projekter efter hentning:", resolvedProjects);
+        // console.log("Alle projekter efter hentning:", resolvedProjects);
         setProjects(resolvedProjects);
         setIsLoading(false);
         setError(null);
