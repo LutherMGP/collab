@@ -4,138 +4,116 @@ import React, { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Image, Dimensions } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { database } from "@/firebaseConfig";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  doc,
-  DocumentData,
-  DocumentSnapshot,
-} from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function WelcomeMessageBruger() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
-  const [userName, setUserName] = useState("Bruger");
-  const [goodiesCount, setGoodiesCount] = useState(0);
-  const [pendingPayments, setPendingPayments] = useState(0);
-  const [lastActive, setLastActive] = useState<string | null>(null);
-  const [greeting, setGreeting] = useState(""); // Ny state for hilsner
+  const [userName, setUserName] = useState("Designer");
+  const [projectData, setProjectData] = useState({
+    Project: 0,
+    Published: 0,
+    Catalog: 0,
+    Favorites: 0,
+    Provider: 0,
+    Applicant: 0,
+    DueDiligence: 0,
+  });
 
   useEffect(() => {
     if (user) {
       fetchUserName();
-      fetchGoodiesCount();
-      fetchPendingPayments();
-      fetchLastActive();
-      setGreeting(getGreeting()); // Sæt hilsnen baseret på tidspunktet
+      fetchProjectData();
     }
   }, [user]);
 
+  // Hent brugerens kaldenavn fra Firestore
   const fetchUserName = async () => {
-    if (user) {
-      const userDocRef = doc(database, "users", user);
-      const userDocSnapshot: DocumentSnapshot<DocumentData> = await getDoc(
-        userDocRef
-      );
-      if (userDocSnapshot.exists()) {
-        const userData = userDocSnapshot.data();
-        setUserName(userData?.nickname || "Bruger");
-      }
-    }
-  };
-
-  const fetchGoodiesCount = async () => {
     try {
-      const allSnitQuery = query(
-        collection(database, "snit"),
-        where("status", "==", "Frigivet")
+      const userDoc = await getDocs(
+        query(collection(database, "users"), where("id", "==", user))
       );
-      const allSnitSnapshot = await getDocs(allSnitQuery);
-      const allSnitIds = allSnitSnapshot.docs.map((doc) => ({
-        id: doc.id,
-      }));
-
-      if (user) {
-        const userSnitQuery = query(
-          collection(database, "users", user, "snit"),
-          where("status", "==", "Frigivet")
-        );
-        const userSnitSnapshot = await getDocs(userSnitQuery);
-        const userSnitIds = new Set(userSnitSnapshot.docs.map((doc) => doc.id));
-
-        const filteredSnit = allSnitIds.filter(
-          ({ id }) => !userSnitIds.has(id)
-        );
-
-        setGoodiesCount(filteredSnit.length);
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        setUserName(userData?.nickname || "Designer");
       }
     } catch (error) {
-      console.error("Fejl ved hentning af goodies:", error);
+      console.error("Fejl ved hentning af brugernavn:", error);
     }
   };
 
-  const fetchPendingPayments = async () => {
-    if (user) {
-      const purchasesRef = collection(database, "users", user, "purchases");
-      const q = query(purchasesRef, where("purchased", "==", false));
-      const snapshot = await getDocs(q);
-      setPendingPayments(snapshot.size);
-    }
-  };
-
-  const fetchLastActive = async () => {
-    if (user) {
-      const userDocRef = doc(database, "users", user);
-      const userDocSnapshot = await getDoc(userDocRef);
-      if (userDocSnapshot.exists()) {
-        const lastActiveDate = userDocSnapshot.data().lastUsed;
-
-        if (lastActiveDate && lastActiveDate.seconds) {
-          const lastActiveTime = new Date(lastActiveDate.seconds * 1000);
-          const timeDiff = Math.abs(Date.now() - lastActiveTime.getTime());
-          const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-          const hoursDiff = Math.floor(
-            (timeDiff % (1000 * 3600 * 24)) / (1000 * 3600)
-          );
-
-          let lastActiveMessage = "";
-
-          if (daysDiff > 0) {
-            lastActiveMessage = `${daysDiff} dage siden`;
-          } else if (hoursDiff > 0) {
-            lastActiveMessage = `${hoursDiff} timer siden`;
-          } else {
-            lastActiveMessage = "mindre end en time siden";
-          }
-
-          setLastActive(lastActiveMessage);
-        } else {
-          setLastActive("Dato ikke tilgængelig");
-        }
-      } else {
-        setLastActive("Bruger findes ikke");
+  // Hent data om projekter fra Firestore
+  const fetchProjectData = async () => {
+    try {
+      if (!user) {
+        console.error("Bruger-ID mangler. Kunne ikke hente data.");
+        return;
       }
+
+      const projectsSnapshot = await getDocs(
+        collection(database, "users", user, "projects")
+      );
+      const data = {
+        Project: 0,
+        Published: 0,
+        Catalog: 0,
+        Favorites: 0,
+        Provider: 0,
+        Applicant: 0,
+        DueDiligence: 0,
+      };
+
+      projectsSnapshot.forEach((doc) => {
+        const project = doc.data();
+        if (project.status === "Project") data.Project++;
+        if (project.status === "Published") data.Published++;
+        if (project.isInCatalog) data.Catalog++;
+        if (project.isFavorite) data.Favorites++;
+        if (project.isProvider) data.Provider++;
+        if (project.isApplicant) data.Applicant++;
+        if (project.isDueDiligence) data.DueDiligence++;
+      });
+
+      setProjectData(data);
+    } catch (error) {
+      console.error("Fejl ved hentning af projektdata:", error);
     }
   };
 
-  const getGreeting = () => {
-    const currentHour = new Date().getHours(); // Få den nuværende time
-    if (currentHour < 6) {
-      return "Du er en natteravn!";
-    } else if (currentHour < 12) {
-      return "Godmorgen,";
-    } else if (currentHour < 18) {
-      return "Godmiddag,";
-    } else {
-      return "Godaften,";
+  const generateWelcomeMessage = () => {
+    const messages = [];
+
+    if (projectData.Project > 0) {
+      messages.push(`Du har i øjeblikket ${projectData.Project} projekter under udvikling.`);
     }
+    if (projectData.Published > 0) {
+      messages.push(`Du har frigivet ${projectData.Published} projekter til samarbejde.`);
+    }
+    if (projectData.Catalog > 0) {
+      messages.push(`Der er ${projectData.Catalog} nye projekter i kataloget, klar til at udforske.`);
+    }
+    if (projectData.Favorites > 0) {
+      messages.push(`Du har markeret ${projectData.Favorites} projekter som dine favoritter.`);
+    }
+    if (projectData.Provider > 0) {
+      messages.push(`${projectData.Provider} brugere har ansøgt om at samarbejde på dine projekter.`);
+    }
+    if (projectData.Applicant > 0) {
+      messages.push(`Du har ansøgt om at deltage i ${projectData.Applicant} andres projekter.`);
+    }
+    if (projectData.DueDiligence > 0) {
+      messages.push(
+        `Du arbejder aktivt på ${projectData.DueDiligence} projekter for at sikre aftaler og stærke samarbejder.`
+      );
+    }
+
+    return messages.length > 0
+      ? `Velkommen tilbage, ${userName}! 🎉\n\n${messages.join("\n\n")}\n\nBliv inspireret, og fortsæt med at skabe innovative løsninger!`
+      : `Velkommen tilbage, ${userName}! 🎉\n\nDu har ingen aktuelle projekter. Kom i gang med at skabe noget FiboTastisk! 🚀`;
   };
 
-  const imageSize = Dimensions.get("window").width * 0.6;
+  const imageSize = Dimensions.get("window").width * 0.6; // 60% af skærmbredden
 
   return (
     <View style={styles.container}>
@@ -153,19 +131,7 @@ export default function WelcomeMessageBruger() {
         />
       </View>
       <View style={styles.roundedContainer}>
-        <Text style={styles.message}>
-          {greeting} {userName}! 🎉
-          {goodiesCount > 0
-            ? ` Du har ${goodiesCount} nye "Goodies" klar til at udforske.`
-            : " Du har endnu ingen nye Goodies klar til at udforske, men vi er i fuld gang med at gøre dem klar til dig."}
-          {pendingPayments > 0
-            ? ` Du har ${pendingPayments} ubetalte snit i Kassen.`
-            : ""}
-          {"\n"}
-          {lastActive
-            ? `Velkommen tilbage i KreaKrogen for ${lastActive} - Skønt at se dig igen!`
-            : "Aktivitet ikke registreret."}
-        </Text>
+        <Text style={styles.message}>{generateWelcomeMessage()}</Text>
       </View>
     </View>
   );
@@ -184,23 +150,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  backgroundImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
   roundedContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.8)", // Halvtransparent baggrund
     borderRadius: 10,
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 5,
-    zIndex: 1,
+    elevation: 5, // For skyggeeffekt
+    zIndex: 1, // For at sikre at den er ovenpå billedet
   },
   message: {
     fontSize: 18,
     fontWeight: "500",
-    textAlign: "center",
+    textAlign: "center", // Centrerer teksten
   },
 });
