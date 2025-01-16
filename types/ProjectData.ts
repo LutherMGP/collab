@@ -30,6 +30,7 @@ export interface ProjectData {
   status: "Project" | "Published" | "Application"; // Inkluder "Application" som en status
   price: number; // Pris på projektet
   transferMethod: string; // Gør feltet obligatorisk
+  legalDescription?: string | null;
 
   // Felter for hver kategori tillader string, null eller undefined
   projectImage?: string | null;
