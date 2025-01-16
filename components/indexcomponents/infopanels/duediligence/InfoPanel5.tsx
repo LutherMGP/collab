@@ -97,6 +97,9 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
   const { isChatActive, toggleChat } = useVisibility(); // Brug den nye tilstand og funktion
   const [newMessage, setNewMessage] = useState(""); // State for beskedinput
   const [messages, setMessages] = useState(chatData?.messages || []); // Chatbeskeder
+  const [isApproved, setIsApproved] = useState(false);
+  const [f1BBackground, setF1BBackground] = useState("#f0f0f0");
+  const [applicantId, setApplicantId] = useState<string | null>(null);
 
   // Tjek for manglende data
   if (!projectData || !projectData.id || !userId) {
@@ -120,6 +123,42 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       Alert.alert("Adgang nægtet", "Kun provideren kan redigere dette projekt.");
     }
   };
+
+  // Funktion til at opdatere projektdata
+  const handleApproval = async () => {
+    if (!projectData.id || !currentUser) return;
+  
+    try {
+      const projectDocRef = doc(database, "projects", projectData.id);
+  
+      // Opdater godkendelsesstatus i Firestore
+      await setDoc(
+        projectDocRef,
+        { isApproved: true }, // Angiv projektet som godkendt
+        { merge: true }
+      );
+  
+      setIsApproved(true); // Opdater lokal state
+    } catch (error) {
+      console.error("Fejl ved opdatering af godkendelsesstatus:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!projectData.id) return;
+  
+    const projectDocRef = doc(database, "projects", projectData.id);
+  
+    // Realtidsovervågning af projektets godkendelsesstatus
+    const unsubscribe = onSnapshot(projectDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setIsApproved(data.isApproved || false); // Synkroniser godkendelsesstatus
+      }
+    });
+  
+    return () => unsubscribe(); // Ryd op efter listener
+  }, [projectData.id]);
 
   // Funktion til at sende en besked  
   type ChatMessage = {
@@ -165,6 +204,67 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
     }
   };
 
+  // Funktion til at hente `applicantId` fra chatdokument
+  const fetchApplicantIdFromChat = async (projectId: string, userId: string): Promise<string | null> => {
+    try {
+      const chatDocRef = doc(database, "chats", projectId);
+      const chatDocSnap = await getDoc(chatDocRef);
+  
+      if (chatDocSnap.exists()) {
+        const chatData = chatDocSnap.data();
+  
+        if (chatData.participants && Array.isArray(chatData.participants)) {
+          return chatData.participants.find((participant: string) => participant !== userId) || null;
+        }
+      }
+  
+      return null;
+    } catch (error) {
+      console.error("Fejl ved hentning af applicantId:", error);
+      return null;
+    }
+  };
+  
+  useEffect(() => {
+    const loadApplicantId = async () => {
+      if (projectData.id && userId) {
+        const fetchedApplicantId = await fetchApplicantIdFromChat(projectData.id, userId);
+        setApplicantId(fetchedApplicantId);
+      }
+    };
+  
+    loadApplicantId();
+  }, [projectData.id, userId]);
+
+  // Hent applicantId ved opstart
+  useEffect(() => {
+    const loadApplicantId = async () => {
+      if (projectData.id && userId) {
+        const fetchedApplicantId = await fetchApplicantIdFromChat(projectData.id, userId);
+        setApplicantId(fetchedApplicantId);
+      }
+    };
+
+    loadApplicantId();
+  }, [projectData.id, userId]);
+
+  // Funktion til at opdatere projektdata efter ændringer
+  useEffect(() => {
+    if (!projectData.id) return;
+  
+    const chatDocRef = doc(database, "chats", projectData.id);
+  
+    const unsubscribe = onSnapshot(chatDocRef, (chatSnap) => {
+      if (chatSnap.exists()) {
+        const chatData = chatSnap.data();
+        const fetchedApplicantId = chatData.participants?.find((participant: string) => participant !== userId);
+        setApplicantId(fetchedApplicantId || null);
+      }
+    });
+  
+    return () => unsubscribe(); // Ryd op efter listener
+  }, [projectData.id, userId]);
+
   // Funktion til at opdatere projektdata efter ændringer
   const refreshProjectData = async () => {
     if (!userId || !projectData.id) return;
@@ -199,6 +299,22 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!projectData.id) return;
+  
+    const projectDocRef = doc(database, "projects", projectData.id);
+  
+    // Realtidsovervågning af projektets godkendelsesstatus
+    const unsubscribe = onSnapshot(projectDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setIsApproved(data.isApproved || false); // Synkroniser godkendelsesstatus
+      }
+    });
+  
+    return () => unsubscribe(); // Ryd op efter listener
+  }, [projectData.id]);
 
   // Funktion til opdatering af transferMethod og pris
   const updateTransferMethod = (newMethod: string) => {
@@ -591,30 +707,46 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
                 <AntDesign name="message1" size={20} color="#0a7ea4" />
               </Pressable>
             </View>
+
+            {/* F1A & F1B knap */}
             <View style={baseStyles.rightTop}>
               <View style={baseStyles.f1topHalf}>
-                <Pressable
-                  style={baseStyles.F1A}
-                  onPress={toggleEdit} // Brug den eksisterende toggleEdit funktion
-                  accessibilityLabel="Edit Button"
-                >
-                  <AntDesign
-                    name="edit" // Ikon ændret til "edit"
-                    size={24}
-                    color={isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve afhængigt af Edit-tilstanden
-                  />
-                </Pressable>
+              <Pressable
+                style={[
+                  baseStyles.F1A,
+                  { backgroundColor: isApproved ? "green" : "#f0f0f0" }, // Dynamisk baggrund
+                ]}
+                onPress={() => {
+                  if (currentUser === applicantId) {
+                    handleApproval(); // Applicant godkender
+                  } else {
+                    toggleEdit(); // Provider skifter til redigeringstilstand
+                  }
+                }}
+                accessibilityLabel="Approval Button"
+              >
+                <AntDesign
+                  name={currentUser === applicantId ? "check" : "edit"} // Dynamisk ikon
+                  size={24}
+                  color={isApproved ? "white" : "#0a7ea4"}
+                />
+              </Pressable>
               </View>
               <View style={baseStyles.f1bottomHalf}>
                 <Pressable
-                  style={baseStyles.F1B}
-                  onPress={handleStatusToggle} // Kalder funktionen for at skifte status
+                  style={[
+                    baseStyles.F1B,
+                    {
+                      backgroundColor: "#f0f0f0", // Ingen ændring af F1B-knappens baggrund
+                    },
+                  ]}
+                  onPress={handleStatusToggle} // Statusskift-funktion
                   accessibilityLabel="Status Toggle Button"
                 >
                   <AntDesign
                     name={projectData.status === "Published" ? "unlock" : "lock"} // Dynamisk ikon
                     size={24}
-                    color="#0a7ea4" // Farve forbliver ens
+                    color="#0a7ea4"
                   />
                 </Pressable>
               </View>
