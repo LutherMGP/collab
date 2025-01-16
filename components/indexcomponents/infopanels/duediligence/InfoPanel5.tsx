@@ -19,7 +19,7 @@ import { AntDesign, Entypo } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibility } from "@/hooks/useVisibilityContext";
-import { doc, getDoc, setDoc, DocumentData, collection, addDoc, Timestamp, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, getDoc, setDoc, DocumentData, collection, addDoc, Timestamp, onSnapshot } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { database, storage } from "@/firebaseConfig";
 import InfoPanelF8 from "@/components/indexcomponents/infopanels/duediligence/Infopanelmodals/f8f5f3f2/InfoPanelF8";
@@ -88,6 +88,44 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
 
   const handleApplicantPress = () => {
     Alert.alert("Info", "Godkendelsesknappen er kun informativ for Applicant.");
+  };
+
+  // Fetch project data whenever projectData.id changes
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      if (!userId || !projectData.id) return; // Tjek at bruger-ID og projekt-ID er tilgængelige
+
+      try {
+        const docRef = doc(database, "users", userId, "projects", projectData.id);
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setProjectData(data as ProjectData); // Opdater projectData state
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af projektdata:", error);
+        Alert.alert("Fejl", "Kunne ikke hente projektdata.");
+      }
+    };
+
+    fetchProjectData();
+  }, [projectData.id]); // Hook reagerer på ændringer i projectData.id
+
+  const updateApplicantSubmittedStatus = async (projectId: string, userId: string) => {
+    try {
+      const projectDocRef = doc(database, "users", userId, "projects", projectId);
+  
+      // Opdater `submitted` til `true` i `applicant`-delen
+      await updateDoc(projectDocRef, {
+        "applicant.submitted": true, // Navigér til applicant-feltet
+      });
+  
+      Alert.alert("Succes", "Applicant-status blev opdateret.");
+    } catch (error) {
+      console.error("Fejl ved opdatering af applicant-status:", error);
+      Alert.alert("Fejl", "Kunne ikke opdatere applicant-status.");
+    }
   };
 
   // Tjek for manglende data
@@ -592,22 +630,27 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
                   style={[
                     baseStyles.F1A,
                     {
-                      backgroundColor: "#f5f5f5", // Baggrundsfarve identisk med F1B
+                      backgroundColor: "#f5f5f5", // Statisk baggrundsfarve
                     },
                   ]}
-                  onPress={() => {
+                  onPress={async () => {
                     if (isApplicant) {
-                      handleApplicantPress(); // Informativ handling for Applicant
+                      // Opdater applicant-status i Firestore
+                      await updateApplicantSubmittedStatus(projectData.id, projectData.userId);
+
+                      // Informér bruger om handlingen
+                      Alert.alert("Info", "F1A-knappen er blevet aktiveret for Applicant.");
                     } else if (isProvider) {
-                      toggleEdit(); // Bevarer funktionaliteten for Provider
+                      // Provider kan skifte mellem edit/visning
+                      toggleEdit();
                     }
                   }}
                   accessibilityLabel="F1A Button"
                 >
                   <AntDesign
-                    name={isApplicant ? "check" : "edit"} // Viser 'Godkendt' for Applicant, 'Edit' for Provider
+                    name={isApplicant ? "check" : "edit"} // Dynamisk ikon baseret på rolle
                     size={24}
-                    color={isApplicant ? "green" : isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk ikonfarve
+                    color={isApplicant ? "green" : isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve
                   />
                 </Pressable>
                 {/* F1A-slut */}
