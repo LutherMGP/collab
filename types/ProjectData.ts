@@ -6,6 +6,7 @@ export interface Applicant {
   email: string; // Brugerens e-mail
   profileImage?: string | null; // Brugerens profilbillede
   appliedAt: string; // Tidsstempel for ansøgning
+  submitted?: boolean; // Status for om ansøgningen er indsendt
 }
 
 export interface InfoPanelCircularProps {

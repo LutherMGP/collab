@@ -85,9 +85,37 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
   const [messages, setMessages] = useState(chatData?.messages || []); // Chatbeskeder
   const isProvider = currentUser === projectData.userId;
   const isApplicant = currentUser === projectData.applicant?.id;
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(
+    initialProjectData?.applicant?.submitted ?? false // Brug nullish-coalescing
+  );
 
-  const handleApplicantPress = () => {
-    Alert.alert("Info", "Godkendelsesknappen er kun informativ for Applicant.");
+  const handleApplicantPress = async () => {
+    if (!isApplicant) return;
+  
+    // Bekræft handlingen med brugeren
+    Alert.alert(
+      "Bekræft handling",
+      "Vil du markere som indsendt?",
+      [
+        {
+          text: "Annuller",
+          style: "cancel",
+        },
+        {
+          text: "Bekræft",
+          style: "default",
+          onPress: async () => {
+            try {
+              await updateApplicantSubmittedStatus(projectData.id, projectData.userId);
+              setIsSubmitted(true); // Opdater state til at reflektere ændringen
+            } catch (error) {
+              console.error("Fejl ved opdatering af applicant-status:", error);
+              Alert.alert("Fejl", "Kunne ikke opdatere applicant-status.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Fetch project data whenever projectData.id changes
@@ -111,6 +139,27 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
 
     fetchProjectData();
   }, [projectData.id]); // Hook reagerer på ændringer i projectData.id
+
+
+  useEffect(() => {
+    const fetchSubmittedStatus = async () => {
+      if (!userId || !projectData.id) return;
+  
+      try {
+        const docRef = doc(database, "users", userId, "projects", projectData.id);
+        const snapshot = await getDoc(docRef);
+  
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setIsSubmitted(data?.applicant?.submitted || false); // Kun læs værdien
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af applicant-status:", error);
+      }
+    };
+  
+    fetchSubmittedStatus();
+  }, [userId, projectData.id]);
 
   const updateApplicantSubmittedStatus = async (projectId: string, userId: string) => {
     try {
@@ -630,27 +679,22 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
                   style={[
                     baseStyles.F1A,
                     {
-                      backgroundColor: "#f5f5f5", // Statisk baggrundsfarve
+                      backgroundColor: "#f5f5f5",
                     },
                   ]}
                   onPress={async () => {
                     if (isApplicant) {
-                      // Opdater applicant-status i Firestore
-                      await updateApplicantSubmittedStatus(projectData.id, projectData.userId);
-
-                      // Informér bruger om handlingen
-                      Alert.alert("Info", "F1A-knappen er blevet aktiveret for Applicant.");
+                      await handleApplicantPress(); // Opdater Firestore og state
                     } else if (isProvider) {
-                      // Provider kan skifte mellem edit/visning
-                      toggleEdit();
+                      toggleEdit(); // Skift til redigeringstilstand for Provider
                     }
                   }}
                   accessibilityLabel="F1A Button"
                 >
                   <AntDesign
-                    name={isApplicant ? "check" : "edit"} // Dynamisk ikon baseret på rolle
+                    name="check"
                     size={24}
-                    color={isApplicant ? "green" : isEditEnabled ? "red" : "#0a7ea4"} // Dynamisk farve
+                    color={isSubmitted ? "red" : "green"} // Dynamisk farve
                   />
                 </Pressable>
                 {/* F1A-slut */}
