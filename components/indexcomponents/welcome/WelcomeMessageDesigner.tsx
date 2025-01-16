@@ -4,123 +4,113 @@ import React, { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Image, Dimensions } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { database } from "@/firebaseConfig";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  doc,
-  DocumentData,
-  DocumentSnapshot,
-} from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function WelcomeMessageDesigner() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
-  const [userName, setUserName] = useState("Designer"); // Brugerens kaldenavn
-  const [totalSnit, setTotalSnit] = useState(0); // Total frigivne snit
-  const [pendingPayments, setPendingPayments] = useState(0); // Antal ubetalte snit
-  const [draftCount, setDraftCount] = useState(0); // Antal Kladder
-  const [soldCount, setSoldCount] = useState(0); // Antal solgte snit
-  const [soldSnits, setSoldSnits] = useState<string[]>([]); // Navne på solgte snit
+  const [userName, setUserName] = useState("Designer");
+  const [projectData, setProjectData] = useState({
+    Project: 0,
+    Published: 0,
+    Catalog: 0,
+    Favorites: 0,
+    Provider: 0,
+    Applicant: 0,
+    DueDiligence: 0,
+  });
 
   useEffect(() => {
     if (user) {
-      fetchUserName(); // Hent brugerens kaldenavn
-      fetchTotalSnit(); // Hent total frigivne snit
-      fetchPendingPayments(); // Hent ubetalte snit
-      fetchDraftCount(); // Hent Kladder
-      fetchSoldSnitCount(); // Hent antallet af solgte snit
-      fetchSoldSnits(); // Hent navne på solgte snit
+      fetchUserName();
+      fetchProjectData();
     }
   }, [user]);
 
-  // Henter brugerens kaldenavn
+  // Hent brugerens kaldenavn fra Firestore
   const fetchUserName = async () => {
-    if (user) {
-      const userDocRef = doc(database, "users", user);
-      const userDocSnapshot: DocumentSnapshot<DocumentData> = await getDoc(
-        userDocRef
+    try {
+      const userDoc = await getDocs(
+        query(collection(database, "users"), where("id", "==", user))
       );
-      if (userDocSnapshot.exists()) {
-        const userData = userDocSnapshot.data();
-        setUserName(userData?.nickname || "Designer"); // Brug 'nickname' hvis den findes
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        setUserName(userData?.nickname || "Designer");
       }
+    } catch (error) {
+      console.error("Fejl ved hentning af brugernavn:", error);
     }
   };
 
-  // Henter total frigivne snit
-  const fetchTotalSnit = async () => {
-    if (user) {
-      try {
-        const snitCollection = collection(database, "users", user, "snit");
-        const q = query(snitCollection, where("status", "==", "Frigivet"));
-        const snapshot = await getDocs(q);
-        setTotalSnit(snapshot.size); // Opdaterer total frigivne snit
-      } catch (error) {
-        console.error("Fejl ved hentning af total frigivne snit:", error);
+  // Hent data om projekter fra Firestore
+  const fetchProjectData = async () => {
+    try {
+      if (!user) {
+        console.error("Bruger-ID mangler. Kunne ikke hente data.");
+        return;
       }
+
+      const projectsSnapshot = await getDocs(
+        collection(database, "users", user, "projects")
+      );
+      const data = {
+        Project: 0,
+        Published: 0,
+        Catalog: 0,
+        Favorites: 0,
+        Provider: 0,
+        Applicant: 0,
+        DueDiligence: 0,
+      };
+
+      projectsSnapshot.forEach((doc) => {
+        const project = doc.data();
+        if (project.status === "Project") data.Project++;
+        if (project.status === "Published") data.Published++;
+        if (project.isInCatalog) data.Catalog++;
+        if (project.isFavorite) data.Favorites++;
+        if (project.isProvider) data.Provider++;
+        if (project.isApplicant) data.Applicant++;
+        if (project.isDueDiligence) data.DueDiligence++;
+      });
+
+      setProjectData(data);
+    } catch (error) {
+      console.error("Fejl ved hentning af projektdata:", error);
     }
   };
 
-  // Henter antallet af ubetalte snit
-  const fetchPendingPayments = async () => {
-    if (user) {
-      const purchasesRef = collection(database, "users", user, "purchases");
-      const q = query(purchasesRef, where("purchased", "==", false));
-      const snapshot = await getDocs(q);
-      setPendingPayments(snapshot.size); // Opdaterer antallet af ubetalte snit
-    }
-  };
+  const generateWelcomeMessage = () => {
+    const messages = [];
 
-  // Henter antallet af Kladder
-  const fetchDraftCount = async () => {
-    if (user) {
-      const snitCollection = collection(database, "users", user, "snit");
-      const q = query(snitCollection, where("status", "==", "Kladde"));
-      const snapshot = await getDocs(q);
-      setDraftCount(snapshot.size); // Opdaterer antallet af Kladder
+    if (projectData.Project > 0) {
+      messages.push(`Du har i øjeblikket ${projectData.Project} projekter under udvikling.`);
     }
-  };
-
-  // Henter antallet af solgte snit
-  const fetchSoldSnitCount = async () => {
-    if (user) {
-      const purchasesRef = collection(database, "users", user, "purchases");
-      const q = query(purchasesRef, where("purchased", "==", true));
-      const snapshot = await getDocs(q);
-      setSoldCount(snapshot.size); // Opdaterer antallet af solgte snit
+    if (projectData.Published > 0) {
+      messages.push(`Du har frigivet ${projectData.Published} projekter til samarbejde.`);
     }
-  };
-
-  // Henter navne på solgte snit
-  const fetchSoldSnits = async () => {
-    if (user) {
-      const purchasesRef = collection(database, "users", user, "purchases");
-      const q = query(purchasesRef, where("purchased", "==", true));
-      const snapshot = await getDocs(q);
-
-      const names: string[] = [];
-      for (const purchaseDoc of snapshot.docs) {
-        const data = purchaseDoc.data();
-        const snitDocRef = doc(
-          database,
-          "users",
-          data.snitOwnerId,
-          "snit",
-          data.snitId
-        );
-        const snitDocSnapshot: DocumentSnapshot<DocumentData> = await getDoc(
-          snitDocRef
-        );
-        if (snitDocSnapshot.exists()) {
-          names.push(snitDocSnapshot.data()?.name || "Uden navn");
-        }
-      }
-      setSoldSnits(names); // Sætter solgte snits navne
+    if (projectData.Catalog > 0) {
+      messages.push(`Der er ${projectData.Catalog} nye projekter i kataloget, klar til at udforske.`);
     }
+    if (projectData.Favorites > 0) {
+      messages.push(`Du har markeret ${projectData.Favorites} projekter som dine favoritter.`);
+    }
+    if (projectData.Provider > 0) {
+      messages.push(`${projectData.Provider} brugere har ansøgt om at samarbejde på dine projekter.`);
+    }
+    if (projectData.Applicant > 0) {
+      messages.push(`Du har ansøgt om at deltage i ${projectData.Applicant} andres projekter.`);
+    }
+    if (projectData.DueDiligence > 0) {
+      messages.push(
+        `Du arbejder aktivt på ${projectData.DueDiligence} projekter for at sikre aftaler og stærke samarbejder.`
+      );
+    }
+
+    return messages.length > 0
+      ? `Velkommen tilbage, ${userName}! 🎉\n\n${messages.join("\n\n")}\n\nBliv inspireret, og fortsæt med at skabe innovative løsninger!`
+      : `Velkommen tilbage, ${userName}! 🎉\n\nDu har ingen aktuelle projekter. Kom i gang med at skabe noget FiboTastisk! 🚀`;
   };
 
   const imageSize = Dimensions.get("window").width * 0.6; // 60% af skærmbredden
@@ -141,21 +131,7 @@ export default function WelcomeMessageDesigner() {
         />
       </View>
       <View style={styles.roundedContainer}>
-        <Text style={styles.message}>
-          Velkommen tilbage, {userName}! 🎉 Du har{" "}
-          {totalSnit > 0 ? totalSnit : "ingen"} frigivne snit klar og har sat
-          dem til salg, {pendingPayments > 0 ? pendingPayments : "ingen"} du har
-          ingen ubetalte snit i Kassen, og{" "}
-          {draftCount > 0 ? draftCount : "ingen"} Kladder til at arbejde på.
-          {"\n"}
-          {soldCount > 0
-            ? `Tillykke! Du har nu solgt ${soldCount} snit til:\n${soldSnits.join(
-                ", "
-              )}.`
-            : "Ingen solgte snit."}
-          {"\n"}
-          God fornøjelse! 🚀
-        </Text>
+        <Text style={styles.message}>{generateWelcomeMessage()}</Text>
       </View>
     </View>
   );
@@ -173,11 +149,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-  },
-  backgroundImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
   },
   roundedContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.8)", // Halvtransparent baggrund
