@@ -411,7 +411,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
     <ScrollView contentContainerStyle={[baseStyles.container, { height }]}>
       {/* Tekst og kommentarer */}
       <View style={baseStyles.textContainer}>
-        <Text
+      <Text
           style={[baseStyles.nameText, { color: Colors[theme].tint }]}
           onPress={() => handlePress("Name & Comment")}
         >
@@ -426,7 +426,7 @@ const InfoPanel5 = ({ projectData: initialProjectData, chatData, onUpdate }: Inf
             setShowFullComment(!showFullComment);
           }}
         >
-          {projectData.description || "Ingen kommentar"}
+          <Text>{projectData.description || "Ingen kommentar"}</Text>
         </Text>
       </View>
 
