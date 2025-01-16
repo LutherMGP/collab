@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { doc, getDoc, setDoc, deleteDoc, deleteField, collection, addDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, deleteField, collection, addDoc, onSnapshot } from "firebase/firestore";
 import { database } from "@/firebaseConfig";
 import { FontAwesome } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -38,38 +38,57 @@ const InfoPanel3 = ({ projectData: initialProjectData }: InfoPanelProps) => {
   const [applicantComment, setApplicantComment] = useState<string>("Pending");
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
-  // Funktion til at hente `applicant` data
-  const fetchApplicantData = async () => {
-    try {
-      if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
+  // Funktion til at lytte til ændringer i ansøgningsdata
+  const fetchApplicantDataRealtime = () => {
+    if (!projectData.userId || !projectData.id) return; // Tjek nødvendige data
 
-      const projectDocRef = doc(
-        database,
-        "users",
-        projectData.userId,
-        "projects",
-        projectData.id
-      );
+    const projectDocRef = doc(
+      database,
+      "users",
+      projectData.userId,
+      "projects",
+      projectData.id
+    );
 
-      const projectSnap = await getDoc(projectDocRef);
-
-      if (projectSnap.exists()) {
-        const applicantData = projectSnap.data()?.applicant;
-        if (applicantData) {
-          setApplicantComment(
-            applicantData.submitted ? applicantData.userComment || "Pending" : "Pending"
-          );
-          setIsSubmitted(!!applicantData.submitted);
+    // Lyt til ændringer i dokumentet
+    const unsubscribe = onSnapshot(
+      projectDocRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const applicantData = docSnapshot.data()?.applicant;
+          if (applicantData) {
+            setApplicantComment(
+              applicantData.submitted ? applicantData.userComment || "Pending" : "Pending"
+            );
+            setIsSubmitted(!!applicantData.submitted);
+          }
         }
+      },
+      (error) => {
+        console.error("Fejl ved overvågning af ansøgningsdata:", error);
       }
-    } catch (error) {
-      console.error("Fejl ved hentning af ansøgningsdata:", error);
-    }
+    );
+
+    // Returner unsubscribe for at fjerne lytteren
+    return unsubscribe;
   };
 
-  // Hent data ved komponentens opstart
+  // UseEffect til at initialisere realtidshåndtering
   useEffect(() => {
-    fetchApplicantData();
+    const unsubscribe = fetchApplicantDataRealtime();
+
+    return () => {
+      if (unsubscribe) unsubscribe(); // Ryd op efter listener
+    };
+  }, [projectData.userId, projectData.id]);
+
+  // Synkroniser lokale data med props
+  useEffect(() => {
+    const unsubscribe = fetchApplicantDataRealtime();
+  
+    return () => {
+      if (unsubscribe) unsubscribe(); // Ryd op efter listener
+    };
   }, [projectData.userId, projectData.id]);
 
   // Synkroniser lokale data med props
